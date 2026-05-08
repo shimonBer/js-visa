@@ -1,5 +1,17 @@
-/** Target bucket for DS-160 document uploads */
+/** Target bucket for DS-160 document uploads (must match server `S3_BUCKET` default) */
 export const S3_DOCUMENTS_BUCKET = 'js_visa'
+
+/**
+ * Presign endpoint: external URL, or built-in `/api/presign` on Vercel (AWS keys server-side only).
+ * Dev (`vite`): no URL unless `VITE_S3_PRESIGN_API_URL` points at a running API (e.g. `vercel dev`).
+ */
+function resolvePresignBase(opts) {
+  if (opts.presignUrl) return opts.presignUrl
+  const explicit = import.meta.env.VITE_S3_PRESIGN_API_URL
+  if (explicit) return explicit
+  if (import.meta.env.PROD) return '/api/presign'
+  return ''
+}
 
 /**
  * @param {FileList|File|null|undefined} value
@@ -13,8 +25,8 @@ export function firstFile(value) {
 }
 
 /**
- * Uploads files to s3://js_visa/{formId}/... via YOUR presign endpoint (Lambda, n8n, etc.).
- * Set `VITE_S3_PRESIGN_API_URL` in Vercel. If unset, returns [] (no upload).
+ * Uploads files to S3 via a presign POST. Production uses `/api/presign` unless `VITE_S3_PRESIGN_API_URL` is set.
+ * AWS credentials belong in Vercel env for the API route only — never use VITE_* for secrets.
  *
  * @param {string} formId
  * @param {{ name: string, file: File|null }[]} items
@@ -22,7 +34,7 @@ export function firstFile(value) {
  * @returns {Promise<{ field: string, bucket: string, key: string }[]>}
  */
 export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
-  const presignBase = opts.presignUrl ?? import.meta.env.VITE_S3_PRESIGN_API_URL ?? ''
+  const presignBase = resolvePresignBase(opts)
   if (!presignBase) return []
 
   const results = []
@@ -44,6 +56,16 @@ export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
 
     if (!presignRes.ok) {
       const text = await presignRes.text()
+      const builtin =
+        presignBase === '/api/presign' || presignBase.endsWith('/api/presign')
+      if (builtin && presignRes.status === 503) {
+        try {
+          const j = JSON.parse(text)
+          if (j.code === 'S3_DISABLED') return []
+        } catch {
+          /* fall through */
+        }
+      }
       throw new Error(`Presign failed (${presignRes.status}): ${text}`)
     }
 
