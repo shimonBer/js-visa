@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { saveFormDraftToBrowser, loadFormDraftFromBrowser } from './lib/formStorage.js'
 import { postFormToN8n } from './lib/n8nWebhook.js'
 import { serializeFormValuesForJson } from './lib/serializeFormPayload.js'
@@ -14,7 +14,7 @@ function buildFormId(passportId, passportDate) {
 }
 
 export default function DS160IsraelForm() {
-  const { register, watch, handleSubmit, getValues, reset, formState: { errors } } = useForm({
+  const { register, watch, handleSubmit, getValues, reset, control, formState: { errors } } = useForm({
     defaultValues: {
       passportId: '',
       passportDate: '',
@@ -22,6 +22,7 @@ export default function DS160IsraelForm() {
       isUnder14: 'no',
       hasForeignCitizenship: 'no',
       travelingWithOthers: 'no',
+      travelCompanions: [{ fullName: '', relation: '' }],
       visitedUSBefore: 'no',
       hadUSVisa: 'no',
       visaIssuedInIsrael: 'yes',
@@ -47,6 +48,12 @@ export default function DS160IsraelForm() {
       languages: [],
     },
   })
+
+  const { fields: travelCompanionFields, append: appendTravelCompanion, remove: removeTravelCompanion } =
+    useFieldArray({
+      control,
+      name: 'travelCompanions',
+    })
 
   const passportIdWatch = watch('passportId')
   const passportDateWatch = watch('passportDate')
@@ -136,8 +143,14 @@ export default function DS160IsraelForm() {
       setAsyncFlow({ phase: 'error', message: 'אין טיוטה שמורה בדפדפן עבור מזהה זה' })
       return
     }
+    const data = snap.data && typeof snap.data === 'object' ? snap.data : {}
+    const companions =
+      Array.isArray(data.travelCompanions) && data.travelCompanions.length > 0
+        ? data.travelCompanions
+        : [{ fullName: '', relation: '' }]
     reset({
-      ...snap.data,
+      ...data,
+      travelCompanions: companions,
       passportScan: undefined,
       existingVisaScan: undefined,
     })
@@ -146,6 +159,7 @@ export default function DS160IsraelForm() {
 
   const w = {
     hadPreviousName: watch('hadPreviousName'),
+    travelingWithOthers: watch('travelingWithOthers'),
     hasForeignCitizenship: watch('hasForeignCitizenship'),
     visitedUSBefore: watch('visitedUSBefore'),
     hadUSVisa: watch('hadUSVisa'),
@@ -168,19 +182,27 @@ export default function DS160IsraelForm() {
     servedInMilitary: watch('servedInMilitary'),
   }
 
-  const Input = ({ label, name, type = 'text', note, hint, placeholder }) => (
-    <div className="flex flex-col mb-4">
-      <label className="font-semibold mb-1 text-gray-700">{label}</label>
-      {note && <span className="text-sm text-gray-500 mb-1">{note}</span>}
-      {type === 'textarea' ? (
-        <textarea {...register(name)} className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" placeholder={placeholder} rows={3} />
-      ) : (
-        <input type={type} {...register(name)} className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" placeholder={placeholder} />
-      )}
-      {hint && <span className="text-xs text-gray-400 mt-1">{hint}</span>}
-      {errors[name] && <span className="text-red-500 text-sm mt-1">{errors[name]?.message || 'שגיאה בשדה'}</span>}
-    </div>
-  )
+  function getFieldError(path) {
+    if (!path || !errors) return undefined
+    return path.split('.').reduce((acc, key) => (acc == null ? undefined : acc[key]), errors)
+  }
+
+  const Input = ({ label, name, type = 'text', note, hint, placeholder }) => {
+    const fieldError = getFieldError(name)
+    return (
+      <div className="flex flex-col mb-4">
+        <label className="font-semibold mb-1 text-gray-700">{label}</label>
+        {note && <span className="text-sm text-gray-500 mb-1">{note}</span>}
+        {type === 'textarea' ? (
+          <textarea {...register(name)} className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" placeholder={placeholder} rows={3} />
+        ) : (
+          <input type={type} {...register(name)} className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" placeholder={placeholder} />
+        )}
+        {hint && <span className="text-xs text-gray-400 mt-1">{hint}</span>}
+        {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שגיאה בשדה'}</span>}
+      </div>
+    )
+  }
 
   const RadioGroup = ({ label, name, options, note }) => (
     <div className="flex flex-col mb-4">
@@ -315,6 +337,39 @@ export default function DS160IsraelForm() {
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">תכנון נסיעה לארה&quot;ב</h2>
             <div className="grid grid-cols-1 gap-4">
               <RadioGroup label="האם אתה מתכנן לטוס עם אנשים נוספים?" name="travelingWithOthers" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+              {w.travelingWithOthers === 'yes' && (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4">
+                  <p className="font-semibold text-gray-800">נוסעים נוספים</p>
+                  {travelCompanionFields.map((field, index) => (
+                    <div
+                      key={field.id}
+                      className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
+                    >
+                      <Input label="שם מלא" name={`travelCompanions.${index}.fullName`} />
+                      <Input label="קרבה אליך" name={`travelCompanions.${index}.relation`} />
+                      <div className="flex justify-end md:justify-start pb-1">
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => removeTravelCompanion(index)}
+                            className="text-sm text-red-600 hover:text-red-800 underline"
+                          >
+                            הסר
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => appendTravelCompanion({ fullName: '', relation: '' })}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                  >
+                    <span aria-hidden className="text-lg leading-none">+</span>
+                    הוסף נוסע
+                  </button>
+                </div>
+              )}
               <Input label="מתי התכנון לטוס לארה״ב?" name="plannedDepartureDate" />
               <Input label="לכמה זמן?" name="plannedStayDuration" />
               <Input label="איפה תלון בארה״ב?" name="accommodationInUS" type="textarea" />
