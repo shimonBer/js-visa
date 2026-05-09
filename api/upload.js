@@ -1,6 +1,7 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 
 const DEFAULT_BUCKET = 'js_visa'
+const DEFAULT_REGION = 'eu-north-1'
 
 /** @param {import('http').IncomingMessage} req */
 async function readBodyBuffer(req) {
@@ -44,8 +45,10 @@ export default async function handler(req, res) {
     return
   }
 
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
+  // Trim: pasted keys in hosting dashboards often include a trailing newline → SignatureDoesNotMatch
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim()
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim()
+  const sessionToken = process.env.AWS_SESSION_TOKEN?.trim()
   if (!accessKeyId || !secretAccessKey) {
     res.status(503).json({
       error: 'S3 upload not configured',
@@ -64,7 +67,7 @@ export default async function handler(req, res) {
   }
 
   const bucket = (process.env.S3_BUCKET || DEFAULT_BUCKET).trim() || DEFAULT_BUCKET
-  const region = (process.env.AWS_REGION || 'eu-west-1').trim() || 'eu-west-1'
+  const region = (process.env.AWS_REGION || DEFAULT_REGION).trim() || DEFAULT_REGION
   const key = `${formId}/${fileName}`
   if (key.length > 900) {
     res.status(400).json({ error: 'Key too long' })
@@ -90,9 +93,7 @@ export default async function handler(req, res) {
     credentials: {
       accessKeyId,
       secretAccessKey,
-      ...(process.env.AWS_SESSION_TOKEN && {
-        sessionToken: process.env.AWS_SESSION_TOKEN,
-      }),
+      ...(sessionToken && { sessionToken }),
     },
   })
 
