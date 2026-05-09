@@ -6,26 +6,71 @@ function blobToken() {
   return process.env.BLOB_READ_WRITE_TOKEN
 }
 
-/** @param {Record<string, unknown>} data form values */
-function fullNameFromPayloadData(data) {
-  const fn = String(data?.firstName ?? '').trim()
-  const ln = String(data?.lastName ?? '').trim()
-  const joined = [fn, ln].filter(Boolean).join(' ')
-  return joined || 'ללא שם'
+/** slug for path segment: spaces → underscores; strip unsafe chars (keep Hebrew/Latin letters, digits, underscore) */
+function slugSegment(str) {
+  let s = String(str ?? '').trim()
+  if (!s) return ''
+  s = s.replace(/\s+/g, '_')
+  s = s.replace(/[/\\?*:|"<>]/g, '')
+  s = s.replace(/[^\w\u0590-\u05FF.-]/g, '_')
+  return s.replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 80)
 }
 
 /**
- * Path: forms/{encodeURIComponent(fullName)}__{formId}.json
- * formId = passport_date | incomplete
+ * Readable path under forms/: forms/{first}_{last}_{formId}.json
+ * formId = passportId_date (e.g. 1234455_2026-05-09) | incomplete
  */
 function blobPathnameForPayload(payload) {
   const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
-  const fullName = fullNameFromPayloadData(data)
-  const fidRaw = payload?.formId != null && String(payload.formId).trim() !== ''
-    ? String(payload.formId).trim()
-    : 'incomplete'
-  const encoded = encodeURIComponent(fullName)
-  return `${PREFIX}${encoded}__${fidRaw}.json`
+  const first = slugSegment(data.firstName) || 'unnamed'
+  const last = slugSegment(data.lastName) || 'unnamed'
+  const fidRaw =
+    payload?.formId != null && String(payload.formId).trim() !== ''
+      ? String(payload.formId).trim()
+      : 'incomplete'
+  return `${PREFIX}${first}_${last}_${fidRaw}.json`
+}
+
+/** Parse new-style filename; returns null if not matched */
+function parseReadableFilename(inner) {
+  if (inner.endsWith('_incomplete')) {
+    const namePart = inner.slice(0, -'_incomplete'.length)
+    return {
+      displayName: namePart.replace(/_/g, ' ').trim() || 'ללא שם',
+      formId: 'incomplete',
+    }
+  }
+
+  const dateRe = /_(\d{4}-\d{2}-\d{2})$/
+  const dm = inner.match(dateRe)
+  if (!dm) return null
+
+  const date = dm[1]
+  const beforeDate = inner.slice(0, inner.length - dm[0].length)
+  const pm = beforeDate.match(/^(.*)_([A-Za-z0-9]+)$/)
+  if (!pm) return null
+
+  const namePart = pm[1]
+  const passport = pm[2]
+  const formId = `${passport}_${date}`
+  const displayName = namePart.replace(/_/g, ' ').trim() || 'ללא שם'
+  return { displayName, formId }
+}
+
+/** Legacy: encodeURIComponent(fullName)__formId.json */
+function parseLegacyFilename(inner) {
+  const sep = '__'
+  const idx = inner.indexOf(sep)
+  if (idx === -1) return null
+  const encodedName = inner.slice(0, idx)
+  const formId = inner.slice(idx + sep.length)
+  let displayName = encodedName
+  try {
+    displayName = decodeURIComponent(encodedName)
+  } catch {
+    /* keep */
+  }
+  return { displayName, formId }
 }
 
 function parseListEntry(pathname) {
@@ -33,20 +78,18 @@ function parseListEntry(pathname) {
     return { pathname, displayName: pathname, formId: '' }
   }
   const inner = pathname.slice(PREFIX.length, -'.json'.length)
-  const sep = '__'
-  const idx = inner.indexOf(sep)
-  if (idx === -1) {
-    return { pathname, displayName: inner, formId: '' }
+
+  const readable = parseReadableFilename(inner)
+  if (readable) {
+    return { pathname, displayName: readable.displayName, formId: readable.formId }
   }
-  const encodedName = inner.slice(0, idx)
-  const formId = inner.slice(idx + sep.length)
-  let displayName = encodedName
-  try {
-    displayName = decodeURIComponent(encodedName)
-  } catch {
-    /* keep encoded */
+
+  const legacy = parseLegacyFilename(inner)
+  if (legacy) {
+    return { pathname, displayName: legacy.displayName, formId: legacy.formId }
   }
-  return { pathname, displayName, formId }
+
+  return { pathname, displayName: inner.replace(/_/g, ' '), formId: '' }
 }
 
 async function readBodyJson(req) {
@@ -78,12 +121,18 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
-      const pathname = url.searchParams.get('pathname')
+      const rawPath = url.searchParams.get('pathname')
+      if (rawPath) {
+        let pathname = rawPath
+        try {
+          pathname = decodeURIComponent(rawPath)
+        } catch {
+          pathname = rawPath
+        }
 
-      if (pathname) {
         const result = await get(pathname, { access: 'private', token })
         if (!result || result.statusCode !== 200 || !result.stream) {
-          res.status(404).json({ error: 'Blob not found' })
+          res.status(404).json({ error: 'Blob not found', pathname })
           return
         }
         const text = await streamToUtf8(result.stream)
