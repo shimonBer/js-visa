@@ -1,19 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { saveFormDraftToBrowser, loadFormDraftFromBrowser } from './lib/formStorage.js'
 import { postFormToN8n } from './lib/n8nWebhook.js'
 import { serializeFormValuesForJson } from './lib/serializeFormPayload.js'
 import { firstFile, uploadFormDocumentsToS3 } from './lib/uploadFormDocuments.js'
+import { buildFormId } from './lib/formId.js'
+import { saveFormBlobPayload } from './lib/formBlob.js'
 
-/** Normalized key: passport digits/letters + ISO date, e.g. 201381722_2026-08-01 */
-function buildFormId(passportId, passportDate) {
-  const id = String(passportId ?? '').trim().replace(/[^A-Za-z0-9]/g, '')
-  const d = String(passportDate ?? '').trim()
-  if (!id || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return ''
-  return `${id}_${d}`
-}
-
-export default function DS160IsraelForm() {
+export default function DS160IsraelForm({
+  initialBlob = null,
+  initialBlobKey = null,
+  onExitToHome = null,
+} = {}) {
   const { register, watch, handleSubmit, getValues, reset, control, formState: { errors } } = useForm({
     defaultValues: {
       passportId: '',
@@ -65,6 +63,21 @@ export default function DS160IsraelForm() {
   const storageFormId = useMemo(() => formId || 'incomplete', [formId])
   const [asyncFlow, setAsyncFlow] = useState({ phase: 'idle', message: '' })
 
+  useEffect(() => {
+    if (!initialBlob?.data || typeof initialBlob.data !== 'object') return
+    const data = initialBlob.data
+    const companions =
+      Array.isArray(data.travelCompanions) && data.travelCompanions.length > 0
+        ? data.travelCompanions
+        : [{ fullName: '', relation: '' }]
+    reset({
+      ...data,
+      travelCompanions: companions,
+      passportScan: undefined,
+      existingVisaScan: undefined,
+    })
+  }, [initialBlobKey, initialBlob, reset])
+
   function buildN8nBody(event, fid, values, s3Documents) {
     const { data, fileMeta } = serializeFormValuesForJson(values)
     return {
@@ -88,6 +101,12 @@ export default function DS160IsraelForm() {
       ])
       const body = buildN8nBody('submit', fid, data, uploads)
       saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'submit', ...body })
+      // Blob backup is independent of n8n: runs first; failures are non-blocking for n8n.
+      try {
+        await saveFormBlobPayload(body)
+      } catch (e) {
+        console.warn('[blob]', e)
+      }
       try {
         await postFormToN8n('submit', body)
       } catch (e) {
@@ -118,6 +137,12 @@ export default function DS160IsraelForm() {
       ])
       const body = buildN8nBody('draft', fid, values, uploads)
       saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'draft', ...body })
+      // Blob backup is independent of n8n: runs first; failures are non-blocking for n8n.
+      try {
+        await saveFormBlobPayload(body)
+      } catch (e) {
+        console.warn('[blob]', e)
+      }
       try {
         await postFormToN8n('draft', body)
       } catch (e) {
@@ -237,14 +262,25 @@ export default function DS160IsraelForm() {
     <div dir="rtl" className="min-h-screen bg-gray-100 py-10 px-4 font-sans text-right">
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
 
-        <div className="bg-blue-600 text-white p-6">
-          <h1 className="text-3xl font-bold">DS160 מותאם לישראל</h1>
-          <p className="mt-2 text-blue-100">
-            טופס מותאם לישראל. שדות מותנים יוצגו אוטומטית בהתאם לתשובות. מומלץ לשמור טיוטה לעיתים קרובות.
-          </p>
-          <p className="mt-3 text-sm font-mono bg-blue-700/50 rounded-md px-3 py-2 inline-block" dir="ltr">
-            מזהה טופס: {formId || 'לא מוגדר — טיוטה תישמר תחת מפתח כללי בדפדפן'}
-          </p>
+        <div className="bg-blue-600 text-white p-6 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-bold">DS160 מותאם לישראל</h1>
+            <p className="mt-2 text-blue-100">
+              טופס מותאם לישראל. שדות מותנים יוצגו אוטומטית בהתאם לתשובות. מומלץ לשמור טיוטה לעיתים קרובות.
+            </p>
+            <p className="mt-3 text-sm font-mono bg-blue-700/50 rounded-md px-3 py-2 inline-block" dir="ltr">
+              מזהה טופס: {formId || 'לא מוגדר — טיוטה תישמר תחת מפתח כללי בדפדפן'}
+            </p>
+          </div>
+          {onExitToHome && (
+            <button
+              type="button"
+              onClick={onExitToHome}
+              className="shrink-0 px-4 py-2 text-sm font-semibold rounded-md bg-white/10 hover:bg-white/20 border border-white/30"
+            >
+              חזרה לרשימה
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-10">
