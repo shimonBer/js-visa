@@ -1,21 +1,15 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 const DEFAULT_BUCKET = 'js_visa'
-const PRESIGN_TTL_SECONDS = 900
 
 /** @param {import('http').IncomingMessage} req */
-async function readJsonBody(req) {
-  if (req.body != null && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
-    return req.body
-  }
+async function readBodyBuffer(req) {
+  if (Buffer.isBuffer(req.body)) return req.body
   const chunks = []
   for await (const chunk of req) {
     chunks.push(chunk)
   }
-  const raw = Buffer.concat(chunks).toString('utf8')
-  if (!raw) return {}
-  return JSON.parse(raw)
+  return Buffer.concat(chunks)
 }
 
 function sanitizeFormId(formId) {
@@ -39,16 +33,9 @@ function sanitizeContentType(ct) {
   return s
 }
 
-function s3DisabledResponse(res) {
-  res.status(503).json({
-    error: 'S3 upload not configured',
-    code: 'S3_DISABLED',
-  })
-}
-
 /**
- * POST JSON { formId, fileName, contentType } → { url, key, bucket }
- * AWS credentials from env only (set in Vercel; never VITE_*).
+ * POST raw file body. Headers: X-Form-Id, X-File-Name; Content-Type = file MIME type.
+ * Uploads with AWS credentials from env (never exposed to the browser).
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -60,33 +47,41 @@ export default async function handler(req, res) {
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
   if (!accessKeyId || !secretAccessKey) {
-    s3DisabledResponse(res)
+    res.status(503).json({
+      error: 'S3 upload not configured',
+      code: 'S3_DISABLED',
+    })
     return
   }
 
-  let body
-  try {
-    body = await readJsonBody(req)
-  } catch {
-    res.status(400).json({ error: 'Invalid JSON body' })
-    return
-  }
-
-  const formId = sanitizeFormId(body.formId)
-  const fileName = sanitizeFileName(body.fileName)
-  const contentType = sanitizeContentType(body.contentType)
+  const formId = sanitizeFormId(req.headers['x-form-id'])
+  const fileName = sanitizeFileName(req.headers['x-file-name'])
+  const contentType = sanitizeContentType(req.headers['content-type'])
 
   if (!formId || !fileName) {
-    res.status(400).json({ error: 'Invalid formId or fileName' })
+    res.status(400).json({ error: 'Missing or invalid X-Form-Id / X-File-Name' })
     return
   }
 
   const bucket = (process.env.S3_BUCKET || DEFAULT_BUCKET).trim() || DEFAULT_BUCKET
   const region = (process.env.AWS_REGION || 'eu-west-1').trim() || 'eu-west-1'
-
   const key = `${formId}/${fileName}`
   if (key.length > 900) {
     res.status(400).json({ error: 'Key too long' })
+    return
+  }
+
+  let body
+  try {
+    body = await readBodyBuffer(req)
+  } catch (e) {
+    console.error('[upload] body read', e)
+    res.status(400).json({ error: 'Could not read body' })
+    return
+  }
+
+  if (!body?.length) {
+    res.status(400).json({ error: 'Empty body' })
     return
   }
 
@@ -101,22 +96,21 @@ export default async function handler(req, res) {
     },
   })
 
-  const command = new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    ContentType: contentType,
-  })
-
   try {
-    const url = await getSignedUrl(client, command, {
-      expiresIn: PRESIGN_TTL_SECONDS,
-    })
-    res.status(200).json({ url, key, bucket })
+    await client.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      }),
+    )
+    res.status(200).json({ key, bucket })
   } catch (e) {
-    console.error('[presign]', e)
+    console.error('[upload] PutObject', e)
     res.status(500).json({
-      error: 'Could not create upload URL',
-      code: 'PRESIGN_FAILED',
+      error: 'S3 upload failed',
+      code: 'UPLOAD_FAILED',
     })
   }
 }

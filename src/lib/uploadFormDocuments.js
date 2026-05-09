@@ -2,14 +2,15 @@
 export const S3_DOCUMENTS_BUCKET = 'js_visa'
 
 /**
- * Presign endpoint: external URL, or built-in `/api/presign` on Vercel (AWS keys server-side only).
- * Dev (`vite`): no URL unless `VITE_S3_PRESIGN_API_URL` points at a running API (e.g. `vercel dev`).
+ * Same-origin POST /api/upload in production. Files are sent to the server; the server
+ * writes to S3 using AWS_* env vars (Vercel). Never put access keys in VITE_*.
+ * Dev: no upload unless VITE_S3_UPLOAD_API_URL points at a running API (e.g. `vercel dev`).
  */
-function resolvePresignBase(opts) {
-  if (opts.presignUrl) return opts.presignUrl
-  const explicit = import.meta.env.VITE_S3_PRESIGN_API_URL
+function resolveUploadApiBase(opts) {
+  if (opts.uploadUrl) return opts.uploadUrl
+  const explicit = import.meta.env.VITE_S3_UPLOAD_API_URL
   if (explicit) return explicit
-  if (import.meta.env.PROD) return '/api/presign'
+  if (import.meta.env.PROD) return '/api/upload'
   return ''
 }
 
@@ -25,17 +26,16 @@ export function firstFile(value) {
 }
 
 /**
- * Uploads files to S3 via a presign POST. Production uses `/api/presign` unless `VITE_S3_PRESIGN_API_URL` is set.
- * AWS credentials belong in Vercel env for the API route only — never use VITE_* for secrets.
+ * Uploads files via POST to the server; server pushes to S3 with credentials from env.
  *
  * @param {string} formId
  * @param {{ name: string, file: File|null }[]} items
- * @param {{ presignUrl?: string }} [opts]
+ * @param {{ uploadUrl?: string }} [opts]
  * @returns {Promise<{ field: string, bucket: string, key: string }[]>}
  */
 export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
-  const presignBase = resolvePresignBase(opts)
-  if (!presignBase) return []
+  const base = resolveUploadApiBase(opts)
+  if (!base) return []
 
   const results = []
   for (const { name, file } of items) {
@@ -43,22 +43,22 @@ export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
 
     const ext = (file.name?.split('.').pop() || 'bin').replace(/[^a-zA-Z0-9]/g, '') || 'bin'
     const fileName = `${name}.${ext}`.slice(0, 180)
+    const contentType = file.type || 'application/octet-stream'
 
-    const presignRes = await fetch(presignBase, {
+    const uploadRes = await fetch(base, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        formId,
-        fileName,
-        contentType: file.type || 'application/octet-stream',
-      }),
+      headers: {
+        'Content-Type': contentType,
+        'X-Form-Id': formId,
+        'X-File-Name': fileName,
+      },
+      body: file,
     })
 
-    if (!presignRes.ok) {
-      const text = await presignRes.text()
-      const builtin =
-        presignBase === '/api/presign' || presignBase.endsWith('/api/presign')
-      if (builtin && presignRes.status === 503) {
+    if (!uploadRes.ok) {
+      const text = await uploadRes.text()
+      const builtin = base === '/api/upload' || base.endsWith('/api/upload')
+      if (builtin && uploadRes.status === 503) {
         try {
           const j = JSON.parse(text)
           if (j.code === 'S3_DISABLED') return []
@@ -66,22 +66,10 @@ export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
           /* fall through */
         }
       }
-      throw new Error(`Presign failed (${presignRes.status}): ${text}`)
+      throw new Error(`Upload failed (${uploadRes.status}): ${text}`)
     }
 
-    const { url, key, bucket } = await presignRes.json()
-    const contentType = file.type || 'application/octet-stream'
-    const putRes = await fetch(url, {
-      method: 'PUT',
-      body: file,
-      headers: { 'Content-Type': contentType },
-    })
-
-    if (!putRes.ok) {
-      const text = await putRes.text().catch(() => '')
-      throw new Error(`S3 upload failed (${putRes.status}) for ${key}: ${text}`)
-    }
-
+    const { key, bucket } = await uploadRes.json()
     results.push({ field: name, bucket: bucket || S3_DOCUMENTS_BUCKET, key })
   }
   return results
