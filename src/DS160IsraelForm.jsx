@@ -6,16 +6,78 @@ import { serializeFormValuesForJson } from './lib/serializeFormPayload.js'
 import { firstFile, uploadFormDocumentsToS3 } from './lib/uploadFormDocuments.js'
 import { buildFormId } from './lib/formId.js'
 import { saveFormBlobPayload } from './lib/formBlob.js'
+import { extractPassportFieldsFromFile } from './lib/passportOcr.js'
+import { fetchI94TravelHistory } from './lib/browserUse.js'
+import { translateFormToEnglish } from './lib/translateForm.js'
+
+/**
+ * Larger dashed drop zone; optional callback when a file is set (e.g. passport OCR).
+ */
+function DocumentFileSlot({ label, name, register, setValue, getFieldError, accept = 'image/*', onFilePicked }) {
+  const [dragOver, setDragOver] = useState(false)
+  const fieldError = getFieldError(name)
+  const reg = register(name)
+  return (
+    <div className="flex flex-col mb-4">
+      <label className="font-semibold mb-1 text-gray-700">{label}</label>
+      <div
+        onDragEnter={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setDragOver(true)
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setDragOver(false)
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setDragOver(false)
+          const f = e.dataTransfer.files?.[0]
+          if (!f) return
+          const dt = new DataTransfer()
+          dt.items.add(f)
+          setValue(name, dt.files, { shouldValidate: true, shouldDirty: true })
+          onFilePicked?.(f)
+        }}
+        className={`rounded-lg border-2 border-dashed p-6 min-h-[10rem] flex flex-col justify-center transition-colors bg-gray-50 ${
+          dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-400'
+        }`}
+      >
+        <input
+          type="file"
+          {...reg}
+          accept={accept}
+          onChange={(e) => {
+            reg.onChange(e)
+            const f = e.target.files?.[0]
+            if (f) onFilePicked?.(f)
+          }}
+          className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        />
+        <p className="text-xs text-gray-500 mt-3 text-center">גרור קובץ לכאן או בחר מהמכשיר</p>
+      </div>
+      {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שגיאה בשדה'}</span>}
+    </div>
+  )
+}
 
 export default function DS160IsraelForm({
   initialBlob = null,
   initialBlobKey = null,
   onExitToHome = null,
 } = {}) {
-  const { register, watch, handleSubmit, getValues, reset, control, formState: { errors } } = useForm({
+  const { register, watch, handleSubmit, getValues, setValue, reset, control, formState: { errors } } = useForm({
     defaultValues: {
       passportId: '',
       passportDate: '',
+      passportIssuingCountry: '',
       hadPreviousName: 'no',
       isUnder14: 'no',
       hasForeignCitizenship: 'no',
@@ -62,6 +124,9 @@ export default function DS160IsraelForm({
   /** localStorage key: stable id when passport+date set, else shared incomplete slot */
   const storageFormId = useMemo(() => formId || 'incomplete', [formId])
   const [asyncFlow, setAsyncFlow] = useState({ phase: 'idle', message: '' })
+  const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
+  const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
+  const [translateUi, setTranslateUi] = useState({ open: false, text: '', loading: false, error: '' })
 
   useEffect(() => {
     if (!initialBlob?.data || typeof initialBlob.data !== 'object') return
@@ -75,6 +140,8 @@ export default function DS160IsraelForm({
       travelCompanions: companions,
       passportScan: undefined,
       existingVisaScan: undefined,
+      socialSecurityScan: undefined,
+      americanLicenseScan: undefined,
     })
   }, [initialBlobKey, initialBlob, reset])
 
@@ -98,6 +165,8 @@ export default function DS160IsraelForm({
       const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
         { name: 'passportScan', file: firstFile(data.passportScan) },
         { name: 'existingVisaScan', file: firstFile(data.existingVisaScan) },
+        { name: 'socialSecurityScan', file: firstFile(data.socialSecurityScan) },
+        { name: 'americanLicenseScan', file: firstFile(data.americanLicenseScan) },
       ])
       const body = buildN8nBody('submit', fid, data, uploads)
       saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'submit', ...body })
@@ -134,6 +203,8 @@ export default function DS160IsraelForm({
       const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
         { name: 'passportScan', file: firstFile(values.passportScan) },
         { name: 'existingVisaScan', file: firstFile(values.existingVisaScan) },
+        { name: 'socialSecurityScan', file: firstFile(values.socialSecurityScan) },
+        { name: 'americanLicenseScan', file: firstFile(values.americanLicenseScan) },
       ])
       const body = buildN8nBody('draft', fid, values, uploads)
       saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'draft', ...body })
@@ -178,8 +249,81 @@ export default function DS160IsraelForm({
       travelCompanions: companions,
       passportScan: undefined,
       existingVisaScan: undefined,
+      socialSecurityScan: undefined,
+      americanLicenseScan: undefined,
     })
     setAsyncFlow({ phase: 'idle', message: 'טיוטה נטענה מהדפדפן (קבצים יש לבחור מחדש)' })
+  }
+
+  async function runPassportOcrFromFile(file) {
+    setPassportOcr({ status: 'loading', message: '' })
+    try {
+      const r = await extractPassportFieldsFromFile(file)
+      if (r.firstName) setValue('firstName', r.firstName, { shouldDirty: true })
+      if (r.lastName) setValue('lastName', r.lastName, { shouldDirty: true })
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(r.birthDate || '').trim())
+      if (m) {
+        setValue('birthDateYear', m[1], { shouldDirty: true })
+        setValue('birthDateMonth', String(parseInt(m[2], 10)), { shouldDirty: true })
+        setValue('birthDateDay', String(parseInt(m[3], 10)), { shouldDirty: true })
+      }
+      if (r.passportNumber) setValue('passportId', r.passportNumber, { shouldDirty: true })
+      if (r.issuingCountry) setValue('passportIssuingCountry', r.issuingCountry, { shouldDirty: true })
+      setPassportOcr({ status: 'idle', message: 'שדות דרכון עודכנו מהצילום.' })
+    } catch (e) {
+      setPassportOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי דרכון' })
+    }
+  }
+
+  const wI94First = watch('firstName')
+  const wI94Last = watch('lastName')
+  const wI94Day = watch('birthDateDay')
+  const wI94Month = watch('birthDateMonth')
+  const wI94Year = watch('birthDateYear')
+  const wI94Passport = watch('passportId')
+  const wI94Country = watch('passportIssuingCountry')
+
+  const canRunI94 = useMemo(() => {
+    const pad = (n) => String(n ?? '').trim().padStart(2, '0')
+    const y = String(wI94Year ?? '').trim()
+    const okDate = /^\d{4}$/.test(y) && pad(wI94Month) !== '00' && pad(wI94Day) !== '00'
+    return Boolean(
+      String(wI94First ?? '').trim() &&
+        String(wI94Last ?? '').trim() &&
+        okDate &&
+        String(wI94Passport ?? '').trim() &&
+        String(wI94Country ?? '').trim(),
+    )
+  }, [wI94First, wI94Last, wI94Day, wI94Month, wI94Year, wI94Passport, wI94Country])
+
+  async function handleI94Lookup() {
+    setI94State({ status: 'loading', error: '', data: null })
+    try {
+      const y = String(wI94Year ?? '').trim()
+      const m = String(wI94Month ?? '').trim().padStart(2, '0')
+      const d = String(wI94Day ?? '').trim().padStart(2, '0')
+      const birthDate = `${y}-${m}-${d}`
+      const data = await fetchI94TravelHistory({
+        firstName: String(wI94First ?? '').trim(),
+        lastName: String(wI94Last ?? '').trim(),
+        birthDate,
+        passportNumber: String(wI94Passport ?? '').trim(),
+        country: String(wI94Country ?? '').trim(),
+      })
+      setI94State({ status: 'idle', error: '', data })
+    } catch (e) {
+      setI94State({ status: 'error', error: e?.message || 'שגיאה', data: null })
+    }
+  }
+
+  async function handleTranslateToEnglish() {
+    setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
+    try {
+      const text = await translateFormToEnglish(getValues())
+      setTranslateUi({ open: true, text, loading: false, error: '' })
+    } catch (e) {
+      setTranslateUi((s) => ({ ...s, loading: false, error: e?.message || 'שגיאת תרגום' }))
+    }
   }
 
   const w = {
@@ -353,9 +497,14 @@ export default function DS160IsraelForm({
                 </div>
               </div>
 
-              <RadioGroup label="Are you under 14?" name="isUnder14" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+              <RadioGroup label="מתחת ל 14?" name="isUnder14" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
               <Input label="עיר לידה (אם בחו״ל, לציין מדינה)" name="birthCity" />
               <Input label="מספר תעודת הזהות" name="idNumber" />
+              <Input
+                label="מדינת הנפקת דרכון (באנגלית)"
+                name="passportIssuingCountry"
+                hint="ניתן למלא ידנית או לעדכן אוטומטית מזיהוי צילום הדרכון"
+              />
               <Input label="כתובת מגורים נוכחית - רחוב" name="addressStreet" />
               <Input label="(מספר דירה / apt number)" name="addressApt" />
               <Input label="עיר" name="addressCity" />
@@ -622,17 +771,114 @@ export default function DS160IsraelForm({
 
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מסמכים</h2>
+            <p className="text-sm text-gray-600">
+              גרירת קובץ לתוך המסגרת מעדכנת את השדה. בצילום דרכון מתבצע זיהוי אוטומטי (GPT-4o) ומילוי שם, תאריך לידה, מספר דרכון ומדינת הנפקה.
+            </p>
+            {passportOcr.status === 'loading' && (
+              <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>
+            )}
+            {passportOcr.status === 'error' && (
+              <p className="text-sm text-red-600" role="alert">
+                {passportOcr.message}
+              </p>
+            )}
+            {passportOcr.status === 'idle' && passportOcr.message && (
+              <p className="text-sm text-green-700">{passportOcr.message}</p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col mb-4">
-                <label className="font-semibold mb-1 text-gray-700">צילום דרכון</label>
-                <input type="file" {...register('passportScan')} accept="image/*" className="border border-dashed border-gray-400 rounded-md p-4 bg-gray-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-                {errors.passportScan && <span className="text-red-500 text-sm mt-1">{errors.passportScan?.message || 'שגיאה בשדה'}</span>}
-              </div>
-              <div className="flex flex-col mb-4">
-                <label className="font-semibold mb-1 text-gray-700">ויזה קודמת במידה ויש</label>
-                <input type="file" {...register('existingVisaScan')} accept="image/*" className="border border-dashed border-gray-400 rounded-md p-4 bg-gray-50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-              </div>
+              <DocumentFileSlot
+                label="צילום דרכון"
+                name="passportScan"
+                register={register}
+                setValue={setValue}
+                getFieldError={getFieldError}
+                accept="image/*,application/pdf"
+                onFilePicked={(f) => {
+                  void runPassportOcrFromFile(f)
+                }}
+              />
+              <DocumentFileSlot
+                label="ויזה קודמת במידה ויש"
+                name="existingVisaScan"
+                register={register}
+                setValue={setValue}
+                getFieldError={getFieldError}
+                accept="image/*,application/pdf"
+              />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 pt-4">
+              <DocumentFileSlot
+                label="צילום Social Security Card (ארה״ב)"
+                name="socialSecurityScan"
+                register={register}
+                setValue={setValue}
+                getFieldError={getFieldError}
+                accept="image/*,application/pdf"
+              />
+              <DocumentFileSlot
+                label="רישיון נהיגה אמריקאי (צילום)"
+                name="americanLicenseScan"
+                register={register}
+                setValue={setValue}
+                getFieldError={getFieldError}
+                accept="image/*,application/pdf"
+              />
+            </div>
+
+            {canRunI94 && (
+              <div className="rounded-lg border border-gray-200 bg-slate-50 p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-bold text-gray-800">היסטוריית כניסות (I-94)</h3>
+                  <button
+                    type="button"
+                    disabled={i94State.status === 'loading' || asyncFlow.phase === 'working'}
+                    onClick={() => void handleI94Lookup()}
+                    className="px-4 py-2 text-sm font-semibold rounded-md bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-40"
+                  >
+                    {i94State.status === 'loading' ? 'טוען…' : 'בדוק היסטוריית כניסות'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-600">
+                  נדרשים שם פרטי, שם משפחה, תאריך לידה מלא, מספר דרכון ומדינת הנפקה. הפעולה רצה בענן (Browser Use).
+                </p>
+                {i94State.error && (
+                  <p className="text-sm text-red-600" role="alert">
+                    {i94State.error}
+                  </p>
+                )}
+                {i94State.data && (
+                  <div className="overflow-x-auto">
+                    {!i94State.data.success && (
+                      <p className="text-sm text-amber-800">לא הוחזרה היסטוריה (success=false).</p>
+                    )}
+                    {i94State.data.history?.length > 0 ? (
+                      <table className="min-w-full text-sm border border-gray-200 bg-white rounded-md">
+                        <thead>
+                          <tr className="bg-gray-100 text-right">
+                            <th className="p-2 border-b">תאריך</th>
+                            <th className="p-2 border-b">סוג</th>
+                            <th className="p-2 border-b">מיקום</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {i94State.data.history.map((row, i) => (
+                            <tr key={`${row.date}-${i}`} className="border-b border-gray-100">
+                              <td className="p-2 font-mono" dir="ltr">
+                                {row.date}
+                              </td>
+                              <td className="p-2">{row.type}</td>
+                              <td className="p-2">{row.location}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      i94State.data.success && <p className="text-sm text-gray-600">אין רשומות היסטוריה.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           <div className="pt-6 border-t flex flex-col items-end gap-2">
@@ -645,7 +891,20 @@ export default function DS160IsraelForm({
             {asyncFlow.phase === 'error' && (
               <p className="text-sm text-red-600 max-w-xl text-right">{asyncFlow.message}</p>
             )}
-            <div className="flex justify-end gap-4">
+            {translateUi.error && (
+              <p className="text-sm text-red-600 w-full text-right" role="alert">
+                {translateUi.error}
+              </p>
+            )}
+            <div className="flex flex-wrap justify-end gap-4">
+              <button
+                type="button"
+                disabled={asyncFlow.phase === 'working' || translateUi.loading}
+                onClick={() => void handleTranslateToEnglish()}
+                className="px-6 py-2 border border-slate-700 text-slate-800 font-semibold rounded-md hover:bg-slate-50 transition disabled:opacity-40"
+              >
+                {translateUi.loading ? 'מתרגם…' : 'תרגם לאנגלית (ChatGPT)'}
+              </button>
               <button
                 type="button"
                 disabled={asyncFlow.phase === 'working'}
@@ -665,6 +924,48 @@ export default function DS160IsraelForm({
           </div>
         </form>
       </div>
+
+      {translateUi.open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="translate-title"
+        >
+          <div className="max-w-3xl w-full max-h-[85vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden" dir="ltr">
+            <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+              <h2 id="translate-title" className="text-lg font-bold text-gray-900">
+                English translation
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="text-sm px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(translateUi.text)
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                >
+                  Copy
+                </button>
+                <button
+                  type="button"
+                  className="text-sm px-3 py-1.5 rounded-md bg-gray-900 text-white hover:bg-gray-800"
+                  onClick={() => setTranslateUi((s) => ({ ...s, open: false }))}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto text-sm whitespace-pre-wrap text-gray-800 font-sans">
+              {translateUi.text}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

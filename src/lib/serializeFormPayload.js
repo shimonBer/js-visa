@@ -7,7 +7,7 @@ export function serializeFormValuesForJson(values) {
   const data = { ...values }
   const fileMeta = {}
 
-  for (const key of ['passportScan', 'existingVisaScan']) {
+  for (const key of ['passportScan', 'existingVisaScan', 'socialSecurityScan', 'americanLicenseScan']) {
     const f = firstFile(data[key])
     delete data[key]
     fileMeta[key] = f

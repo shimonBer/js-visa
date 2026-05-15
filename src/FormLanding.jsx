@@ -1,10 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Fuse from 'fuse.js'
 import { listFormBlobsFromApi, fetchFormBlobPayload } from './lib/formBlob.js'
 
 export default function FormLanding({ onNewForm, onOpenForm }) {
   const [forms, setForms] = useState([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const filteredForms = useMemo(() => {
+    const q = searchQuery.trim()
+    if (!q) return forms
+    const fuse = new Fuse(forms, {
+      keys: ['displayName'],
+      threshold: 0.4,
+      ignoreLocation: true,
+    })
+    return fuse.search(q).map((r) => r.item)
+  }, [forms, searchQuery])
 
   useEffect(() => {
     let cancelled = false
@@ -58,6 +71,20 @@ export default function FormLanding({ onNewForm, onOpenForm }) {
 
         <div className="border-t border-gray-200 pt-6">
           <h2 className="font-semibold text-gray-800 mb-3">המשך טופס קיים</h2>
+          <div className="mb-4">
+            <label htmlFor="form-search" className="block text-sm font-medium text-gray-700 mb-1">
+              חיפוש לפי שם (שם פרטי + משפחה)
+            </label>
+            <input
+              id="form-search"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="הקלד שם…"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              disabled={loading}
+            />
+          </div>
           {loading && <p className="text-sm text-gray-500">טוען רשימה…</p>}
           {error && (
             <p className="text-sm text-red-600 mb-3" role="alert">
@@ -67,8 +94,11 @@ export default function FormLanding({ onNewForm, onOpenForm }) {
           {!loading && forms.length === 0 && !error && (
             <p className="text-sm text-gray-500">אין טפסים שמורים בענן עדיין.</p>
           )}
+          {!loading && forms.length > 0 && filteredForms.length === 0 && searchQuery.trim() && (
+            <p className="text-sm text-gray-500 mb-2">לא נמצאו תוצאות לחיפוש.</p>
+          )}
           <ul className="space-y-2">
-            {forms.map((f) => (
+            {filteredForms.map((f) => (
               <li key={f.pathname}>
                 <button
                   type="button"
