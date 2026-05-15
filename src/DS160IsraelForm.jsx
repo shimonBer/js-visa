@@ -98,7 +98,7 @@ export default function DS160IsraelForm({
   const { register, watch, handleSubmit, getValues, setValue, reset, control, formState: { errors } } = useForm({
     defaultValues: {
       passportId: '',
-      passportDate: '',
+      passportDate: new Date().toISOString().slice(0, 10),
       passportIssuingCountry: '',
       firstNameEnglish: '',
       lastNameEnglish: '',
