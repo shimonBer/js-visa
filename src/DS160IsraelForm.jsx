@@ -12,11 +12,26 @@ import { translateFormToEnglish } from './lib/translateForm.js'
 
 /**
  * Larger dashed drop zone; optional callback when a file is set (e.g. passport OCR).
+ * Shows chosen filename (RHF + local fallback — native file input cannot show programmatic picks reliably).
  */
-function DocumentFileSlot({ label, name, register, setValue, getFieldError, accept = 'image/*', onFilePicked }) {
+function DocumentFileSlot({
+  label,
+  name,
+  register,
+  setValue,
+  getFieldError,
+  accept = 'image/*',
+  onFilePicked,
+  /** @type {FileList|File|null|undefined} */
+  watchedValue,
+}) {
   const [dragOver, setDragOver] = useState(false)
+  const [pickedFileName, setPickedFileName] = useState('')
   const fieldError = getFieldError(name)
   const reg = register(name)
+  const nameFromForm = firstFile(watchedValue)?.name?.trim() || ''
+  const displayName = nameFromForm || pickedFileName
+
   return (
     <div className="flex flex-col mb-4">
       <label className="font-semibold mb-1 text-gray-700">{label}</label>
@@ -44,6 +59,7 @@ function DocumentFileSlot({ label, name, register, setValue, getFieldError, acce
           const dt = new DataTransfer()
           dt.items.add(f)
           setValue(name, dt.files, { shouldValidate: true, shouldDirty: true })
+          setPickedFileName(f.name)
           onFilePicked?.(f)
         }}
         className={`rounded-lg border-2 border-dashed p-6 min-h-[10rem] flex flex-col justify-center transition-colors bg-gray-50 ${
@@ -57,11 +73,17 @@ function DocumentFileSlot({ label, name, register, setValue, getFieldError, acce
           onChange={(e) => {
             reg.onChange(e)
             const f = e.target.files?.[0]
+            setPickedFileName(f?.name || '')
             if (f) onFilePicked?.(f)
           }}
           className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
         />
         <p className="text-xs text-gray-500 mt-3 text-center">גרור קובץ לכאן או בחר מהמכשיר</p>
+        {displayName ? (
+          <p className="text-xs font-medium text-green-700 mt-2 text-center truncate" title={displayName}>
+            נבחר: {displayName}
+          </p>
+        ) : null}
       </div>
       {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שגיאה בשדה'}</span>}
     </div>
@@ -78,6 +100,8 @@ export default function DS160IsraelForm({
       passportId: '',
       passportDate: '',
       passportIssuingCountry: '',
+      firstNameEnglish: '',
+      lastNameEnglish: '',
       hadPreviousName: 'no',
       isUnder14: 'no',
       hasForeignCitizenship: 'no',
@@ -117,6 +141,10 @@ export default function DS160IsraelForm({
 
   const passportIdWatch = watch('passportId')
   const passportDateWatch = watch('passportDate')
+  const passportScanWatch = watch('passportScan')
+  const existingVisaScanWatch = watch('existingVisaScan')
+  const socialSecurityScanWatch = watch('socialSecurityScan')
+  const americanLicenseScanWatch = watch('americanLicenseScan')
   const formId = useMemo(
     () => buildFormId(passportIdWatch, passportDateWatch),
     [passportIdWatch, passportDateWatch],
@@ -259,8 +287,8 @@ export default function DS160IsraelForm({
     setPassportOcr({ status: 'loading', message: '' })
     try {
       const r = await extractPassportFieldsFromFile(file)
-      if (r.firstName) setValue('firstName', r.firstName, { shouldDirty: true })
-      if (r.lastName) setValue('lastName', r.lastName, { shouldDirty: true })
+      if (r.firstName) setValue('firstNameEnglish', r.firstName, { shouldDirty: true })
+      if (r.lastName) setValue('lastNameEnglish', r.lastName, { shouldDirty: true })
       const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(r.birthDate || '').trim())
       if (m) {
         setValue('birthDateYear', m[1], { shouldDirty: true })
@@ -275,8 +303,10 @@ export default function DS160IsraelForm({
     }
   }
 
-  const wI94First = watch('firstName')
-  const wI94Last = watch('lastName')
+  const wI94FirstEn = watch('firstNameEnglish')
+  const wI94LastEn = watch('lastNameEnglish')
+  const wI94FirstHe = watch('firstName')
+  const wI94LastHe = watch('lastName')
   const wI94Day = watch('birthDateDay')
   const wI94Month = watch('birthDateMonth')
   const wI94Year = watch('birthDateYear')
@@ -287,14 +317,10 @@ export default function DS160IsraelForm({
     const pad = (n) => String(n ?? '').trim().padStart(2, '0')
     const y = String(wI94Year ?? '').trim()
     const okDate = /^\d{4}$/.test(y) && pad(wI94Month) !== '00' && pad(wI94Day) !== '00'
-    return Boolean(
-      String(wI94First ?? '').trim() &&
-        String(wI94Last ?? '').trim() &&
-        okDate &&
-        String(wI94Passport ?? '').trim() &&
-        String(wI94Country ?? '').trim(),
-    )
-  }, [wI94First, wI94Last, wI94Day, wI94Month, wI94Year, wI94Passport, wI94Country])
+    const first = String(wI94FirstEn ?? '').trim() || String(wI94FirstHe ?? '').trim()
+    const last = String(wI94LastEn ?? '').trim() || String(wI94LastHe ?? '').trim()
+    return Boolean(first && last && okDate && String(wI94Passport ?? '').trim() && String(wI94Country ?? '').trim())
+  }, [wI94FirstEn, wI94LastEn, wI94FirstHe, wI94LastHe, wI94Day, wI94Month, wI94Year, wI94Passport, wI94Country])
 
   async function handleI94Lookup() {
     setI94State({ status: 'loading', error: '', data: null })
@@ -303,9 +329,11 @@ export default function DS160IsraelForm({
       const m = String(wI94Month ?? '').trim().padStart(2, '0')
       const d = String(wI94Day ?? '').trim().padStart(2, '0')
       const birthDate = `${y}-${m}-${d}`
+      const first = String(wI94FirstEn ?? '').trim() || String(wI94FirstHe ?? '').trim()
+      const last = String(wI94LastEn ?? '').trim() || String(wI94LastHe ?? '').trim()
       const data = await fetchI94TravelHistory({
-        firstName: String(wI94First ?? '').trim(),
-        lastName: String(wI94Last ?? '').trim(),
+        firstName: first,
+        lastName: last,
         birthDate,
         passportNumber: String(wI94Passport ?? '').trim(),
         country: String(wI94Country ?? '').trim(),
@@ -479,6 +507,16 @@ export default function DS160IsraelForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="שם פרטי" name="firstName" />
               <Input label="שם משפחה" name="lastName" />
+              <Input
+                label="שם פרטי באנגלית (מדרכון)"
+                name="firstNameEnglish"
+                hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית"
+              />
+              <Input
+                label="שם משפחה באנגלית (מדרכון)"
+                name="lastNameEnglish"
+                hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית"
+              />
 
               <RadioGroup label="במידה והיה שם קודם" name="hadPreviousName" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
               {w.hadPreviousName === 'yes' && (
@@ -772,7 +810,7 @@ export default function DS160IsraelForm({
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מסמכים</h2>
             <p className="text-sm text-gray-600">
-              גרירת קובץ לתוך המסגרת מעדכנת את השדה. בצילום דרכון מתבצע זיהוי אוטומטי (GPT-4o) ומילוי שם, תאריך לידה, מספר דרכון ומדינת הנפקה.
+              גרירת קובץ לתוך המסגרת מעדכנת את השדה. בצילום דרכון מתבצע זיהוי אוטומטי (GPT-4o): שם באנגלית, תאריך לידה, מספר דרכון ומדינת הנפקה.
             </p>
             {passportOcr.status === 'loading' && (
               <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>
@@ -792,6 +830,7 @@ export default function DS160IsraelForm({
                 register={register}
                 setValue={setValue}
                 getFieldError={getFieldError}
+                watchedValue={passportScanWatch}
                 accept="image/*,application/pdf"
                 onFilePicked={(f) => {
                   void runPassportOcrFromFile(f)
@@ -803,6 +842,7 @@ export default function DS160IsraelForm({
                 register={register}
                 setValue={setValue}
                 getFieldError={getFieldError}
+                watchedValue={existingVisaScanWatch}
                 accept="image/*,application/pdf"
               />
             </div>
@@ -813,6 +853,7 @@ export default function DS160IsraelForm({
                 register={register}
                 setValue={setValue}
                 getFieldError={getFieldError}
+                watchedValue={socialSecurityScanWatch}
                 accept="image/*,application/pdf"
               />
               <DocumentFileSlot
@@ -821,6 +862,7 @@ export default function DS160IsraelForm({
                 register={register}
                 setValue={setValue}
                 getFieldError={getFieldError}
+                watchedValue={americanLicenseScanWatch}
                 accept="image/*,application/pdf"
               />
             </div>
@@ -839,7 +881,7 @@ export default function DS160IsraelForm({
                   </button>
                 </div>
                 <p className="text-xs text-gray-600">
-                  נדרשים שם פרטי, שם משפחה, תאריך לידה מלא, מספר דרכון ומדינת הנפקה. הפעולה רצה בענן (Browser Use).
+                  נדרשים שם (באנגלית מהדרכון או בעברית), תאריך לידה מלא, מספר דרכון ומדינת הנפקה באנגלית. I-94 משתמש בשם האנגלי אם מולא. הפעולה רצה בענן (Browser Use).
                 </p>
                 {i94State.error && (
                   <p className="text-sm text-red-600" role="alert">
