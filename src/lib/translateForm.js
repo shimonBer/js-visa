@@ -19,12 +19,12 @@ function readFileAsBase64(file) {
 }
 
 const DOC_FIELDS = ['passportScan', 'existingVisaScan', 'socialSecurityScan', 'americanLicenseScan']
-const MAX_PER_FILE = 2 * 1024 * 1024
+const MAX_PER_FILE = 4 * 1024 * 1024
 
 /**
  * Sends form field JSON + optional document images to /api/translate-form.
  * @param {Record<string, unknown>} values react-hook-form values (may include File fields)
- * @returns {Promise<string>} translated English text
+ * @returns {Promise<{ translated: string, attachmentLabels: string[] }>}
  */
 export async function translateFormToEnglish(values) {
   const { data, fileMeta } = serializeFormValuesForJson(values)
@@ -35,7 +35,7 @@ export async function translateFormToEnglish(values) {
     const f = firstFile(values[field])
     if (!(f instanceof File)) continue
     if (f.size > MAX_PER_FILE) {
-      throw new Error(`קובץ ${field} גדול מדי (מקסימום 2MB לתרגום)`)
+      throw new Error(`קובץ ${field} גדול מדי (מקסימום 4MB לתרגום)`)
     }
     attachments.push({
       field,
@@ -64,5 +64,18 @@ export async function translateFormToEnglish(values) {
   if (!res.ok) {
     throw new Error(json.error || json.detail || `Translate failed (${res.status})`)
   }
-  return String(json.translated ?? '')
+  const translated = String(json.translated ?? '')
+  const raw = Array.isArray(json.analyzedAttachments) ? json.analyzedAttachments : []
+  const attachmentLabels = raw
+    .map((a) => {
+      const field = String(a?.field ?? '').trim()
+      const fileName = String(a?.fileName ?? '').trim()
+      if (!field && !fileName) return ''
+      if (!field) return fileName
+      if (!fileName) return field
+      return `${field}: ${fileName}`
+    })
+    .filter(Boolean)
+
+  return { translated, attachmentLabels }
 }

@@ -1,6 +1,6 @@
 /**
  * Calls /api/browser-use with traveller data; server holds BROWSER_USE_API_KEY.
- * @param {{ firstName: string, lastName: string, birthDate: string, passportNumber: string, country: string }} input
+ * @param {{ firstName: string, lastName: string, birthDate: string, passportNumber: string, country: string, formContext?: unknown }} input
  * @param {{ timeoutMs?: number }} [opts]
  * @returns {Promise<{ success: boolean, history: { date: string, type: string, location: string }[] }>}
  */
@@ -21,6 +21,9 @@ export async function fetchI94TravelHistory(input, opts = {}) {
         birthDate: input.birthDate,
         passportNumber: input.passportNumber,
         country: input.country,
+        ...(input.formContext != null && typeof input.formContext === 'object'
+          ? { formContext: input.formContext }
+          : {}),
       }),
       signal: controller.signal,
     })

@@ -154,7 +154,13 @@ export default function DS160IsraelForm({
   const [asyncFlow, setAsyncFlow] = useState({ phase: 'idle', message: '' })
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
-  const [translateUi, setTranslateUi] = useState({ open: false, text: '', loading: false, error: '' })
+  const [translateUi, setTranslateUi] = useState({
+    open: false,
+    text: '',
+    loading: false,
+    error: '',
+    attachmentLabels: /** @type {string[]} */ ([]),
+  })
 
   useEffect(() => {
     if (!initialBlob?.data || typeof initialBlob.data !== 'object') return
@@ -331,12 +337,14 @@ export default function DS160IsraelForm({
       const birthDate = `${y}-${m}-${d}`
       const first = String(wI94FirstEn ?? '').trim() || String(wI94FirstHe ?? '').trim()
       const last = String(wI94LastEn ?? '').trim() || String(wI94LastHe ?? '').trim()
+      const { data: formContext } = serializeFormValuesForJson(getValues())
       const data = await fetchI94TravelHistory({
         firstName: first,
         lastName: last,
         birthDate,
         passportNumber: String(wI94Passport ?? '').trim(),
         country: String(wI94Country ?? '').trim(),
+        formContext,
       })
       setI94State({ status: 'idle', error: '', data })
     } catch (e) {
@@ -347,8 +355,14 @@ export default function DS160IsraelForm({
   async function handleTranslateToEnglish() {
     setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
     try {
-      const text = await translateFormToEnglish(getValues())
-      setTranslateUi({ open: true, text, loading: false, error: '' })
+      const { translated, attachmentLabels } = await translateFormToEnglish(getValues())
+      setTranslateUi({
+        open: true,
+        text: translated,
+        attachmentLabels,
+        loading: false,
+        error: '',
+      })
     } catch (e) {
       setTranslateUi((s) => ({ ...s, loading: false, error: e?.message || 'שגיאת תרגום' }))
     }
@@ -1002,7 +1016,12 @@ export default function DS160IsraelForm({
                 </button>
               </div>
             </div>
-            <div className="p-4 overflow-y-auto text-sm whitespace-pre-wrap text-gray-800 font-sans">
+            {translateUi.attachmentLabels?.length > 0 && (
+              <p className="px-4 pt-3 text-xs text-gray-600 border-b pb-2 text-left" dir="ltr">
+                Analyzed documents: {translateUi.attachmentLabels.join(', ')}
+              </p>
+            )}
+            <div className="p-4 overflow-y-auto text-sm whitespace-pre-wrap text-gray-800 font-sans text-left">
               {translateUi.text}
             </div>
           </div>

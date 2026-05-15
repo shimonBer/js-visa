@@ -1,12 +1,13 @@
 /**
  * POST /api/translate-form
  * Body: JSON { data: object, attachments?: [{ field, fileName, mimeType, base64 }] }
+ * Response: { translated: string, analyzedAttachments?: { field, fileName }[] }
  * DS-160 English summary via GPT-4o (system + user messages; vision attachments as data URLs).
  */
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_TIMEOUT_MS = 120_000
-const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024
+const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024
 
 /** Professional DS-160 framing (system role) — reduces refusal vs casual "translate my data" prompts. */
 const SYSTEM_PROMPT = `You are an expert DS-160 visa preparation assistant.
@@ -212,6 +213,8 @@ export default async function handler(req, res) {
     }
 
     const attachments = Array.isArray(body.attachments) ? body.attachments : []
+    /** @type {{ field: string, fileName: string }[]} */
+    const analyzedAttachments = []
     const content = [
       {
         type: 'text',
@@ -246,6 +249,10 @@ export default async function handler(req, res) {
       content.push({
         type: 'image_url',
         image_url: { url: `data:${mime};base64,${b64}` },
+      })
+      analyzedAttachments.push({
+        field: String(att?.field || ''),
+        fileName: String(att?.fileName || ''),
       })
     }
 
@@ -293,7 +300,7 @@ export default async function handler(req, res) {
       return jsonResponse(res, 502, { error: 'Missing translation text from OpenAI' })
     }
 
-    return jsonResponse(res, 200, { translated })
+    return jsonResponse(res, 200, { translated, analyzedAttachments })
   } catch (e) {
     const msg = e?.name === 'AbortError' ? 'OpenAI request timed out' : e?.message || 'translate-form error'
     console.error('[translate-form]', e)
