@@ -1,9 +1,11 @@
 /**
  * POST /api/translate-form
  * Body: JSON { data: object, attachments?: [{ field, fileName, mimeType, base64 }] }
- * Response: { translated: string, analyzedAttachments?: { field, fileName }[] }
+ * Response: { translated: string, analyzedAttachments?: { field, fileName }[], pdfBase64?: string }
  * DS-160 English summary via GPT-4o (system + user messages; vision attachments as data URLs).
  */
+
+import { buildTranslationPdf } from './lib/buildTranslationPdf.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_TIMEOUT_MS = 120_000
@@ -150,6 +152,17 @@ Whenever the user message includes image or PDF attachments (passport, visa, Soc
 
 ---
 
+## COMBINED PDF DELIVERABLE (SERVER-ASSEMBLED)
+
+After your English reply is generated, the system **automatically builds one PDF file** that contains:
+
+1. **Printable pages** with your full English DS-160 summary (this text).
+2. **Then full-page, full-color embedded copies** of each uploaded photograph (JPEG/PNG) and **embedded pages** from any uploaded PDF—so the reviewer sees the **actual scans inside the same PDF**, not links or thumbnails-only.
+
+When you list documents in **🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS**, use the same order as the form fields when possible: **passportScan**, **existingVisaScan**, **socialSecurityScan**, **americanLicenseScan**—so the written audit trail matches the visual appendix in the PDF.
+
+---
+
 ## STYLE RULES
 
 * Professional
@@ -186,11 +199,12 @@ If conflicting data exists:
 
 ## FINAL GOAL
 
-Generate a COMPLETE DS-160-ready English summary document that a human can directly review before submission. If attachments were provided, that document MUST include the 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with full in-body transcriptions as specified above.`
+Generate a COMPLETE DS-160-ready English summary document that a human can directly review before submission. If attachments were provided, that document MUST include the 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with full in-body transcriptions as specified above. Assume the final exported PDF will include those same files as visually embedded pages after your text.`
 
 const USER_PREAMBLE =
   'Analyze the form data and attachments below and produce the DS-160-ready English summary document per your system instructions. ' +
-  'If there are image/PDF attachments, the final text must embed their readable content: include the mandatory 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with per-file transcriptions and DS-160 mapping bullets — do not ask the reader to open files elsewhere.'
+  'If there are image/PDF attachments, the final text must embed their readable content: include the mandatory 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with per-file transcriptions and DS-160 mapping bullets — do not ask the reader to open files elsewhere. ' +
+  'A combined PDF will be produced automatically: your English text as pages, then full-page embedded copies of each upload—keep transcription blocks ordered to match passportScan, existingVisaScan, socialSecurityScan, americanLicenseScan when applicable.'
 
 /** @param {import('http').IncomingMessage} req */
 async function readBodyJson(req) {
@@ -235,6 +249,8 @@ export default async function handler(req, res) {
     }
 
     const attachments = Array.isArray(body.attachments) ? body.attachments : []
+    /** @type {{ field: string, fileName: string, mimeType: string, bytes: Uint8Array }[]} */
+    const binaryAttachments = []
     /** @type {{ field: string, fileName: string }[]} */
     const analyzedAttachments = []
     const content = [
@@ -276,6 +292,17 @@ export default async function handler(req, res) {
         field: String(att?.field || ''),
         fileName: String(att?.fileName || ''),
       })
+      try {
+        const buf = Buffer.from(b64, 'base64')
+        binaryAttachments.push({
+          field: String(att?.field || ''),
+          fileName: String(att?.fileName || ''),
+          mimeType: mime.toLowerCase(),
+          bytes: new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength),
+        })
+      } catch {
+        /* skip binary if decode fails */
+      }
     }
 
     const controller = new AbortController()
@@ -322,7 +349,15 @@ export default async function handler(req, res) {
       return jsonResponse(res, 502, { error: 'Missing translation text from OpenAI' })
     }
 
-    return jsonResponse(res, 200, { translated, analyzedAttachments })
+    let pdfBase64 = ''
+    try {
+      const pdfBytes = await buildTranslationPdf(translated, binaryAttachments)
+      pdfBase64 = Buffer.from(pdfBytes).toString('base64')
+    } catch (pdfErr) {
+      console.error('[translate-form] PDF assembly failed', pdfErr)
+    }
+
+    return jsonResponse(res, 200, { translated, analyzedAttachments, pdfBase64 })
   } catch (e) {
     const msg = e?.name === 'AbortError' ? 'OpenAI request timed out' : e?.message || 'translate-form error'
     console.error('[translate-form]', e)

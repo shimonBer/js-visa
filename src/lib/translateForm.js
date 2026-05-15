@@ -24,7 +24,7 @@ const MAX_PER_FILE = 4 * 1024 * 1024
 /**
  * Sends form field JSON + optional document images to /api/translate-form.
  * @param {Record<string, unknown>} values react-hook-form values (may include File fields)
- * @returns {Promise<{ translated: string, attachmentLabels: string[] }>}
+ * @returns {Promise<{ translated: string, attachmentLabels: string[], pdfBase64: string }>}
  */
 export async function translateFormToEnglish(values) {
   const { data, fileMeta } = serializeFormValuesForJson(values)
@@ -77,5 +77,7 @@ export async function translateFormToEnglish(values) {
     })
     .filter(Boolean)
 
-  return { translated, attachmentLabels }
+  const pdfBase64 = typeof json.pdfBase64 === 'string' ? json.pdfBase64 : ''
+
+  return { translated, attachmentLabels, pdfBase64 }
 }

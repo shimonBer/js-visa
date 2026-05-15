@@ -160,6 +160,7 @@ export default function DS160IsraelForm({
     loading: false,
     error: '',
     attachmentLabels: /** @type {string[]} */ ([]),
+    pdfBase64: '',
   })
 
   useEffect(() => {
@@ -353,11 +354,12 @@ export default function DS160IsraelForm({
   async function handleTranslateToEnglish() {
     setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
     try {
-      const { translated, attachmentLabels } = await translateFormToEnglish(getValues())
+      const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(getValues())
       setTranslateUi({
         open: true,
         text: translated,
         attachmentLabels,
+        pdfBase64,
         loading: false,
         error: '',
       })
@@ -992,6 +994,30 @@ export default function DS160IsraelForm({
                 English translation
               </h2>
               <div className="flex gap-2">
+                {translateUi.pdfBase64 ? (
+                  <button
+                    type="button"
+                    className="text-sm px-3 py-1.5 rounded-md border border-blue-600 text-blue-700 hover:bg-blue-50"
+                    onClick={() => {
+                      try {
+                        const bin = atob(translateUi.pdfBase64)
+                        const bytes = new Uint8Array(bin.length)
+                        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+                        const blob = new Blob([bytes], { type: 'application/pdf' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = 'ds160-english-summary.pdf'
+                        a.click()
+                        URL.revokeObjectURL(url)
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                  >
+                    Download PDF
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="text-sm px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50"
