@@ -337,14 +337,12 @@ export default function DS160IsraelForm({
       const birthDate = `${y}-${m}-${d}`
       const first = String(wI94FirstEn ?? '').trim() || String(wI94FirstHe ?? '').trim()
       const last = String(wI94LastEn ?? '').trim() || String(wI94LastHe ?? '').trim()
-      const { data: formContext } = serializeFormValuesForJson(getValues())
       const data = await fetchI94TravelHistory({
         firstName: first,
         lastName: last,
         birthDate,
         passportNumber: String(wI94Passport ?? '').trim(),
         country: String(wI94Country ?? '').trim(),
-        formContext,
       })
       setI94State({ status: 'idle', error: '', data })
     } catch (e) {

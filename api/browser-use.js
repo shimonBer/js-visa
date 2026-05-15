@@ -59,11 +59,11 @@ const TERMINAL_STATUSES = new Set(['stopped', 'timed_out', 'error'])
 
 /**
  * Build natural-language task with injected values.
- * @param {{ firstName: string, lastName: string, birthDate: string, passportNumber: string, country: string, formContext?: unknown }} p
+ * @param {{ firstName: string, lastName: string, birthDate: string, passportNumber: string, country: string }} p
  */
 function buildI94Task(p) {
-  const { firstName, lastName, birthDate, passportNumber, country, formContext } = p
-  const lines = [
+  const { firstName, lastName, birthDate, passportNumber, country } = p
+  return [
     'You are automating a web browser.',
     '1) Open https://i94.cbp.dhs.gov/search/history-search',
     '2) Click the control or link labeled "Travel History" (or equivalent to start travel history retrieval).',
@@ -81,14 +81,7 @@ function buildI94Task(p) {
     '9) Return ONLY valid JSON (no markdown, no explanations) with this exact shape:',
     '{"success": true, "history": [{"date": "", "type": "", "location": ""}]}',
     'If the flow fails or data is unavailable, return {"success": false, "history": []} only.',
-  ]
-  let task = lines.join('\n')
-  if (formContext != null && typeof formContext === 'object') {
-    task +=
-      '\n\nFULL FORM CONTEXT (for reference only; use ONLY steps 1–9 for I-94, do not navigate away to fill unrelated data):\n' +
-      JSON.stringify(formContext, null, 2)
-  }
-  return task
+  ].join('\n')
 }
 
 /**
@@ -177,7 +170,6 @@ export default async function handler(req, res) {
     const birthDate = String(body?.birthDate ?? '').trim()
     const passportNumber = String(body?.passportNumber ?? '').trim()
     const country = String(body?.country ?? '').trim()
-    const formContext = body?.formContext
 
     if (!firstName || !lastName || !birthDate || !passportNumber || !country) {
       return jsonResponse(res, 400, {
@@ -185,14 +177,7 @@ export default async function handler(req, res) {
       })
     }
 
-    const task = buildI94Task({
-      firstName,
-      lastName,
-      birthDate,
-      passportNumber,
-      country,
-      formContext: formContext != null && typeof formContext === 'object' ? formContext : undefined,
-    })
+    const task = buildI94Task({ firstName, lastName, birthDate, passportNumber, country })
 
     // Step 1: create a Browser Use v3 session with the I-94 task
     const createRes = await fetch(SESSIONS_URL, {

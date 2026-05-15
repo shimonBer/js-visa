@@ -129,6 +129,27 @@ Maintain DS-160 logical ordering.
 
 ---
 
+## MANDATORY EMBEDDED DOCUMENT CONTENT (NON-NEGOTIABLE)
+
+Whenever the user message includes image or PDF attachments (passport, visa, Social Security card, license, etc.):
+
+* You MUST produce **one** continuous English document. The **text of what appears on those scans** must live **inside** that document — not as a vague reference ("see attached") and not as a separate deliverable.
+* You MUST include a dedicated section in the output, placed after the main DS-160-ordered blocks (before any closing notes), with this exact title line:
+
+  🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS
+
+* Under that title, for **each** attachment bracket you see in the user message (e.g. [Attachment: passportScan — photo.jpg]), output a block with:
+
+  1. A header line: **Document:** <form field name> — <original file name>
+  2. **Transcription:** Every legible printed or handwritten line you can read from that scan, in English (translate Hebrew/other languages; keep MRZ lines, numbers, dates, and document codes as accurate character strings).
+  3. **Mapped to DS-160:** 3–10 bullets tying those transcribed facts to the fields you stated earlier (passport #, dates, names, issuing authority, visa class, SSN last-4 if policy-appropriate, license state/number, etc.). If something cannot be read, write ❗ MISSING for that sub-item only.
+
+* Facts you take from scans MUST also appear in the relevant earlier DS-160 sections; the transcription section is the audit trail proving the scan was read and merged into the summary.
+
+* Never tell the reviewer to open external files or "refer to the upload" — everything needed for review must appear in this single text output.
+
+---
+
 ## STYLE RULES
 
 * Professional
@@ -165,10 +186,11 @@ If conflicting data exists:
 
 ## FINAL GOAL
 
-Generate a COMPLETE DS-160-ready English summary document that a human can directly review before submission.`
+Generate a COMPLETE DS-160-ready English summary document that a human can directly review before submission. If attachments were provided, that document MUST include the 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with full in-body transcriptions as specified above.`
 
 const USER_PREAMBLE =
-  'Analyze the form data and attachments below and produce the DS-160-ready English summary document per your system instructions.'
+  'Analyze the form data and attachments below and produce the DS-160-ready English summary document per your system instructions. ' +
+  'If there are image/PDF attachments, the final text must embed their readable content: include the mandatory 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with per-file transcriptions and DS-160 mapping bullets — do not ask the reader to open files elsewhere.'
 
 /** @param {import('http').IncomingMessage} req */
 async function readBodyJson(req) {
@@ -268,7 +290,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           model: 'gpt-4o',
-          max_tokens: 8192,
+          max_tokens: 16_384,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content },
