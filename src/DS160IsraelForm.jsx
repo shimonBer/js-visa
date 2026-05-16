@@ -329,6 +329,12 @@ export default function DS160IsraelForm({
   const wI94Year = watch('birthDateYear')
   const wI94Passport = watch('passportId')
   const wI94Country = watch('passportIssuingCountry')
+  const wPreviousUSVisits = watch('previousUSVisits')
+
+  const i94SkipBecausePriorVisits = useMemo(
+    () => Boolean(String(wPreviousUSVisits ?? '').trim()),
+    [wPreviousUSVisits],
+  )
 
   const canRunI94 = useMemo(() => {
     const pad = (n) => String(n ?? '').trim().padStart(2, '0')
@@ -340,6 +346,9 @@ export default function DS160IsraelForm({
   }, [wI94FirstEn, wI94LastEn, wI94FirstHe, wI94LastHe, wI94Day, wI94Month, wI94Year, wI94Passport, wI94Country])
 
   async function handleI94Lookup() {
+    if (String(getValues('previousUSVisits') ?? '').trim()) {
+      return
+    }
     setI94State({ status: 'loading', error: '', data: null })
     try {
       const y = String(wI94Year ?? '').trim()
@@ -356,6 +365,17 @@ export default function DS160IsraelForm({
         country: String(wI94Country ?? '').trim(),
       })
       setI94State({ status: 'idle', error: '', data })
+
+      if (data.success && Array.isArray(data.history) && data.history.length > 0) {
+        const lines = data.history
+          .map((row) => [row.date, row.type, row.location].map((s) => String(s ?? '').trim()).filter(Boolean).join(' — '))
+          .filter(Boolean)
+          .join('\n')
+        if (lines) {
+          setValue('visitedUSBefore', 'yes', { shouldDirty: true })
+          setValue('previousUSVisits', lines, { shouldDirty: true })
+        }
+      }
     } catch (e) {
       setI94State({ status: 'error', error: e?.message || 'שגיאה', data: null })
     }
@@ -644,7 +664,12 @@ export default function DS160IsraelForm({
             <div className="grid grid-cols-1 gap-4">
               <RadioGroup label="האם אי פעם ביקרת בארה״ב?" name="visitedUSBefore" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
               {w.visitedUSBefore === 'yes' && (
-                <Input label="בערך מתי ולכמה זמן [עד 5 אחרונות]" name="previousUSVisits" type="textarea" hint="הפרד שורות, למשל: ינואר 2019 - שבועיים" />
+                <Input
+                  label="בערך מתי ולכמה זמן [עד 5 אחרונות]"
+                  name="previousUSVisits"
+                  type="textarea"
+                  hint="ניתן למלא ידנית או להריץ 'בדוק היסטוריית כניסות' (I-94) למטה — הרשומות יועתקו לכאן אוטומטית."
+                />
               )}
 
               <RadioGroup label="הייתה לך בעבר ויזה לארה״ב?" name="hadUSVisa" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
@@ -912,13 +937,22 @@ export default function DS160IsraelForm({
                   <h3 className="font-bold text-gray-800">היסטוריית כניסות (I-94)</h3>
                   <button
                     type="button"
-                    disabled={i94State.status === 'loading' || asyncFlow.phase === 'working'}
+                    disabled={
+                      i94State.status === 'loading' ||
+                      asyncFlow.phase === 'working' ||
+                      i94SkipBecausePriorVisits
+                    }
                     onClick={() => void handleI94Lookup()}
                     className="px-4 py-2 text-sm font-semibold rounded-md bg-slate-800 text-white hover:bg-slate-900 disabled:opacity-40"
                   >
                     {i94State.status === 'loading' ? 'טוען…' : 'בדוק היסטוריית כניסות'}
                   </button>
                 </div>
+                {i94SkipBecausePriorVisits && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                    שדה &quot;ביקורים קודמים בארה״ב&quot; כבר מלא — לא תורץ בדיקת I-94 (חיסכון בעלות). רוקנו את השדה כדי להפעיל.
+                  </p>
+                )}
                 <p className="text-xs text-gray-600">
                   נדרשים שם (באנגלית מהדרכון או בעברית), תאריך לידה מלא, מספר דרכון ומדינת הנפקה באנגלית. I-94 משתמש בשם האנגלי אם מולא. הפעולה רצה בענן (Browser Use).
                 </p>
