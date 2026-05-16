@@ -63,25 +63,33 @@ const TERMINAL_STATUSES = new Set(['stopped', 'timed_out', 'error'])
  */
 function buildI94Task(p) {
   const { firstName, lastName, birthDate, passportNumber, country } = p
-  return [
+  console.log('[browser-use] buildI94Task input fields', {
+    firstName,
+    lastName,
+    birthDate,
+    passportNumber,
+    country,
+  })
+  const task = [
     'You are automating a web browser.',
     '1) Open https://i94.cbp.dhs.gov/search/history-search',
-    '2) Click the control or link labeled "Travel History" (or equivalent to start travel history retrieval).',
-    '3) Wait until a Terms of Service or similar modal appears.',
-    '4) Scroll that modal all the way to the bottom.',
-    '5) Click the Agree / Continue / Accept button to dismiss the modal.',
-    '6) Fill the form with EXACTLY these values:',
+    '2) Wait until a Terms of Service or similar modal appears.',
+    '3) Scroll that modal all the way to the bottom.',
+    '4) Click the Agree / Continue / Accept button to dismiss the modal.',
+    '5) Fill the form with EXACTLY these values:',
     `   - First name: ${firstName}`,
     `   - Last name: ${lastName}`,
     `   - Birth date: ${birthDate} (use the format the site expects, e.g. MM/DD/YYYY if required)`,
     `   - Passport number: ${passportNumber}`,
     `   - Passport country / issuing country: ${country}`,
-    '7) Submit the form.',
-    '8) After results load, extract ALL travel history rows (date, entry/exit or type, port/location).',
-    '9) Return ONLY valid JSON (no markdown, no explanations) with this exact shape:',
+    '6) Submit the form.',
+    '7) After results load, extract ALL travel history rows (date, entry/exit or type, port/location).',
+    '8) Return ONLY valid JSON (no markdown, no explanations) with this exact shape:',
     '{"success": true, "history": [{"date": "", "type": "", "location": ""}]}',
     'If the flow fails or data is unavailable, return {"success": false, "history": []} only.',
   ].join('\n')
+  console.log('[browser-use] buildI94Task full task string:\n', task)
+  return task
 }
 
 /**

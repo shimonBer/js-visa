@@ -1,6 +1,6 @@
 /**
  * Assembles a single PDF: English summary (text pages) + visually embedded uploads (JPEG/PNG/PDF).
- * Uses Standard Helvetica (Latin-1); non-encodable characters are approximated or dropped for text pages.
+ * Embeds Noto Sans (Google Fonts) for Hebrew + Latin in the text portion; falls back to Helvetica if fetch fails.
  */
 
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
@@ -10,6 +10,43 @@ const PAGE_H = 792
 const MARGIN = 50
 const FONT_SIZE = 10
 const LINE_H = 12
+
+const NOTO_SANS_TTF_URL =
+  'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf'
+
+/** @type {Uint8Array | null | undefined} undefined = not tried, null = failed */
+let cachedNotoBytes = undefined
+
+async function getNotoSansBytes() {
+  if (cachedNotoBytes !== undefined) return cachedNotoBytes
+  try {
+    const res = await fetch(NOTO_SANS_TTF_URL)
+    if (!res.ok) {
+      console.warn('[buildTranslationPdf] Noto font HTTP', res.status)
+      cachedNotoBytes = null
+      return null
+    }
+    cachedNotoBytes = new Uint8Array(await res.arrayBuffer())
+    return cachedNotoBytes
+  } catch (e) {
+    console.warn('[buildTranslationPdf] Noto font fetch failed', e)
+    cachedNotoBytes = null
+    return null
+  }
+}
+
+/**
+ * Strip control chars only; keep Hebrew and full Unicode for embedded fonts.
+ * @param {string} s
+ */
+function sanitizePdfText(s) {
+  let out = ''
+  for (const ch of String(s || '')) {
+    const c = ch.charCodeAt(0)
+    if (c >= 32 || c === 9) out += ch
+  }
+  return out
+}
 
 /**
  * @param {string} s
@@ -71,8 +108,9 @@ function wrapTextToLines(text, charsPerLine) {
  * @param {import('pdf-lib').PDFFont} font
  * @param {import('pdf-lib').PDFImage} image
  * @param {string} caption
+ * @param {boolean} captionUnicode
  */
-async function addImageFullPage(pdfDoc, font, image, caption) {
+async function addImageFullPage(pdfDoc, font, image, caption, captionUnicode) {
   const page = pdfDoc.addPage([PAGE_W, PAGE_H])
   const iw = image.width
   const ih = image.height
@@ -84,8 +122,8 @@ async function addImageFullPage(pdfDoc, font, image, caption) {
   const x = (PAGE_W - w) / 2
   const y = (PAGE_H - h) / 2 - 16
   page.drawImage(image, { x, y, width: w, height: h })
-  const cap = sanitizeForPdfDraw(caption).slice(0, 140)
-  page.drawText(cap, { x: MARGIN, y: PAGE_H - 26, size: 9, font, color: rgb(0.15, 0.15, 0.15) })
+  const capRaw = (captionUnicode ? sanitizePdfText(caption) : sanitizeForPdfDraw(caption)).slice(0, 200)
+  page.drawText(capRaw || ' ', { x: MARGIN, y: PAGE_H - 26, size: 9, font, color: rgb(0.15, 0.15, 0.15) })
 }
 
 /**
@@ -95,8 +133,26 @@ async function addImageFullPage(pdfDoc, font, image, caption) {
  */
 export async function buildTranslationPdf(translated, binaries) {
   const pdfDoc = await PDFDocument.create()
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const charsPerLine = 92
+  const notoBytes = await getNotoSansBytes()
+  /** @type {import('pdf-lib').PDFFont} */
+  let textFont
+  let useUnicode = false
+  if (notoBytes && notoBytes.length > 0) {
+    try {
+      textFont = await pdfDoc.embedFont(notoBytes, { subset: false })
+      useUnicode = true
+    } catch (e) {
+      console.warn('[buildTranslationPdf] embed Noto failed', e)
+      textFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+    }
+  } else {
+    textFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  }
+
+  const captionFont = textFont
+  const charsPerLine = useUnicode ? 72 : 92
+
+  const lineForDraw = (raw) => (useUnicode ? sanitizePdfText(raw) : sanitizeForPdfDraw(raw))
 
   let page = pdfDoc.addPage([PAGE_W, PAGE_H])
   let y = PAGE_H - MARGIN
@@ -105,29 +161,41 @@ export async function buildTranslationPdf(translated, binaries) {
     x: MARGIN,
     y,
     size: 12,
-    font,
+    font: textFont,
     color: rgb(0, 0, 0),
   })
   y -= 28
 
   const lines = wrapTextToLines(translated, charsPerLine)
   for (const rawLine of lines) {
-    const line = sanitizeForPdfDraw(rawLine)
+    const line = lineForDraw(rawLine)
     if (y < MARGIN + LINE_H) {
       page = pdfDoc.addPage([PAGE_W, PAGE_H])
       y = PAGE_H - MARGIN
     }
-    page.drawText(line || ' ', { x: MARGIN, y, size: FONT_SIZE, font, color: rgb(0, 0, 0) })
+    try {
+      page.drawText(line || ' ', { x: MARGIN, y, size: FONT_SIZE, font: textFont, color: rgb(0, 0, 0) })
+    } catch (e) {
+      page.drawText('[line omitted — unsupported characters]', {
+        x: MARGIN,
+        y,
+        size: FONT_SIZE,
+        font: textFont,
+        color: rgb(0.5, 0, 0),
+      })
+      console.warn('[buildTranslationPdf] drawText line failed', e)
+    }
     y -= LINE_H
   }
 
   if (binaries.length > 0) {
     page = pdfDoc.addPage([PAGE_W, PAGE_H])
-    page.drawText('ORIGINAL UPLOADS (embedded images / PDF pages)', {
+    const sectionTitle = 'ORIGINAL UPLOADS (embedded images / PDF pages)'
+    page.drawText(sectionTitle, {
       x: MARGIN,
       y: PAGE_H - MARGIN,
       size: 14,
-      font,
+      font: textFont,
       color: rgb(0, 0, 0),
     })
 
@@ -147,28 +215,28 @@ export async function buildTranslationPdf(translated, binaries) {
         }
         if (mime === 'image/jpeg' || mime === 'image/jpg') {
           const img = await pdfDoc.embedJpg(it.bytes)
-          await addImageFullPage(pdfDoc, font, img, caption)
+          await addImageFullPage(pdfDoc, captionFont, img, caption, useUnicode)
           continue
         }
         if (mime === 'image/png') {
           const img = await pdfDoc.embedPng(it.bytes)
-          await addImageFullPage(pdfDoc, font, img, caption)
+          await addImageFullPage(pdfDoc, captionFont, img, caption, useUnicode)
           continue
         }
         page = pdfDoc.addPage([PAGE_W, PAGE_H])
-        page.drawText(sanitizeForPdfDraw(`[Format not embedded as image in PDF: ${mime} — ${caption}]`), {
+        page.drawText(lineForDraw(`[Format not embedded as image in PDF: ${mime} — ${caption}]`), {
           x: MARGIN,
           y: PAGE_H - MARGIN,
           size: 10,
-          font,
+          font: textFont,
         })
       } catch {
         page = pdfDoc.addPage([PAGE_W, PAGE_H])
-        page.drawText(sanitizeForPdfDraw(`[Could not embed file: ${caption}]`), {
+        page.drawText(lineForDraw(`[Could not embed file: ${caption}]`), {
           x: MARGIN,
           y: PAGE_H - MARGIN,
           size: 10,
-          font,
+          font: textFont,
         })
       }
     }

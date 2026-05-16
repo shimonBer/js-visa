@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { saveFormDraftToBrowser, loadFormDraftFromBrowser } from './lib/formStorage.js'
 import { postFormToN8n } from './lib/n8nWebhook.js'
@@ -9,6 +9,11 @@ import { saveFormBlobPayload } from './lib/formBlob.js'
 import { extractPassportFieldsFromFile } from './lib/passportOcr.js'
 import { fetchI94TravelHistory } from './lib/browserUse.js'
 import { translateFormToEnglish } from './lib/translateForm.js'
+import {
+  buildTranslationFingerprint,
+  loadTranslationCache,
+  saveTranslationCache,
+} from './lib/translationCache.js'
 
 /**
  * Larger dashed drop zone; optional callback when a file is set (e.g. passport OCR).
@@ -95,10 +100,12 @@ export default function DS160IsraelForm({
   initialBlobKey = null,
   onExitToHome = null,
 } = {}) {
+  /** ISO date (YYYY-MM-DD) when this form session started; used for draft/S3 id, not user-editable. */
+  const formStartedDateRef = useRef(new Date().toISOString().slice(0, 10))
+
   const { register, watch, handleSubmit, getValues, setValue, reset, control, formState: { errors } } = useForm({
     defaultValues: {
       passportId: '',
-      passportDate: new Date().toISOString().slice(0, 10),
       passportIssuingCountry: '',
       firstNameEnglish: '',
       lastNameEnglish: '',
@@ -140,14 +147,13 @@ export default function DS160IsraelForm({
     })
 
   const passportIdWatch = watch('passportId')
-  const passportDateWatch = watch('passportDate')
   const passportScanWatch = watch('passportScan')
   const existingVisaScanWatch = watch('existingVisaScan')
   const socialSecurityScanWatch = watch('socialSecurityScan')
   const americanLicenseScanWatch = watch('americanLicenseScan')
   const formId = useMemo(
-    () => buildFormId(passportIdWatch, passportDateWatch),
-    [passportIdWatch, passportDateWatch],
+    () => buildFormId(passportIdWatch, formStartedDateRef.current),
+    [passportIdWatch],
   )
   /** localStorage key: stable id when passport+date set, else shared incomplete slot */
   const storageFormId = useMemo(() => formId || 'incomplete', [formId])
@@ -165,7 +171,7 @@ export default function DS160IsraelForm({
 
   useEffect(() => {
     if (!initialBlob?.data || typeof initialBlob.data !== 'object') return
-    const data = initialBlob.data
+    const { passportDate: _omitBlobPd, ...data } = initialBlob.data
     const companions =
       Array.isArray(data.travelCompanions) && data.travelCompanions.length > 0
         ? data.travelCompanions
@@ -187,14 +193,17 @@ export default function DS160IsraelForm({
       formId: fid || null,
       clientTimestamp: new Date().toISOString(),
       schema: 'ds160_israel_form_v1',
-      data,
+      data: {
+        ...data,
+        formStartedDate: formStartedDateRef.current,
+      },
       fileMeta,
       s3Documents,
     }
   }
 
   const onSubmit = async (data) => {
-    const fid = buildFormId(data.passportId, data.passportDate)
+    const fid = buildFormId(data.passportId, formStartedDateRef.current)
     setAsyncFlow({ phase: 'working', message: '' })
     try {
       const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
@@ -234,7 +243,7 @@ export default function DS160IsraelForm({
     setAsyncFlow({ phase: 'working', message: '' })
     try {
       const values = getValues()
-      const fid = buildFormId(values.passportId, values.passportDate)
+      const fid = buildFormId(values.passportId, formStartedDateRef.current)
       const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
         { name: 'passportScan', file: firstFile(values.passportScan) },
         { name: 'existingVisaScan', file: firstFile(values.existingVisaScan) },
@@ -274,13 +283,14 @@ export default function DS160IsraelForm({
       setAsyncFlow({ phase: 'error', message: 'אין טיוטה שמורה בדפדפן עבור מזהה זה' })
       return
     }
-    const data = snap.data && typeof snap.data === 'object' ? snap.data : {}
+    const raw = snap.data && typeof snap.data === 'object' ? snap.data : {}
+    const { passportDate: _omitPd, ...restData } = raw
     const companions =
-      Array.isArray(data.travelCompanions) && data.travelCompanions.length > 0
-        ? data.travelCompanions
+      Array.isArray(restData.travelCompanions) && restData.travelCompanions.length > 0
+        ? restData.travelCompanions
         : [{ fullName: '', relation: '' }]
     reset({
-      ...data,
+      ...restData,
       travelCompanions: companions,
       passportScan: undefined,
       existingVisaScan: undefined,
@@ -354,7 +364,36 @@ export default function DS160IsraelForm({
   async function handleTranslateToEnglish() {
     setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
     try {
-      const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(getValues())
+      const values = getValues()
+      const fp = buildTranslationFingerprint(values)
+      let cached = null
+      try {
+        cached = await loadTranslationCache(storageFormId)
+      } catch (e) {
+        console.warn('[translation cache] load failed', e)
+      }
+      if (cached && cached.fingerprint === fp) {
+        setTranslateUi({
+          open: true,
+          text: cached.translated,
+          attachmentLabels: cached.attachmentLabels,
+          pdfBase64: cached.pdfBase64,
+          loading: false,
+          error: '',
+        })
+        return
+      }
+      const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(values)
+      try {
+        await saveTranslationCache(storageFormId, {
+          fingerprint: fp,
+          translated,
+          attachmentLabels,
+          pdfBase64,
+        })
+      } catch (e) {
+        console.warn('[translation cache] save failed', e)
+      }
       setTranslateUi({
         open: true,
         text: translated,
@@ -456,69 +495,55 @@ export default function DS160IsraelForm({
             </p>
             <p className="mt-3 text-sm font-mono bg-blue-700/50 rounded-md px-3 py-2 inline-block" dir="ltr">
               מזהה טופס: {formId || 'לא מוגדר — טיוטה תישמר תחת מפתח כללי בדפדפן'}
+              <span className="block text-xs text-blue-100 mt-1 font-sans" dir="rtl">
+                תאריך בסיומת המזהה (אוטומטי): {formStartedDateRef.current}
+              </span>
             </p>
           </div>
-          {onExitToHome && (
+          <div className="flex flex-wrap gap-2 shrink-0 items-center">
             <button
               type="button"
-              onClick={onExitToHome}
-              className="shrink-0 px-4 py-2 text-sm font-semibold rounded-md bg-white/10 hover:bg-white/20 border border-white/30"
+              onClick={onLoadLocalDraft}
+              disabled={asyncFlow.phase === 'working'}
+              className="px-4 py-2 text-sm font-semibold rounded-md bg-white/10 hover:bg-white/20 border border-white/30 disabled:opacity-40"
             >
-              חזרה לרשימה
+              טען טיוטה מהדפדפן
             </button>
-          )}
+            {onExitToHome && (
+              <button
+                type="button"
+                onClick={onExitToHome}
+                className="px-4 py-2 text-sm font-semibold rounded-md bg-white/10 hover:bg-white/20 border border-white/30"
+              >
+                חזרה לרשימה
+              </button>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-10">
 
-          <section className="space-y-4 rounded-lg border-2 border-amber-200 bg-amber-50/80 p-4 md:p-6">
-            <h2 className="text-2xl font-bold border-b border-amber-300 pb-2 text-gray-800">זיהוי טופס (אופציונלי)</h2>
-            <p className="text-sm text-gray-600">
-              ניתן להזין מספר דרכון ותאריך (למשל תוקף או הנפקה) כדי ליצור מזהה בפורמט{' '}
-              <span className="font-mono" dir="ltr">מספר_YYYY-MM-DD</span>
-              . כך הטיוטה בדפדפן ותיקיית S3 (אם מוגדרת) יהיו מסודרים לפי לקוח. בלי מזהה, הטיוטה נשמרת תחת מפתח כללי.
-            </p>
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שם הלקוח ומידע אישי</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col mb-0">
-                <label className="font-semibold mb-1 text-gray-700">
-                  מספר דרכון
-                </label>
+              <div className="flex flex-col mb-4 md:col-span-2">
+                <label className="font-semibold mb-1 text-gray-700">מספר דרכון</label>
                 <input
                   type="text"
                   autoComplete="off"
                   {...register('passportId')}
-                  className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                  className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 font-mono max-w-md"
                   dir="ltr"
-                  placeholder="201381722"
+                  placeholder="למשל 201381722"
                 />
+                <span className="text-xs text-gray-500 mt-1">
+                  מזהה טיוטה בפורמט{' '}
+                  <span className="font-mono" dir="ltr">
+                    מספר_YYYY-MM-DD
+                  </span>
+                  : התאריך הוא <strong>אוטומטית</strong> תאריך תחילת מילוי הטופס ({formStartedDateRef.current}), לדפדפן ול-S3.
+                </span>
               </div>
-              <div className="flex flex-col mb-0">
-                <label className="font-semibold mb-1 text-gray-700">
-                  תאריך (לזיהוי הטופס)
-                </label>
-                <input
-                  type="date"
-                  {...register('passportDate')}
-                  className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-end pt-2">
-              <button
-                type="button"
-                onClick={onLoadLocalDraft}
-                disabled={asyncFlow.phase === 'working'}
-                className="px-4 py-2 text-sm border border-gray-400 text-gray-700 font-semibold rounded-md hover:bg-white transition disabled:opacity-40"
-              >
-                טען טיוטה מהדפדפן
-              </button>
-            </div>
-          </section>
-
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שם הלקוח ומידע אישי</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="שם פרטי" name="firstName" />
               <Input label="שם משפחה" name="lastName" />
               <Input
@@ -972,7 +997,9 @@ export default function DS160IsraelForm({
               <button
                 type="submit"
                 disabled={asyncFlow.phase === 'working'}
-                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+                className="hidden px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+                aria-hidden="true"
+                tabIndex={-1}
               >
                 שלח טופס
               </button>
