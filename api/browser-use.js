@@ -1,13 +1,17 @@
 /**
  * POST /api/browser-use
- * Browser Use Cloud API v3: create session, poll until terminal state, return I-94 travel history JSON.
+ * Browser Use Cloud API v3: create session, wait 20s, poll GET /sessions/{id} every 20s until terminal (max 5 min).
  * API key: process.env.BROWSER_USE_API_KEY (header X-Browser-Use-API-Key)
  */
 
 const BASE_URL = 'https://api.browser-use.com/api/v3'
 const SESSIONS_URL = `${BASE_URL}/sessions`
-const POLL_INTERVAL_MS = 2_000
-const POLL_TIMEOUT_MS = 120_000
+/** Wait before first GET /sessions/{id} after POST /sessions (per product spec). */
+const POLL_INITIAL_WAIT_MS = 20_000
+/** Wait between subsequent polls. */
+const POLL_INTERVAL_MS = 20_000
+/** Max wall time for polling (5 min at 20s cadence). */
+const POLL_TIMEOUT_MS = 300_000
 
 /** @param {import('http').IncomingMessage} req */
 async function readBodyJson(req) {
@@ -63,13 +67,6 @@ const TERMINAL_STATUSES = new Set(['stopped', 'timed_out', 'error'])
  */
 function buildI94Task(p) {
   const { firstName, lastName, birthDate, passportNumber, country } = p
-  console.log('[browser-use] buildI94Task input fields', {
-    firstName,
-    lastName,
-    birthDate,
-    passportNumber,
-    country,
-  })
   const task = [
     'You are automating a web browser.',
     '1) Open https://i94.cbp.dhs.gov/search/history-search',
@@ -133,10 +130,9 @@ function normalizeBrowserUseResult(parsed) {
 async function pollSessionUntilDone(apiKey, sessionId) {
   const deadline = Date.now() + POLL_TIMEOUT_MS
 
-  while (Date.now() < deadline) {
-    // Wait 2 seconds between polls (per product requirement)
-    await sleep(POLL_INTERVAL_MS)
+  await sleep(POLL_INITIAL_WAIT_MS)
 
+  while (Date.now() < deadline) {
     const pollRes = await fetch(`${SESSIONS_URL}/${encodeURIComponent(sessionId)}`, {
       method: 'GET',
       headers: {
@@ -151,6 +147,8 @@ async function pollSessionUntilDone(apiKey, sessionId) {
     if (TERMINAL_STATUSES.has(status)) {
       return session
     }
+
+    await sleep(POLL_INTERVAL_MS)
   }
 
   throw new Error(`Browser Use session ${sessionId} timed out after ${POLL_TIMEOUT_MS}ms`)
@@ -186,6 +184,7 @@ export default async function handler(req, res) {
     }
 
     const task = buildI94Task({ firstName, lastName, birthDate, passportNumber, country })
+    console.log('[browser-use] task string:\n', task)
 
     // Step 1: create a Browser Use v3 session with the I-94 task
     const createRes = await fetch(SESSIONS_URL, {

@@ -5,8 +5,8 @@
  * @returns {Promise<{ success: boolean, history: { date: string, type: string, location: string }[] }>}
  */
 export async function fetchI94TravelHistory(input, opts = {}) {
-  // Server polls up to 120s + create request; allow headroom on the client
-  const timeoutMs = opts.timeoutMs ?? 125_000
+  // Server waits 20s then polls every 20s up to 300s + create request; allow headroom on the client
+  const timeoutMs = opts.timeoutMs ?? 310_000
   const controller = new AbortController()
   const t = setTimeout(() => controller.abort(), timeoutMs)
 
