@@ -2,16 +2,20 @@
 export const S3_DOCUMENTS_BUCKET = 'js_visa'
 
 /**
- * Same-origin POST /api/upload in production. Files are sent to the server; the server
+ * Same-origin POST/GET `/api/upload` in production. Upload sends files to the server; the server
  * writes to S3 using AWS_* env vars (Vercel). Never put access keys in VITE_*.
- * Dev: no upload unless VITE_S3_UPLOAD_API_URL points at a running API (e.g. `vercel dev`).
+ * Dev: no upload/restore unless VITE_S3_UPLOAD_API_URL points at a running API (e.g. `vercel dev`).
  */
-function resolveUploadApiBase(opts) {
+export function getS3UploadApiBase(opts = {}) {
   if (opts.uploadUrl) return opts.uploadUrl
   const explicit = import.meta.env.VITE_S3_UPLOAD_API_URL
   if (explicit) return explicit
   if (import.meta.env.PROD) return '/api/upload'
   return ''
+}
+
+function resolveUploadApiBase(opts) {
+  return getS3UploadApiBase(opts)
 }
 
 /**
