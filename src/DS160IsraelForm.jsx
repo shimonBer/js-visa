@@ -16,6 +16,7 @@ import {
 } from './lib/translationCache.js'
 import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
 import { getS3UploadApiBase } from './lib/uploadFormDocuments.js'
+import { sendPdfToMonday } from './lib/monday.js'
 
 /**
  * Larger dashed drop zone; optional callback when a file is set (e.g. passport OCR).
@@ -222,6 +223,14 @@ export default function DS160IsraelForm({
     error: '',
     attachmentLabels: /** @type {string[]} */ ([]),
     pdfBase64: '',
+  })
+
+  /** Monday.com send from translation modal (server creates item + uploads PDF). */
+  const [mondayUi, setMondayUi] = useState({
+    loading: false,
+    error: '',
+    success: false,
+    itemId: '',
   })
 
   useEffect(() => {
@@ -495,6 +504,42 @@ export default function DS160IsraelForm({
       })
     } catch (e) {
       setTranslateUi((s) => ({ ...s, loading: false, error: e?.message || 'שגיאת תרגום' }))
+    }
+  }
+
+  async function handleSendToMonday() {
+    if (!translateUi.pdfBase64?.trim()) {
+      setMondayUi((s) => ({ ...s, error: 'אין PDF זמין — הרץ תרגום מחדש.' }))
+      return
+    }
+    setMondayUi({ loading: true, error: '', success: false, itemId: '' })
+    try {
+      const values = getValues()
+      const en = `${values.firstNameEnglish || ''} ${values.lastNameEnglish || ''}`.trim()
+      const he = `${values.firstName || ''} ${values.lastName || ''}`.trim()
+      const applicantName = en || he || 'Applicant'
+      const result = await sendPdfToMonday({
+        applicantName,
+        pdfBase64: translateUi.pdfBase64,
+        status: 'DS-160 English summary',
+        metadata: {
+          formId: storageFormId,
+          clientTimestamp: new Date().toISOString(),
+        },
+      })
+      setMondayUi({
+        loading: false,
+        error: '',
+        success: true,
+        itemId: result.itemId,
+      })
+    } catch (e) {
+      setMondayUi({
+        loading: false,
+        error: e?.message || 'שליחה ל-Monday נכשלה',
+        success: false,
+        itemId: '',
+      })
     }
   }
 
@@ -1081,28 +1126,38 @@ export default function DS160IsraelForm({
               </h2>
               <div className="flex gap-2">
                 {translateUi.pdfBase64 ? (
-                  <button
-                    type="button"
-                    className="text-sm px-3 py-1.5 rounded-md border border-blue-600 text-blue-700 hover:bg-blue-50"
-                    onClick={() => {
-                      try {
-                        const bin = atob(translateUi.pdfBase64)
-                        const bytes = new Uint8Array(bin.length)
-                        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-                        const blob = new Blob([bytes], { type: 'application/pdf' })
-                        const url = URL.createObjectURL(blob)
-                        const a = document.createElement('a')
-                        a.href = url
-                        a.download = 'ds160-english-summary.pdf'
-                        a.click()
-                        URL.revokeObjectURL(url)
-                      } catch {
-                        /* ignore */
-                      }
-                    }}
-                  >
-                    Download PDF
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className="text-sm px-3 py-1.5 rounded-md border border-blue-600 text-blue-700 hover:bg-blue-50"
+                      onClick={() => {
+                        try {
+                          const bin = atob(translateUi.pdfBase64)
+                          const bytes = new Uint8Array(bin.length)
+                          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+                          const blob = new Blob([bytes], { type: 'application/pdf' })
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url
+                          a.download = 'ds160-english-summary.pdf'
+                          a.click()
+                          URL.revokeObjectURL(url)
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    >
+                      Download PDF
+                    </button>
+                    <button
+                      type="button"
+                      disabled={mondayUi.loading}
+                      className="text-sm px-3 py-1.5 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50 disabled:opacity-40"
+                      onClick={() => void handleSendToMonday()}
+                    >
+                      {mondayUi.loading ? 'שולח…' : 'שלח ל-Monday'}
+                    </button>
+                  </>
                 ) : null}
                 <button
                   type="button"
@@ -1120,12 +1175,29 @@ export default function DS160IsraelForm({
                 <button
                   type="button"
                   className="text-sm px-3 py-1.5 rounded-md bg-gray-900 text-white hover:bg-gray-800"
-                  onClick={() => setTranslateUi((s) => ({ ...s, open: false }))}
+                  onClick={() => {
+                    setMondayUi({ loading: false, error: '', success: false, itemId: '' })
+                    setTranslateUi((s) => ({ ...s, open: false }))
+                  }}
                 >
                   Close
                 </button>
               </div>
             </div>
+            {(mondayUi.error || mondayUi.success) && (
+              <div className="px-4 py-2 text-sm border-b text-left" dir="ltr">
+                {mondayUi.error ? (
+                  <p className="text-red-600" role="alert">
+                    {mondayUi.error}
+                  </p>
+                ) : null}
+                {mondayUi.success ? (
+                  <p className="text-green-700">
+                    נוצר פריט ב-Monday. מזהה: <span className="font-mono">{mondayUi.itemId}</span>
+                  </p>
+                ) : null}
+              </div>
+            )}
             {translateUi.attachmentLabels?.length > 0 && (
               <p className="px-4 pt-3 text-xs text-gray-600 border-b pb-2 text-left" dir="ltr">
                 Analyzed documents: {translateUi.attachmentLabels.join(', ')}
