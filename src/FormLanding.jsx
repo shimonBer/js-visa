@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import Fuse from 'fuse.js'
-import { listFormBlobsFromApi, fetchFormBlobPayload } from './lib/formBlob.js'
+import { listFormBlobsFromApi, fetchFormBlobPayload, deleteFormFromCloud } from './lib/formBlob.js'
 
 export default function FormLanding({ onNewForm, onOpenForm }) {
   const [forms, setForms] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  /** Non-blocking message after delete (e.g. some S3 keys failed). */
+  const [notice, setNotice] = useState('')
+  /** pathname currently being deleted (disables actions for that row). */
+  const [deletingPathname, setDeletingPathname] = useState('')
 
   const filteredForms = useMemo(() => {
     const q = searchQuery.trim()
@@ -43,11 +47,35 @@ export default function FormLanding({ onNewForm, onOpenForm }) {
 
   async function handleContinue(pathname) {
     setError('')
+    setNotice('')
     try {
       const { payload } = await fetchFormBlobPayload(pathname)
       onOpenForm(pathname, payload)
     } catch (e) {
       setError(e?.message || 'טעינת הטופס נכשלה')
+    }
+  }
+
+  async function handleDeleteForm(f) {
+    const label = f.displayName || f.pathname
+    if (!window.confirm(`למחוק לצמיתות את "${label}" מהענן (Vercel Blob) וקבצים ב-S3?`)) {
+      return
+    }
+    setError('')
+    setNotice('')
+    setDeletingPathname(f.pathname)
+    try {
+      const result = await deleteFormFromCloud(f.pathname)
+      setForms((prev) => prev.filter((x) => x.pathname !== f.pathname))
+      if (Array.isArray(result.s3Errors) && result.s3Errors.length > 0) {
+        setNotice(
+          `הטופס נמחק מ-Vercel Blob. לא נמחקו ${result.s3Errors.length} קבצים מ-S3 (בדוק הרשאות או מפתחות).`,
+        )
+      }
+    } catch (e) {
+      setError(e?.message || 'מחיקה נכשלה')
+    } finally {
+      setDeletingPathname('')
     }
   }
 
@@ -91,6 +119,11 @@ export default function FormLanding({ onNewForm, onOpenForm }) {
               {error}
             </p>
           )}
+          {notice && (
+            <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-3" role="status">
+              {notice}
+            </p>
+          )}
           {!loading && forms.length === 0 && !error && (
             <p className="text-sm text-gray-500">אין טפסים שמורים בענן עדיין.</p>
           )}
@@ -99,16 +132,26 @@ export default function FormLanding({ onNewForm, onOpenForm }) {
           )}
           <ul className="space-y-2">
             {filteredForms.map((f) => (
-              <li key={f.pathname}>
+              <li key={f.pathname} className="flex gap-2 items-stretch">
                 <button
                   type="button"
-                  onClick={() => handleContinue(f.pathname)}
-                  className="w-full text-right py-2 px-3 rounded-md border border-gray-200 hover:bg-gray-50 flex flex-col gap-0.5"
+                  disabled={!!deletingPathname}
+                  onClick={() => void handleContinue(f.pathname)}
+                  className="min-w-0 flex-1 text-right py-2 px-3 rounded-md border border-gray-200 hover:bg-gray-50 flex flex-col gap-0.5 disabled:opacity-40"
                 >
                   <span className="font-medium text-gray-900">{f.displayName}</span>
                   <span className="text-xs text-gray-500 font-mono" dir="ltr">
                     {f.formId || '—'} · {f.uploadedAt ? new Date(f.uploadedAt).toLocaleString('he-IL') : ''}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={!!deletingPathname}
+                  onClick={() => void handleDeleteForm(f)}
+                  className="shrink-0 px-3 py-2 rounded-md border border-red-200 text-red-700 text-sm font-medium hover:bg-red-50 disabled:opacity-40"
+                  aria-label={`מחק ${f.displayName}`}
+                >
+                  {deletingPathname === f.pathname ? '…' : 'מחק'}
                 </button>
               </li>
             ))}
