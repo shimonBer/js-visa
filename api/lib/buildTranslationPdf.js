@@ -11,6 +11,27 @@ const MARGIN = 50
 const FONT_SIZE = 10
 const LINE_H = 12
 
+const COLOR_HEADER_BG = rgb(0.22, 0.27, 0.68)
+const COLOR_HEADER_TEXT = rgb(1, 1, 1)
+const COLOR_MISSING = rgb(0.82, 0.22, 0.12)
+const COLOR_LABEL = rgb(0.18, 0.22, 0.42)
+const COLOR_BODY = rgb(0.08, 0.08, 0.1)
+const COLOR_RULE = rgb(0.78, 0.8, 0.88)
+
+/**
+ * @param {string} raw
+ * @returns {'blank' | 'section-header' | 'missing' | 'field-label' | 'body'}
+ */
+function classifyPdfLine(raw) {
+  const trim = String(raw ?? '').trim()
+  if (!trim) return 'blank'
+  if (/^🟦/.test(trim)) return 'section-header'
+  if (trim.includes('❗ MISSING')) return 'missing'
+  if (/^\*\*/.test(trim)) return 'field-label'
+  if (/^Document:/i.test(trim) || /^Mapped to DS-160/i.test(trim)) return 'field-label'
+  return 'body'
+}
+
 const NOTO_SANS_TTF_URL =
   'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf'
 
@@ -151,41 +172,151 @@ export async function buildTranslationPdf(translated, binaries) {
 
   const captionFont = textFont
   const charsPerLine = useUnicode ? 72 : 92
+  /** Narrower wrap when body lines are slightly indented */
+  const charsBody = Math.max(40, charsPerLine - 4)
 
   const lineForDraw = (raw) => (useUnicode ? sanitizePdfText(raw) : sanitizeForPdfDraw(raw))
+
+  let helveticaBold
+  try {
+    helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  } catch {
+    helveticaBold = textFont
+  }
 
   let page = pdfDoc.addPage([PAGE_W, PAGE_H])
   let y = PAGE_H - MARGIN
 
-  page.drawText('DS-160 English summary (generated)', {
+  page.drawText(lineForDraw('DS-160 English summary (generated)'), {
     x: MARGIN,
     y,
-    size: 12,
-    font: textFont,
-    color: rgb(0, 0, 0),
+    size: 13,
+    font: useUnicode ? textFont : helveticaBold,
+    color: COLOR_LABEL,
   })
-  y -= 28
+  y -= 10
+  page.drawLine({
+    start: { x: MARGIN, y: y + 4 },
+    end: { x: PAGE_W - MARGIN, y: y + 4 },
+    thickness: 1,
+    color: COLOR_RULE,
+  })
+  y -= 22
 
-  const lines = wrapTextToLines(translated, charsPerLine)
-  for (const rawLine of lines) {
-    const line = lineForDraw(rawLine)
-    if (y < MARGIN + LINE_H) {
+  const paragraphs = String(translated || '').replace(/\r\n/g, '\n').split('\n')
+
+  /**
+   * @param {number} need
+   */
+  function ensureVerticalSpace(need) {
+    if (y < MARGIN + need) {
       page = pdfDoc.addPage([PAGE_W, PAGE_H])
       y = PAGE_H - MARGIN
     }
-    try {
-      page.drawText(line || ' ', { x: MARGIN, y, size: FONT_SIZE, font: textFont, color: rgb(0, 0, 0) })
-    } catch (e) {
-      page.drawText('[line omitted — unsupported characters]', {
-        x: MARGIN,
-        y,
-        size: FONT_SIZE,
-        font: textFont,
-        color: rgb(0.5, 0, 0),
-      })
-      console.warn('[buildTranslationPdf] drawText line failed', e)
+  }
+
+  for (const rawPara of paragraphs) {
+    const kind = classifyPdfLine(rawPara)
+    if (kind === 'blank') {
+      y -= 6
+      ensureVerticalSpace(LINE_H)
+      continue
     }
-    y -= LINE_H
+
+    const wrapWidth =
+      kind === 'field-label'
+        ? charsPerLine - 6
+        : kind === 'section-header'
+          ? charsPerLine - 2
+          : charsBody
+    const wrapped = wrapTextToLines(rawPara, wrapWidth)
+
+    for (let i = 0; i < wrapped.length; i++) {
+      const rawLine = wrapped[i]
+      const line = lineForDraw(rawLine)
+      /** Only first line of a 🟦 block gets the full-width bar */
+      const drawKind =
+        kind === 'section-header' && i > 0 ? 'header-continuation' : kind === 'section-header' ? 'section-header' : kind
+
+      const indent = drawKind === 'body' ? MARGIN + 10 : drawKind === 'header-continuation' ? MARGIN + 8 : MARGIN
+      let size = FONT_SIZE
+      let color = COLOR_BODY
+      let font = textFont
+      let extraGap = 0
+
+      if (drawKind === 'section-header') {
+        ensureVerticalSpace(36)
+        const barH = 22
+        const barBottom = y
+        page.drawRectangle({
+          x: MARGIN,
+          y: barBottom - barH,
+          width: PAGE_W - 2 * MARGIN,
+          height: barH,
+          color: COLOR_HEADER_BG,
+        })
+        try {
+          page.drawText(line || ' ', {
+            x: MARGIN + 8,
+            y: barBottom - barH + 6,
+            size: 11,
+            font: textFont,
+            color: COLOR_HEADER_TEXT,
+          })
+        } catch (e) {
+          console.warn('[buildTranslationPdf] section header draw failed', e)
+        }
+        y = barBottom - barH - 10
+        extraGap = 0
+        continue
+      }
+
+      if (drawKind === 'header-continuation') {
+        ensureVerticalSpace(LINE_H + 4)
+        size = 10
+        color = COLOR_HEADER_BG
+        try {
+          page.drawText(line || ' ', { x: indent, y, size, font: textFont, color })
+        } catch (e) {
+          console.warn('[buildTranslationPdf] header continuation draw failed', e)
+        }
+        y -= LINE_H + 2
+        continue
+      }
+
+      if (drawKind === 'missing') {
+        size = 10
+        color = COLOR_MISSING
+      } else if (drawKind === 'field-label') {
+        size = 9
+        color = COLOR_LABEL
+        font = useUnicode ? textFont : helveticaBold
+        extraGap = i === 0 ? 4 : 0
+      } else {
+        size = FONT_SIZE
+        color = COLOR_BODY
+      }
+
+      if (extraGap) y -= extraGap
+      ensureVerticalSpace(LINE_H + 4)
+      try {
+        page.drawText(line || ' ', { x: indent, y, size, font, color })
+      } catch (e) {
+        page.drawText('[line omitted — unsupported characters]', {
+          x: indent,
+          y,
+          size: FONT_SIZE,
+          font: textFont,
+          color: rgb(0.5, 0, 0),
+        })
+        console.warn('[buildTranslationPdf] drawText line failed', e)
+      }
+      y -= drawKind === 'field-label' ? LINE_H : LINE_H + 1
+    }
+
+    if (kind === 'section-header') {
+      y -= 4
+    }
   }
 
   if (binaries.length > 0) {

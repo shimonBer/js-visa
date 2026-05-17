@@ -8,7 +8,7 @@
 import { buildTranslationPdf } from './lib/buildTranslationPdf.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
-const OPENAI_TIMEOUT_MS = 120_000
+const OPENAI_TIMEOUT_MS = 180_000
 const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024
 
 /** Professional DS-160 framing (system role) — reduces refusal vs casual "translate my data" prompts. */
@@ -57,18 +57,12 @@ Do NOT include zip codes unless specifically relevant.
 
 ## INSTITUTION ADDRESS COMPLETION
 
-If a school, employer, institution, military base, synagogue, yeshiva, or organization is mentioned without a full address:
+For **every** school, employer, company, university, yeshiva, synagogue, military unit, or organization mentioned in the form JSON or attachments:
 
-* Search the web for the official address
-* Complete it automatically
-* Use the primary official address
-* Normalize it into:
-  Street, City, Country
-
-If confidence is low:
-
-* mark the field as:
-  ❗ MISSING
+* You **must** supply a complete physical address in **Street, City, Country** format (see ADDRESS FORMAT above).
+* **Use web search** to find the official primary / headquarters address when the user did not provide one.
+* If several branches exist, pick the main headquarters or the best-known official site address.
+* Only mark **❗ MISSING** if, after searching, you still cannot determine a reasonable address with acceptable confidence.
 
 ---
 
@@ -316,6 +310,7 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // Vision attachments require a vision-capable model. `gpt-4o-search-preview` is text-only and would skip image analysis.
           model: 'gpt-4o',
           max_tokens: 16_384,
           messages: [

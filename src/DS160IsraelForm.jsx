@@ -163,8 +163,11 @@ export default function DS160IsraelForm({
     defaultValues: {
       passportId: '',
       passportIssuingCountry: '',
+      firstName: '',
+      lastName: '',
       firstNameEnglish: '',
       lastNameEnglish: '',
+      sex: '',
       hadPreviousName: 'no',
       isUnder14: 'no',
       hasForeignCitizenship: 'no',
@@ -321,9 +324,16 @@ export default function DS160IsraelForm({
   }
 
   const onSaveDraft = async () => {
+    const values = getValues()
+    if (!String(values.firstName || '').trim() || !String(values.lastName || '').trim()) {
+      setAsyncFlow({
+        phase: 'error',
+        message: 'יש למלא שם פרטי ושם משפחה בעברית כדי לשמור טיוטה.',
+      })
+      return
+    }
     setAsyncFlow({ phase: 'working', message: '' })
     try {
-      const values = getValues()
       const fid = buildFormId(values.passportId, formStartedDateRef.current)
       const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
         { name: 'passportScan', file: firstFile(values.passportScan) },
@@ -394,6 +404,9 @@ export default function DS160IsraelForm({
       }
       if (r.passportNumber) setValue('passportId', r.passportNumber, { shouldDirty: true })
       if (r.issuingCountry) setValue('passportIssuingCountry', r.issuingCountry, { shouldDirty: true })
+      if (r.sex === 'M') setValue('sex', 'male', { shouldDirty: true })
+      else if (r.sex === 'F') setValue('sex', 'female', { shouldDirty: true })
+      if (r.nationalId) setValue('idNumber', r.nationalId, { shouldDirty: true })
       setPassportOcr({ status: 'idle', message: 'שדות דרכון עודכנו מהצילום.' })
     } catch (e) {
       setPassportOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי דרכון' })
@@ -544,6 +557,8 @@ export default function DS160IsraelForm({
   }
 
   const w = {
+    firstName: watch('firstName'),
+    lastName: watch('lastName'),
     hadPreviousName: watch('hadPreviousName'),
     travelingWithOthers: watch('travelingWithOthers'),
     hasForeignCitizenship: watch('hasForeignCitizenship'),
@@ -599,6 +614,23 @@ export default function DS160IsraelForm({
             >
               טען טיוטה מהדפדפן
             </button>
+            <button
+              type="button"
+              onClick={() => void onSaveDraft()}
+              disabled={
+                asyncFlow.phase === 'working' ||
+                !String(w.firstName || '').trim() ||
+                !String(w.lastName || '').trim()
+              }
+              title={
+                !String(w.firstName || '').trim() || !String(w.lastName || '').trim()
+                  ? 'יש למלא שם פרטי ושם משפחה כדי לשמור'
+                  : undefined
+              }
+              className="px-4 py-2 text-sm font-semibold rounded-md bg-white text-blue-700 hover:bg-blue-50 border border-white disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              שמור טיוטה
+            </button>
             {onExitToHome && (
               <button
                 type="button"
@@ -633,6 +665,35 @@ export default function DS160IsraelForm({
                   </span>
                   : התאריך הוא <strong>אוטומטית</strong> תאריך תחילת מילוי הטופס ({formStartedDateRef.current}), לדפדפן ול-S3.
                 </span>
+              </div>
+              <div className="md:col-span-2 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p className="font-semibold text-gray-800">צילום דרכון</p>
+                <p className="text-xs text-gray-600">
+                  גרירה או בחירת קובץ — זיהוי אוטומטי (GPT-4o): שם באנגלית, תאריך לידה, מספר דרכון, מדינת הנפקה, מין (MRZ), תעודת זהות אם מופיעה במסמך.
+                </p>
+                {passportOcr.status === 'loading' && (
+                  <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>
+                )}
+                {passportOcr.status === 'error' && (
+                  <p className="text-sm text-red-600" role="alert">
+                    {passportOcr.message}
+                  </p>
+                )}
+                {passportOcr.status === 'idle' && passportOcr.message && (
+                  <p className="text-sm text-green-700">{passportOcr.message}</p>
+                )}
+                <DocumentFileSlot
+                  label="העלאת צילום דרכון"
+                  name="passportScan"
+                  register={register}
+                  setValue={setValue}
+                  getFieldError={getFieldError}
+                  watchedValue={passportScanWatch}
+                  accept="image/*,application/pdf"
+                  onFilePicked={(f) => {
+                    void runPassportOcrFromFile(f)
+                  }}
+                />
               </div>
               <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="firstName" />
               <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name="lastName" />
@@ -933,8 +994,12 @@ export default function DS160IsraelForm({
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">רשתות חברתיות ומיקום ראיון</h2>
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">רשתות חברתיות</h2>
             <FormInput register={register} getFieldError={getFieldError} label="קישורים לרשתות החברתיות" name="socialMediaLinks" type="textarea" />
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מיקום ראיון</h2>
             <FormRadioGroup register={register} getFieldError={getFieldError} label="לאן תגש לראיון?" name="interviewLocation" options={[
               { label: 'הירקון 71, תל אביב', value: 'tel_aviv' },
               { label: 'דוד פלוסר 14, ירושלים', value: 'jerusalem' },
@@ -942,64 +1007,54 @@ export default function DS160IsraelForm({
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מסמכים</h2>
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מסמכים נוספים</h2>
             <p className="text-sm text-gray-600">
-              גרירת קובץ לתוך המסגרת מעדכנת את השדה. בצילום דרכון מתבצע זיהוי אוטומטי (GPT-4o): שם באנגלית, תאריך לידה, מספר דרכון ומדינת הנפקה.
+              מסמכים מוצגים לפי מה שסימנת בטופס (ויזה קודמת, סושיאל, רישיון נהיגה אמריקאי). צילום הדרכון נמצא למעלה ליד מספר הדרכון.
             </p>
-            {passportOcr.status === 'loading' && (
-              <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>
-            )}
-            {passportOcr.status === 'error' && (
-              <p className="text-sm text-red-600" role="alert">
-                {passportOcr.message}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(w.visitedUSBefore === 'yes' || w.hadUSVisa === 'yes') && (
+                <DocumentFileSlot
+                  label="ויזה קודמת במידה ויש"
+                  name="existingVisaScan"
+                  register={register}
+                  setValue={setValue}
+                  getFieldError={getFieldError}
+                  watchedValue={existingVisaScanWatch}
+                  accept="image/*,application/pdf"
+                />
+              )}
+              {w.hasSocialSecurityNumber === 'yes' && (
+                <DocumentFileSlot
+                  label="צילום Social Security Card (ארה״ב)"
+                  name="socialSecurityScan"
+                  register={register}
+                  setValue={setValue}
+                  getFieldError={getFieldError}
+                  watchedValue={socialSecurityScanWatch}
+                  accept="image/*,application/pdf"
+                />
+              )}
+              {w.hasUSDriversLicense === 'yes' && (
+                <DocumentFileSlot
+                  label="רישיון נהיגה אמריקאי (צילום)"
+                  name="americanLicenseScan"
+                  register={register}
+                  setValue={setValue}
+                  getFieldError={getFieldError}
+                  watchedValue={americanLicenseScanWatch}
+                  accept="image/*,application/pdf"
+                />
+              )}
+            </div>
+            {!(
+              (w.visitedUSBefore === 'yes' || w.hadUSVisa === 'yes') ||
+              w.hasSocialSecurityNumber === 'yes' ||
+              w.hasUSDriversLicense === 'yes'
+            ) && (
+              <p className="text-sm text-gray-500">
+                אין כאן מסמכים נוספים להעלאה — סמן ביקור/ויזה קודמת בארה״ב, סושיאל, או רישיון נהיגה אמריקאי בטופס כדי להציג את השדות הרלוונטיים.
               </p>
             )}
-            {passportOcr.status === 'idle' && passportOcr.message && (
-              <p className="text-sm text-green-700">{passportOcr.message}</p>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DocumentFileSlot
-                label="צילום דרכון"
-                name="passportScan"
-                register={register}
-                setValue={setValue}
-                getFieldError={getFieldError}
-                watchedValue={passportScanWatch}
-                accept="image/*,application/pdf"
-                onFilePicked={(f) => {
-                  void runPassportOcrFromFile(f)
-                }}
-              />
-              <DocumentFileSlot
-                label="ויזה קודמת במידה ויש"
-                name="existingVisaScan"
-                register={register}
-                setValue={setValue}
-                getFieldError={getFieldError}
-                watchedValue={existingVisaScanWatch}
-                accept="image/*,application/pdf"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 pt-4">
-              <DocumentFileSlot
-                label="צילום Social Security Card (ארה״ב)"
-                name="socialSecurityScan"
-                register={register}
-                setValue={setValue}
-                getFieldError={getFieldError}
-                watchedValue={socialSecurityScanWatch}
-                accept="image/*,application/pdf"
-              />
-              <DocumentFileSlot
-                label="רישיון נהיגה אמריקאי (צילום)"
-                name="americanLicenseScan"
-                register={register}
-                setValue={setValue}
-                getFieldError={getFieldError}
-                watchedValue={americanLicenseScanWatch}
-                accept="image/*,application/pdf"
-              />
-            </div>
 
             {canRunI94 && (
               <div className="rounded-lg border border-gray-200 bg-slate-50 p-4 space-y-3">
@@ -1082,6 +1137,15 @@ export default function DS160IsraelForm({
               </p>
             )}
             <div className="flex flex-wrap justify-end gap-4">
+              {onExitToHome && (
+                <button
+                  type="button"
+                  onClick={onExitToHome}
+                  className="px-6 py-2 border border-gray-400 text-gray-700 font-semibold rounded-md hover:bg-gray-50 transition"
+                >
+                  חזרה לרשימה
+                </button>
+              )}
               <button
                 type="button"
                 disabled={asyncFlow.phase === 'working' || translateUi.loading}
@@ -1092,8 +1156,12 @@ export default function DS160IsraelForm({
               </button>
               <button
                 type="button"
-                disabled={asyncFlow.phase === 'working'}
-                onClick={onSaveDraft}
+                disabled={
+                  asyncFlow.phase === 'working' ||
+                  !String(w.firstName || '').trim() ||
+                  !String(w.lastName || '').trim()
+                }
+                onClick={() => void onSaveDraft()}
                 className="px-6 py-2 border border-blue-600 text-blue-600 font-semibold rounded-md hover:bg-blue-50 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
                 שמור טיוטה

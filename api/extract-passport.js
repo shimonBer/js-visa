@@ -84,7 +84,9 @@ export default async function handler(req, res) {
                   type: 'text',
                   text:
                     'You are reading a passport scan or photo. Extract ONLY these fields and respond with a single JSON object (no markdown): ' +
-                    '{"firstName": string, "lastName": string, "birthDate": string (YYYY-MM-DD), "passportNumber": string, "issuingCountry": string (English country name as on passport)}. ' +
+                    '{"firstName": string, "lastName": string, "birthDate": string (YYYY-MM-DD), "passportNumber": string, "issuingCountry": string (English country name as on passport), ' +
+                    '"sex": string — single letter "M" or "F" from MRZ line 1 (position after nationality code in TD3 MRZ), empty if not readable, ' +
+                    '"nationalId": string — national personal ID from MRZ line 2 (often positions 29–42 in TD3) or from the document face if visible, empty if not found}. ' +
                     'If a field is unreadable, use empty string for that field. Use Latin script for names when printed on the document.',
                 },
                 { type: 'image_url', image_url: { url: dataUrl } },
@@ -126,12 +128,20 @@ export default async function handler(req, res) {
       return jsonResponse(res, 502, { error: 'Assistant did not return valid JSON', detail: content.slice(0, 200) })
     }
 
+    const sexRaw = String(extracted.sex ?? '')
+      .trim()
+      .toUpperCase()
+      .slice(0, 1)
+    const sex = sexRaw === 'M' || sexRaw === 'F' ? sexRaw : ''
+
     const out = {
       firstName: String(extracted.firstName ?? '').trim(),
       lastName: String(extracted.lastName ?? '').trim(),
       birthDate: String(extracted.birthDate ?? '').trim(),
       passportNumber: String(extracted.passportNumber ?? '').trim(),
       issuingCountry: String(extracted.issuingCountry ?? extracted.country ?? '').trim(),
+      sex,
+      nationalId: String(extracted.nationalId ?? '').trim(),
     }
 
     return jsonResponse(res, 200, out)
