@@ -1,7 +1,7 @@
 /**
  * POST /api/extract-us-license
  * Raw image body: Content-Type = image/* or application/pdf.
- * GPT-4o vision → licenseNumber, issuingCountry (JSON).
+ * GPT-4o vision → licenseNumber, issuingState (JSON).
  */
 
 const MAX_BYTES = 4 * 1024 * 1024
@@ -68,17 +68,24 @@ export default async function handler(req, res) {
       'You are an identity document extraction assistant.\n\n' +
       "Your task is to analyze a driver's license image and extract ONLY the following fields:\n\n" +
       '1. License number\n' +
-      '2. Issuing country\n\n' +
+      '2. Issuing state\n\n' +
       'Extraction rules:\n\n' +
       '* Use OCR and visual inspection\n' +
       '* Preserve exact formatting and capitalization\n' +
       '* Do NOT guess missing values\n' +
       '* If a value is unclear, return null\n' +
-      '* The issuing country should be normalized to the country name in English\n\n' +
+      '* The issuing state is the U.S. state or regional jurisdiction prominently displayed on the license\n' +
+      '* Examples:\n\n' +
+      '  * Florida\n' +
+      '  * California\n' +
+      '  * New York\n\n' +
+      'For U.S. licenses:\n\n' +
+      '* Return the state name only\n' +
+      '* Do NOT return "United States"\n\n' +
       'Return ONLY valid JSON in this exact format (no markdown):\n\n' +
       '{\n' +
       '"licenseNumber": "",\n' +
-      '"issuingCountry": ""\n' +
+      '"issuingState": ""\n' +
       '}\n\n' +
       'Use JSON null (not the string "null") for any field that is missing or unclear.'
 
@@ -137,9 +144,9 @@ export default async function handler(req, res) {
     }
 
     const licenseNumber = strOrEmpty(extracted.licenseNumber)
-    const issuingCountry = strOrEmpty(extracted.issuingCountry)
+    const issuingState = strOrEmpty(extracted.issuingState ?? extracted.issuingCountry)
 
-    return jsonResponse(res, 200, { licenseNumber, issuingCountry })
+    return jsonResponse(res, 200, { licenseNumber, issuingState })
   } catch (e) {
     const msg = e?.name === 'AbortError' ? 'OpenAI request timed out' : e?.message || 'extract-us-license error'
     console.error('[extract-us-license]', e)

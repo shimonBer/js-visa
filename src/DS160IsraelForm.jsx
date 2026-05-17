@@ -499,12 +499,12 @@ export default function DS160IsraelForm({
       const r = await extractUsLicenseFieldsFromFile(file)
       const lines = []
       if (r.licenseNumber) lines.push(`License number: ${r.licenseNumber}`)
-      if (r.issuingCountry) lines.push(`Issuing country: ${r.issuingCountry}`)
+      if (r.issuingState) lines.push(`Issuing state: ${r.issuingState}`)
       if (lines.length) {
         setValue('driversLicenseDetails', lines.join('\n'), { shouldDirty: true })
         setUsLicenseOcr({ status: 'idle', message: 'פרטי רישיון עודכנו מהצילום.' })
       } else {
-        setUsLicenseOcr({ status: 'idle', message: 'לא זוהו מספר רישיון או מדינת הנפקה בבירור מהתמונה.' })
+        setUsLicenseOcr({ status: 'idle', message: 'לא זוהו מספר רישיון או מדינת/מחוז הנפקה (State) בבירור מהתמונה.' })
       }
     } catch (e) {
       setUsLicenseOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי רישיון נהיגה' })
@@ -1141,7 +1141,7 @@ export default function DS160IsraelForm({
                     <div className="flex-1 min-w-0 space-y-4 rounded-lg border-r-4 border-blue-500 bg-gray-50 p-4 pr-4 pl-2">
                       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
                         <p className="text-xs text-gray-600">
-                          העלאת צילום — זיהוי אוטומטי (GPT-4o): מספר רישיון ומדינת הנפקה (אנגלית).
+                          העלאת צילום — זיהוי אוטומטי (GPT-4o): מספר רישיון ומדינת/מחוז ארה״ב (State, באנגלית).
                         </p>
                         {usLicenseOcr.status === 'loading' && (
                           <p className="text-sm text-blue-600">מזהה פרטי רישיון מהקובץ…</p>

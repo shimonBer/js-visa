@@ -1,7 +1,7 @@
 /**
  * POST driver's license image to /api/extract-us-license.
  * @param {File} file
- * @returns {Promise<{ licenseNumber: string, issuingCountry: string }>}
+ * @returns {Promise<{ licenseNumber: string, issuingState: string }>}
  */
 export async function extractUsLicenseFieldsFromFile(file) {
   if (!(file instanceof File)) {
@@ -30,6 +30,6 @@ export async function extractUsLicenseFieldsFromFile(file) {
   }
   return {
     licenseNumber: String(json.licenseNumber ?? '').trim(),
-    issuingCountry: String(json.issuingCountry ?? '').trim(),
+    issuingState: String(json.issuingState ?? json.issuingCountry ?? '').trim(),
   }
 }
