@@ -5,6 +5,9 @@ const DOCUMENT_FIELDS = new Set([
   'existingVisaScan',
   'socialSecurityScan',
   'americanLicenseScan',
+  'extraDocumentScan1',
+  'extraDocumentScan2',
+  'extraDocumentScan3',
 ])
 
 /**

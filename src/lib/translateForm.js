@@ -18,7 +18,15 @@ function readFileAsBase64(file) {
   })
 }
 
-const DOC_FIELDS = ['passportScan', 'existingVisaScan', 'socialSecurityScan', 'americanLicenseScan']
+const DOC_FIELDS = [
+  'passportScan',
+  'existingVisaScan',
+  'socialSecurityScan',
+  'americanLicenseScan',
+  'extraDocumentScan1',
+  'extraDocumentScan2',
+  'extraDocumentScan3',
+]
 const MAX_PER_FILE = 4 * 1024 * 1024
 
 /**

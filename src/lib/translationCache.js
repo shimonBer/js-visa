@@ -5,7 +5,15 @@ const DB_NAME = 'ds160_form_app'
 const DB_VERSION = 1
 const STORE = 'translation_cache'
 
-const DOC_FIELDS = ['passportScan', 'existingVisaScan', 'socialSecurityScan', 'americanLicenseScan']
+const DOC_FIELDS = [
+  'passportScan',
+  'existingVisaScan',
+  'socialSecurityScan',
+  'americanLicenseScan',
+  'extraDocumentScan1',
+  'extraDocumentScan2',
+  'extraDocumentScan3',
+]
 
 /** @type {Promise<IDBDatabase> | null} */
 let dbPromise = null

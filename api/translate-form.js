@@ -155,7 +155,7 @@ After your English reply is generated, the system **automatically builds one PDF
 1. **Printable pages** with your full English DS-160 summary (this text).
 2. **Then full-page, full-color embedded copies** of each uploaded photograph (JPEG/PNG) and **embedded pages** from any uploaded PDF—so the reviewer sees the **actual scans inside the same PDF**, not links or thumbnails-only.
 
-When you list documents in **🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS**, use the same order as the form fields when possible: **passportScan**, **existingVisaScan**, **socialSecurityScan**, **americanLicenseScan**—so the written audit trail matches the visual appendix in the PDF.
+When you list documents in **🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS**, use the same order as the form fields when possible: **passportScan**, **existingVisaScan**, **socialSecurityScan**, **americanLicenseScan**, then **extraDocumentScan1**, **extraDocumentScan2**, **extraDocumentScan3** (ad-hoc uploads)—so the written audit trail matches the visual appendix in the PDF.
 
 The server may attach the same four document types from cloud storage (S3) when the JSON lists saved keys but the browser did not send base64 bytes. Treat those images/PDFs exactly like user attachments: transcribe them, map them to DS-160, and assume they appear in the PDF appendix.
 
@@ -163,7 +163,7 @@ The server may attach the same four document types from cloud storage (S3) when 
 
 ## ATTACHMENT-DRIVEN GAP FILLING (WHEN SCANS EXIST)
 
-The intake JSON may omit facts that are visible on uploads. Whenever **passportScan**, **existingVisaScan**, **socialSecurityScan**, or **americanLicenseScan** is available (inline attachment or server-loaded from S3):
+The intake JSON may omit facts that are visible on uploads. Whenever **passportScan**, **existingVisaScan**, **socialSecurityScan**, **americanLicenseScan**, or any **extraDocumentScan1–3** attachment is available (inline attachment or server-loaded from S3):
 
 * **passportScan:** Use as primary source of truth for legal English names, native name if printed, date of birth, passport number, issuing country / authority, nationality, sex (MRZ or visual), and national ID if shown. If a JSON field is empty or clearly wrong, prefer the scan when legible.
 
@@ -172,6 +172,8 @@ The intake JSON may omit facts that are visible on uploads. Whenever **passportS
 * **socialSecurityScan:** If Social Security–related text in the summary would be empty but the card is readable, supply the SSN string exactly as on the card (preserve formatting). Never guess obscured digits—use ❗ MISSING for the whole number if any digit is uncertain.
 
 * **americanLicenseScan:** If license number, issuing U.S. state or jurisdiction, class, or expiration appear on the card but are missing from the JSON, add them from the scan when legible.
+
+* **extraDocumentScan1 / extraDocumentScan2 / extraDocumentScan3:** Ad-hoc uploads. Transcribe legible content and map facts to the nearest DS-160 sections; if they only support a narrative, include them under a short **Supplemental documents** note within the main flow before 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS.
 
 Always merge these facts into the main DS-160-ordered sections first; **🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS** remains the audit trail for each file.
 
@@ -219,9 +221,17 @@ const USER_PREAMBLE =
   'Analyze the form data and attachments below and produce the DS-160-ready English summary document per your system instructions. ' +
   'If there are image/PDF attachments (including any loaded from S3 on the server), the final text must embed their readable content: include the mandatory 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with per-file transcriptions and DS-160 mapping bullets — do not ask the reader to open files elsewhere. ' +
   'Use scans to fill gaps in the JSON where the instructions allow (visa dates, license details, SSN from card, passport identity fields). ' +
-  'A combined PDF will be produced automatically: your English text as pages, then full-page embedded copies of each upload—keep transcription blocks ordered to match passportScan, existingVisaScan, socialSecurityScan, americanLicenseScan when applicable.'
+  'A combined PDF will be produced automatically: your English text as pages, then full-page embedded copies of each upload—keep transcription blocks ordered to match passportScan, existingVisaScan, socialSecurityScan, americanLicenseScan, then extraDocumentScan1–3 when applicable.'
 
-const UPLOAD_DOC_FIELDS = ['passportScan', 'existingVisaScan', 'socialSecurityScan', 'americanLicenseScan']
+const UPLOAD_DOC_FIELDS = [
+  'passportScan',
+  'existingVisaScan',
+  'socialSecurityScan',
+  'americanLicenseScan',
+  'extraDocumentScan1',
+  'extraDocumentScan2',
+  'extraDocumentScan3',
+]
 
 /**
  * @param {string} name
