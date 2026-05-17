@@ -24,10 +24,12 @@ const MAX_PER_FILE = 4 * 1024 * 1024
 /**
  * Sends form field JSON + optional document images to /api/translate-form.
  * @param {Record<string, unknown>} values react-hook-form values (may include File fields)
+ * @param {{ s3Documents?: { field: string, key: string, bucket?: string }[] }} [opts] — merged S3 keys from last save so the server can load bytes for vision + PDF when File blobs are missing
  * @returns {Promise<{ translated: string, attachmentLabels: string[], pdfBase64: string }>}
  */
-export async function translateFormToEnglish(values) {
+export async function translateFormToEnglish(values, opts = {}) {
   const { data, fileMeta } = serializeFormValuesForJson(values)
+  const s3Documents = Array.isArray(opts.s3Documents) ? opts.s3Documents : []
 
   /** @type {{ field: string, fileName: string, mimeType: string, base64: string }[]} */
   const attachments = []
@@ -52,6 +54,7 @@ export async function translateFormToEnglish(values) {
       data,
       fileMeta,
       attachments,
+      s3Documents,
     }),
   })
   const text = await res.text()

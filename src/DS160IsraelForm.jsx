@@ -7,6 +7,9 @@ import { firstFile, uploadFormDocumentsToS3 } from './lib/uploadFormDocuments.js
 import { buildFormId } from './lib/formId.js'
 import { saveFormBlobPayload } from './lib/formBlob.js'
 import { extractPassportFieldsFromFile } from './lib/passportOcr.js'
+import { extractSocialSecurityNumberFromFile } from './lib/socialSecurityOcr.js'
+import { extractUsLicenseFieldsFromFile } from './lib/usLicenseOcr.js'
+import { extractUsVisaDatesFromFile } from './lib/usVisaOcr.js'
 import { fetchI94TravelHistory } from './lib/browserUse.js'
 import { translateFormToEnglish } from './lib/translateForm.js'
 import {
@@ -17,6 +20,26 @@ import {
 import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
 import { getS3UploadApiBase } from './lib/uploadFormDocuments.js'
 import { sendPdfToMonday } from './lib/monday.js'
+
+/**
+ * Keeps latest S3 object per document field (passport / visa / SSN card / license) for translate + PDF when the browser has no File.
+ * @param {unknown[]} prev
+ * @param {unknown[]} next
+ */
+function mergeS3DocumentsByField(prev, next) {
+  const map = new Map()
+  for (const d of Array.isArray(prev) ? prev : []) {
+    const f = d && typeof d.field === 'string' ? d.field : ''
+    const k = d && typeof d.key === 'string' ? d.key : ''
+    if (f && k) map.set(f, { field: f, key: k, ...(d.bucket ? { bucket: d.bucket } : {}) })
+  }
+  for (const d of Array.isArray(next) ? next : []) {
+    const f = d && typeof d.field === 'string' ? d.field : ''
+    const k = d && typeof d.key === 'string' ? d.key : ''
+    if (f && k) map.set(f, { field: f, key: k, ...(d.bucket ? { bucket: d.bucket } : {}) })
+  }
+  return [...map.values()]
+}
 
 /**
  * Larger dashed drop zone; optional callback when a file is set (e.g. passport OCR).
@@ -171,10 +194,14 @@ export default function DS160IsraelForm({
       hadPreviousName: 'no',
       isUnder14: 'no',
       hasForeignCitizenship: 'no',
+      foreignCitizenshipCountry: '',
+      foreignCitizenshipId: '',
       travelingWithOthers: 'no',
       travelCompanions: [{ fullName: '', relation: '' }],
       visitedUSBefore: 'no',
       hadUSVisa: 'no',
+      lastVisaIssueDate: '',
+      lastVisaExpirationDate: '',
       visaIssuedInIsrael: 'yes',
       visaWasCancelled: 'no',
       visaRefused: 'no',
@@ -218,6 +245,9 @@ export default function DS160IsraelForm({
   const storageFormId = useMemo(() => formId || 'incomplete', [formId])
   const [asyncFlow, setAsyncFlow] = useState({ phase: 'idle', message: '' })
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
+  const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
+  const [usLicenseOcr, setUsLicenseOcr] = useState({ status: 'idle', message: '' })
+  const [previousVisaOcr, setPreviousVisaOcr] = useState({ status: 'idle', message: '' })
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
   const [translateUi, setTranslateUi] = useState({
     open: false,
@@ -235,6 +265,18 @@ export default function DS160IsraelForm({
     success: false,
     itemId: '',
   })
+
+  /** Latest uploaded S3 keys per field — sent with translate so server can fetch bytes for GPT + PDF appendix. */
+  const s3DocumentsRef = useRef(/** @type {{ field: string, key: string, bucket?: string }[]} */ ([]))
+
+  useEffect(() => {
+    const docs = initialBlob?.s3Documents
+    if (Array.isArray(docs) && docs.length > 0) {
+      s3DocumentsRef.current = mergeS3DocumentsByField([], docs)
+    } else if (initialBlobKey != null && initialBlob != null && (!Array.isArray(docs) || docs.length === 0)) {
+      s3DocumentsRef.current = []
+    }
+  }, [initialBlobKey, initialBlob])
 
   useEffect(() => {
     if (!initialBlob?.data || typeof initialBlob.data !== 'object') return
@@ -296,6 +338,7 @@ export default function DS160IsraelForm({
         { name: 'socialSecurityScan', file: firstFile(data.socialSecurityScan) },
         { name: 'americanLicenseScan', file: firstFile(data.americanLicenseScan) },
       ])
+      s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
       const body = buildN8nBody('submit', fid, data, uploads)
       saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'submit', ...body })
       // Blob backup is independent of n8n: runs first; failures are non-blocking for n8n.
@@ -341,6 +384,7 @@ export default function DS160IsraelForm({
         { name: 'socialSecurityScan', file: firstFile(values.socialSecurityScan) },
         { name: 'americanLicenseScan', file: firstFile(values.americanLicenseScan) },
       ])
+      s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
       const body = buildN8nBody('draft', fid, values, uploads)
       saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'draft', ...body })
       await saveFormBlobPayload(body)
@@ -375,6 +419,11 @@ export default function DS160IsraelForm({
       americanLicenseScan: undefined,
     })
     const { restored, failed } = await restoreS3DocumentsIntoForm(snap.s3Documents, setValue)
+    if (Array.isArray(snap.s3Documents)) {
+      s3DocumentsRef.current = mergeS3DocumentsByField([], snap.s3Documents)
+    } else {
+      s3DocumentsRef.current = []
+    }
     const apiBase = getS3UploadApiBase()
     const hadMeta = Array.isArray(snap.s3Documents) && snap.s3Documents.length > 0
     let msg = 'טיוטה נטענה מהדפדפן.'
@@ -410,6 +459,71 @@ export default function DS160IsraelForm({
       setPassportOcr({ status: 'idle', message: 'שדות דרכון עודכנו מהצילום.' })
     } catch (e) {
       setPassportOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי דרכון' })
+    }
+  }
+
+  async function runSocialSecurityOcrFromFile(file) {
+    setSocialSecurityOcr({ status: 'loading', message: '' })
+    try {
+      const r = await extractSocialSecurityNumberFromFile(file)
+      if (r.socialSecurityNumber) {
+        setValue('socialSecurityNumber', r.socialSecurityNumber, { shouldDirty: true })
+        setSocialSecurityOcr({ status: 'idle', message: 'מספר סושיאל עודכן מהצילום.' })
+      } else {
+        setSocialSecurityOcr({ status: 'idle', message: 'לא זוהה מספר סושיאל בבירור מהתמונה.' })
+      }
+    } catch (e) {
+      setSocialSecurityOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי כרטיס סושיאל' })
+    }
+  }
+
+  async function runUsLicenseOcrFromFile(file) {
+    setUsLicenseOcr({ status: 'loading', message: '' })
+    try {
+      const r = await extractUsLicenseFieldsFromFile(file)
+      const lines = []
+      if (r.licenseNumber) lines.push(`License number: ${r.licenseNumber}`)
+      if (r.issuingCountry) lines.push(`Issuing country: ${r.issuingCountry}`)
+      if (lines.length) {
+        setValue('driversLicenseDetails', lines.join('\n'), { shouldDirty: true })
+        setUsLicenseOcr({ status: 'idle', message: 'פרטי רישיון עודכנו מהצילום.' })
+      } else {
+        setUsLicenseOcr({ status: 'idle', message: 'לא זוהו מספר רישיון או מדינת הנפקה בבירור מהתמונה.' })
+      }
+    } catch (e) {
+      setUsLicenseOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי רישיון נהיגה' })
+    }
+  }
+
+  async function runPreviousVisaOcrFromFile(file) {
+    setPreviousVisaOcr({ status: 'loading', message: '' })
+    try {
+      const r = await extractUsVisaDatesFromFile(file)
+      let filled = 0
+      if (r.issueDate) {
+        setValue('lastVisaIssueDate', r.issueDate, { shouldDirty: true })
+        filled += 1
+      }
+      if (r.expirationDate) {
+        setValue('lastVisaExpirationDate', r.expirationDate, { shouldDirty: true })
+        filled += 1
+      }
+      if (filled > 0) {
+        setPreviousVisaOcr({
+          status: 'idle',
+          message:
+            filled === 2
+              ? 'תאריכי הנפקה ותפוגה עודכנו מהצילום.'
+              : 'חלק מהתאריכים עודכן מהצילום (שדה אחד לא זוהה בבירור).',
+        })
+      } else {
+        setPreviousVisaOcr({
+          status: 'idle',
+          message: 'לא זוהו תאריכי ויזה בבירור מהתמונה.',
+        })
+      }
+    } catch (e) {
+      setPreviousVisaOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי ויזה' })
     }
   }
 
@@ -496,7 +610,9 @@ export default function DS160IsraelForm({
         })
         return
       }
-      const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(values)
+      const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(values, {
+        s3Documents: s3DocumentsRef.current,
+      })
       try {
         await saveTranslationCache(storageFormId, {
           fingerprint: fp,
@@ -741,7 +857,15 @@ export default function DS160IsraelForm({
 
               <FormRadioGroup register={register} getFieldError={getFieldError} label="אזרחות זרה?" name="hasForeignCitizenship" options={[{ label: 'לא', value: 'no' }, { label: 'של איזה מדינה?', value: 'yes' }]} />
               {w.hasForeignCitizenship === 'yes' && (
-                <FormInput register={register} getFieldError={getFieldError} label="של איזה מדינה (אזרחות זרה)" name="foreignCitizenshipCountry" />
+                <div className="grid grid-cols-1 gap-4">
+                  <FormInput register={register} getFieldError={getFieldError} label="של איזה מדינה (אזרחות זרה)" name="foreignCitizenshipCountry" />
+                  <FormInput
+                    register={register}
+                    getFieldError={getFieldError}
+                    label="מספר זיהות באזרחות הזו (ת.ז. / מספר אזרחות וכו׳)"
+                    name="foreignCitizenshipId"
+                  />
+                </div>
               )}
             </div>
           </section>
@@ -806,9 +930,50 @@ export default function DS160IsraelForm({
               <FormRadioGroup register={register} getFieldError={getFieldError} label="הייתה לך בעבר ויזה לארה״ב?" name="hadUSVisa" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
               {w.hadUSVisa === 'yes' && (
                 <div className="pl-4 border-r-4 border-blue-500 space-y-4 pr-4 bg-gray-50 p-4 rounded">
-                  <FormInput register={register} getFieldError={getFieldError} label="תאריך הנפקת הויזה האחרונה" name="lastVisaIssueDate" />
+                  <FormInput
+                    register={register}
+                    getFieldError={getFieldError}
+                    label="תאריך הנפקת הויזה האחרונה"
+                    name="lastVisaIssueDate"
+                    hint="מומלץ YYYY-MM-DD; ניתן למלא אוטומטית מצילום הויזה למטה"
+                  />
+                  <FormInput
+                    register={register}
+                    getFieldError={getFieldError}
+                    label="תאריך תפוגת הויזה"
+                    name="lastVisaExpirationDate"
+                    hint="מומלץ YYYY-MM-DD; ניתן למלא אוטומטית מצילום הויזה למטה"
+                  />
                   <FormRadioGroup register={register} getFieldError={getFieldError} label="האם הויזה הקודמת שלך הונפקה בישראל?" name="visaIssuedInIsrael" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
                   <FormRadioGroup register={register} getFieldError={getFieldError} label="האם הויזה שלך בוטלה?" name="visaWasCancelled" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
+                  <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+                    <p className="text-xs text-gray-600">
+                      העלאת צילום ויזה — זיהוי אוטומטי (GPT-4o): תאריך הנפקה ותאריך תפוגה (YYYY-MM-DD כשאפשר), בלי ניחוש.
+                    </p>
+                    {previousVisaOcr.status === 'loading' && (
+                      <p className="text-sm text-blue-600">מזהה תאריכים מהקובץ…</p>
+                    )}
+                    {previousVisaOcr.status === 'error' && (
+                      <p className="text-sm text-red-600" role="alert">
+                        {previousVisaOcr.message}
+                      </p>
+                    )}
+                    {previousVisaOcr.status === 'idle' && previousVisaOcr.message && (
+                      <p className="text-sm text-green-700">{previousVisaOcr.message}</p>
+                    )}
+                    <DocumentFileSlot
+                      label="ויזה קודמת במידה ויש (צילום / PDF)"
+                      name="existingVisaScan"
+                      register={register}
+                      setValue={setValue}
+                      getFieldError={getFieldError}
+                      watchedValue={existingVisaScanWatch}
+                      accept="image/*,application/pdf"
+                      onFilePicked={(f) => {
+                        void runPreviousVisaOcrFromFile(f)
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -825,13 +990,77 @@ export default function DS160IsraelForm({
               {w.appliedForGreenCard === 'yes' && <FormInput register={register} getFieldError={getFieldError} label="פרטי בקשת גרין קארד (מי, איך, מתי)" name="greenCardDetails" />}
 
               <FormRadioGroup register={register} getFieldError={getFieldError} label="U.S. Social Security Number (במידה וביקר בעבר)" name="hasSocialSecurityNumber" options={[{ label: 'לא', value: 'no' }, { label: 'מספר סושיאל', value: 'yes' }]} />
-              {w.hasSocialSecurityNumber === 'yes' && <FormInput register={register} getFieldError={getFieldError} label="מספר סושיאל סקוריטי" name="socialSecurityNumber" />}
+              {w.hasSocialSecurityNumber === 'yes' && (
+                <div className="space-y-4 pl-4 border-r-4 border-blue-500 pr-4 bg-gray-50 p-4 rounded">
+                  <FormInput register={register} getFieldError={getFieldError} label="מספר סושיאל סקוריטי" name="socialSecurityNumber" />
+                  <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+                    <p className="text-xs text-gray-600">
+                      העלאת צילום — זיהוי אוטומטי (GPT-4o): מספר סושיאל בלבד, בלי ניחוש ספרות.
+                    </p>
+                    {socialSecurityOcr.status === 'loading' && (
+                      <p className="text-sm text-blue-600">מזהה מספר מהקובץ…</p>
+                    )}
+                    {socialSecurityOcr.status === 'error' && (
+                      <p className="text-sm text-red-600" role="alert">
+                        {socialSecurityOcr.message}
+                      </p>
+                    )}
+                    {socialSecurityOcr.status === 'idle' && socialSecurityOcr.message && (
+                      <p className="text-sm text-green-700">{socialSecurityOcr.message}</p>
+                    )}
+                    <DocumentFileSlot
+                      label="צילום Social Security Card (ארה״ב)"
+                      name="socialSecurityScan"
+                      register={register}
+                      setValue={setValue}
+                      getFieldError={getFieldError}
+                      watchedValue={socialSecurityScanWatch}
+                      accept="image/*,application/pdf"
+                      onFilePicked={(f) => {
+                        void runSocialSecurityOcrFromFile(f)
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <FormRadioGroup register={register} getFieldError={getFieldError} label="U.S. Taxpayer ID Number (במידה וביקר בעבר)" name="hasTaxpayerID" options={[{ label: 'לא', value: 'no' }, { label: 'מה הוא המספר משלם מיסים?', value: 'yes' }]} />
               {w.hasTaxpayerID === 'yes' && <FormInput register={register} getFieldError={getFieldError} label="מספר משלם מיסים אמריקאי" name="taxpayerIDNumber" />}
 
               <FormRadioGroup register={register} getFieldError={getFieldError} label="היה לך רישיון נהיגה אמריקאי?" name="hasUSDriversLicense" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
-              {w.hasUSDriversLicense === 'yes' && <FormInput register={register} getFieldError={getFieldError} label="של איזה מדינה ומה המספר רישיון?" name="driversLicenseDetails" type="textarea" />}
+              {w.hasUSDriversLicense === 'yes' && (
+                <div className="space-y-4 pl-4 border-r-4 border-blue-500 pr-4 bg-gray-50 p-4 rounded">
+                  <FormInput register={register} getFieldError={getFieldError} label="של איזה מדינה ומה המספר רישיון?" name="driversLicenseDetails" type="textarea" />
+                  <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+                    <p className="text-xs text-gray-600">
+                      העלאת צילום — זיהוי אוטומטי (GPT-4o): מספר רישיון ומדינת הנפקה (אנגלית).
+                    </p>
+                    {usLicenseOcr.status === 'loading' && (
+                      <p className="text-sm text-blue-600">מזהה פרטי רישיון מהקובץ…</p>
+                    )}
+                    {usLicenseOcr.status === 'error' && (
+                      <p className="text-sm text-red-600" role="alert">
+                        {usLicenseOcr.message}
+                      </p>
+                    )}
+                    {usLicenseOcr.status === 'idle' && usLicenseOcr.message && (
+                      <p className="text-sm text-green-700">{usLicenseOcr.message}</p>
+                    )}
+                    <DocumentFileSlot
+                      label="רישיון נהיגה אמריקאי (צילום / PDF)"
+                      name="americanLicenseScan"
+                      register={register}
+                      setValue={setValue}
+                      getFieldError={getFieldError}
+                      watchedValue={americanLicenseScanWatch}
+                      accept="image/*,application/pdf"
+                      onFilePicked={(f) => {
+                        void runUsLicenseOcrFromFile(f)
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אי פעם אבד או נגנב לך הדרכון?" name="passportLostOrStolen" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
               {w.passportLostOrStolen === 'yes' && (
@@ -1007,52 +1236,13 @@ export default function DS160IsraelForm({
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מסמכים נוספים</h2>
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">היסטוריית כניסות (I-94)</h2>
             <p className="text-sm text-gray-600">
-              מסמכים מוצגים לפי מה שסימנת בטופס (ויזה קודמת, סושיאל, רישיון נהיגה אמריקאי). צילום הדרכון נמצא למעלה ליד מספר הדרכון.
+              צילום הדרכון, ויזה קודמת, כרטיס סושיאל ורישיון נהיגה אמריקאי — מופיעים למעלה ליד השאלות הרלוונטיות בטופס.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(w.visitedUSBefore === 'yes' || w.hadUSVisa === 'yes') && (
-                <DocumentFileSlot
-                  label="ויזה קודמת במידה ויש"
-                  name="existingVisaScan"
-                  register={register}
-                  setValue={setValue}
-                  getFieldError={getFieldError}
-                  watchedValue={existingVisaScanWatch}
-                  accept="image/*,application/pdf"
-                />
-              )}
-              {w.hasSocialSecurityNumber === 'yes' && (
-                <DocumentFileSlot
-                  label="צילום Social Security Card (ארה״ב)"
-                  name="socialSecurityScan"
-                  register={register}
-                  setValue={setValue}
-                  getFieldError={getFieldError}
-                  watchedValue={socialSecurityScanWatch}
-                  accept="image/*,application/pdf"
-                />
-              )}
-              {w.hasUSDriversLicense === 'yes' && (
-                <DocumentFileSlot
-                  label="רישיון נהיגה אמריקאי (צילום)"
-                  name="americanLicenseScan"
-                  register={register}
-                  setValue={setValue}
-                  getFieldError={getFieldError}
-                  watchedValue={americanLicenseScanWatch}
-                  accept="image/*,application/pdf"
-                />
-              )}
-            </div>
-            {!(
-              (w.visitedUSBefore === 'yes' || w.hadUSVisa === 'yes') ||
-              w.hasSocialSecurityNumber === 'yes' ||
-              w.hasUSDriversLicense === 'yes'
-            ) && (
+            {!canRunI94 && (
               <p className="text-sm text-gray-500">
-                אין כאן מסמכים נוספים להעלאה — סמן ביקור/ויזה קודמת בארה״ב, סושיאל, או רישיון נהיגה אמריקאי בטופס כדי להציג את השדות הרלוונטיים.
+                כדי להפעיל בדיקת I-94: מלא שם (אנגלי או עברי), תאריך לידה מלא, מספר דרכון ומדינת הנפקת הדרכון באנגלית.
               </p>
             )}
 

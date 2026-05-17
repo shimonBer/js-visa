@@ -1,11 +1,13 @@
 /**
  * POST /api/translate-form
- * Body: JSON { data: object, attachments?: [{ field, fileName, mimeType, base64 }] }
- * Response: { translated: string, analyzedAttachments?: { field, fileName }[], pdfBase64?: string }
- * DS-160 English summary via GPT-4o (system + user messages; vision attachments as data URLs).
+ * Body: JSON { data, attachments?, fileMeta?, s3Documents? }
+ * — attachments: [{ field, fileName, mimeType, base64 }] from browser File blobs
+ * — s3Documents: [{ field, key, bucket? }] fills any missing doc slot from S3 (same keys as /api/upload)
+ * Response: { translated, analyzedAttachments, pdfBase64 }
  */
 
 import { buildTranslationPdf } from './lib/buildTranslationPdf.js'
+import { fetchS3FormDocumentBytes } from './lib/s3FormDocuments.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_TIMEOUT_MS = 180_000
@@ -155,6 +157,24 @@ After your English reply is generated, the system **automatically builds one PDF
 
 When you list documents in **🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS**, use the same order as the form fields when possible: **passportScan**, **existingVisaScan**, **socialSecurityScan**, **americanLicenseScan**—so the written audit trail matches the visual appendix in the PDF.
 
+The server may attach the same four document types from cloud storage (S3) when the JSON lists saved keys but the browser did not send base64 bytes. Treat those images/PDFs exactly like user attachments: transcribe them, map them to DS-160, and assume they appear in the PDF appendix.
+
+---
+
+## ATTACHMENT-DRIVEN GAP FILLING (WHEN SCANS EXIST)
+
+The intake JSON may omit facts that are visible on uploads. Whenever **passportScan**, **existingVisaScan**, **socialSecurityScan**, or **americanLicenseScan** is available (inline attachment or server-loaded from S3):
+
+* **passportScan:** Use as primary source of truth for legal English names, native name if printed, date of birth, passport number, issuing country / authority, nationality, sex (MRZ or visual), and national ID if shown. If a JSON field is empty or clearly wrong, prefer the scan when legible.
+
+* **existingVisaScan:** Read the visa foil (class/type, control numbers, post name, issue and expiration dates, entries). If JSON fields for prior U.S. visa or travel dates (e.g. last visa issue/expiration, prior visits) are empty or marked ❗ MISSING, populate them from the visa when you can read them confidently; otherwise keep ❗ MISSING.
+
+* **socialSecurityScan:** If Social Security–related text in the summary would be empty but the card is readable, supply the SSN string exactly as on the card (preserve formatting). Never guess obscured digits—use ❗ MISSING for the whole number if any digit is uncertain.
+
+* **americanLicenseScan:** If license number, issuing U.S. state or jurisdiction, class, or expiration appear on the card but are missing from the JSON, add them from the scan when legible.
+
+Always merge these facts into the main DS-160-ordered sections first; **🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS** remains the audit trail for each file.
+
 ---
 
 ## STYLE RULES
@@ -197,8 +217,24 @@ Generate a COMPLETE DS-160-ready English summary document that a human can direc
 
 const USER_PREAMBLE =
   'Analyze the form data and attachments below and produce the DS-160-ready English summary document per your system instructions. ' +
-  'If there are image/PDF attachments, the final text must embed their readable content: include the mandatory 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with per-file transcriptions and DS-160 mapping bullets — do not ask the reader to open files elsewhere. ' +
+  'If there are image/PDF attachments (including any loaded from S3 on the server), the final text must embed their readable content: include the mandatory 🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS section with per-file transcriptions and DS-160 mapping bullets — do not ask the reader to open files elsewhere. ' +
+  'Use scans to fill gaps in the JSON where the instructions allow (visa dates, license details, SSN from card, passport identity fields). ' +
   'A combined PDF will be produced automatically: your English text as pages, then full-page embedded copies of each upload—keep transcription blocks ordered to match passportScan, existingVisaScan, socialSecurityScan, americanLicenseScan when applicable.'
+
+const UPLOAD_DOC_FIELDS = ['passportScan', 'existingVisaScan', 'socialSecurityScan', 'americanLicenseScan']
+
+/**
+ * @param {string} name
+ */
+function guessMimeFromFileName(name) {
+  const n = String(name ?? '').toLowerCase()
+  if (n.endsWith('.pdf')) return 'application/pdf'
+  if (n.endsWith('.png')) return 'image/png'
+  if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'image/jpeg'
+  if (n.endsWith('.gif')) return 'image/gif'
+  if (n.endsWith('.webp')) return 'image/webp'
+  return ''
+}
 
 /** @param {import('http').IncomingMessage} req */
 async function readBodyJson(req) {
@@ -299,6 +335,48 @@ export default async function handler(req, res) {
       }
     }
 
+    const fieldsAttached = new Set(analyzedAttachments.map((a) => a.field).filter(Boolean))
+    const s3List = Array.isArray(body.s3Documents) ? body.s3Documents : []
+
+    for (const field of UPLOAD_DOC_FIELDS) {
+      if (fieldsAttached.has(field)) continue
+      const meta = s3List.find((d) => d && String(d.field) === field && String(d.key || '').trim())
+      if (!meta) continue
+      const got = await fetchS3FormDocumentBytes(String(meta.key))
+      if (!got?.bytes?.length) continue
+      let mime = String(got.contentType || '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase()
+      if (!mime || mime === 'application/octet-stream') {
+        mime = guessMimeFromFileName(got.fileName) || 'image/jpeg'
+      }
+      const allowed = /^image\/(jpeg|png|gif|webp)$|^application\/pdf$/i
+      if (!allowed.test(mime)) continue
+      if (got.bytes.length > MAX_ATTACHMENT_BYTES) {
+        console.warn('[translate-form] S3 attachment skipped (too large)', field)
+        continue
+      }
+      const b64 = Buffer.from(got.bytes).toString('base64')
+      const fileName = got.fileName || `${field}.bin`
+      content.push({
+        type: 'text',
+        text: `\n[Attachment: ${field} — ${fileName} (from S3)]`,
+      })
+      content.push({
+        type: 'image_url',
+        image_url: { url: `data:${mime};base64,${b64}` },
+      })
+      analyzedAttachments.push({ field, fileName })
+      binaryAttachments.push({
+        field,
+        fileName,
+        mimeType: mime.toLowerCase(),
+        bytes: got.bytes,
+      })
+      fieldsAttached.add(field)
+    }
+
     const controller = new AbortController()
     const t = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS)
     let openaiRes
@@ -343,6 +421,13 @@ export default async function handler(req, res) {
     if (!translated || typeof translated !== 'string') {
       return jsonResponse(res, 502, { error: 'Missing translation text from OpenAI' })
     }
+
+    const orderIdx = (f) => {
+      const i = UPLOAD_DOC_FIELDS.indexOf(String(f || ''))
+      return i === -1 ? 99 : i
+    }
+    binaryAttachments.sort((a, b) => orderIdx(a.field) - orderIdx(b.field))
+    analyzedAttachments.sort((a, b) => orderIdx(a.field) - orderIdx(b.field))
 
     let pdfBase64 = ''
     try {
