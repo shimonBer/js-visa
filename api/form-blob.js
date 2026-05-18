@@ -188,6 +188,7 @@ export default async function handler(req, res) {
         access: 'private',
         token,
         contentType: 'application/json',
+        allowOverwrite: true,
       })
       res.status(200).json({ pathname, ok: true })
       return

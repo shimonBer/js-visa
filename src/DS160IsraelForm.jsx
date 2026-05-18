@@ -122,16 +122,28 @@ function DocumentFileSlot({
 }
 
 /** Module scope so React does not remount inputs on every parent render (fixes focus loss while typing). */
-function FormInput({ label, name, type = 'text', note, hint, placeholder, register, getFieldError }) {
+function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError }) {
   const fieldError = getFieldError(name)
   return (
     <div className="flex flex-col mb-4">
       <label className="font-semibold mb-1 text-gray-700">{label}</label>
       {note && <span className="text-sm text-gray-500 mb-1">{note}</span>}
       {type === 'textarea' ? (
-        <textarea {...register(name)} className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" placeholder={placeholder} rows={3} />
+        <textarea
+          {...register(name)}
+          className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+          placeholder={placeholder}
+          rows={3}
+          dir={dir}
+        />
       ) : (
-        <input type={type} {...register(name)} className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" placeholder={placeholder} />
+        <input
+          type={type}
+          {...register(name)}
+          className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+          placeholder={placeholder}
+          dir={dir}
+        />
       )}
       {hint && <span className="text-xs text-gray-400 mt-1">{hint}</span>}
       {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שגיאה בשדה'}</span>}
@@ -139,10 +151,11 @@ function FormInput({ label, name, type = 'text', note, hint, placeholder, regist
   )
 }
 
+
 function FormRadioGroup({ label, name, options, note, register, getFieldError }) {
   const fieldError = getFieldError(name)
   return (
-    <div className="flex flex-col mb-4">
+    <div className={`flex flex-col mb-4 ${fieldError ? 'rounded-md bg-red-50 p-2 -mx-2' : ''}`}>
       <label className="font-semibold mb-1 text-gray-700">{label}</label>
       {note && <span className="text-sm text-gray-500 mb-2">{note}</span>}
       <div className="flex gap-4">
@@ -153,7 +166,7 @@ function FormRadioGroup({ label, name, options, note, register, getFieldError })
           </label>
         ))}
       </div>
-      {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שגיאה בשדה'}</span>}
+      {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שדה חובה'}</span>}
     </div>
   )
 }
@@ -163,13 +176,16 @@ function FormSelect({ label, name, options, register, getFieldError }) {
   return (
     <div className="flex flex-col mb-4">
       <label className="font-semibold mb-1 text-gray-700">{label}</label>
-      <select {...register(name)} className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+      <select
+        {...register(name)}
+        className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+      >
         <option value="">בחר...</option>
         {options.map((opt) => (
           <option key={opt} value={opt}>{opt}</option>
         ))}
       </select>
-      {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שגיאה בשדה'}</span>}
+      {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שדה חובה'}</span>}
     </div>
   )
 }
@@ -224,6 +240,9 @@ export default function DS160IsraelForm({
       interviewLocation: 'tel_aviv',
       languages: [],
       extraDocumentsNote: '',
+      phone: '',
+      email: '',
+      mondayItemId: '',
     },
   })
 
@@ -262,13 +281,18 @@ export default function DS160IsraelForm({
     pdfBase64: '',
   })
 
-  /** Monday.com send from translation modal (server creates item + uploads PDF). */
+  /** Monday.com send from translation modal. */
   const [mondayUi, setMondayUi] = useState({
     loading: false,
     error: '',
     success: false,
     itemId: '',
+    itemUrl: '',
+    isNew: false,
   })
+
+  /** Fields that failed the "translate" pre-flight validation (Set of field names). */
+  const [translationErrors, setTranslationErrors] = useState(/** @type {Set<string>} */ (new Set()))
 
   /** Latest uploaded S3 keys per field — sent with translate so server can fetch bytes for GPT + PDF appendix. */
   const s3DocumentsRef = useRef(/** @type {{ field: string, key: string, bucket?: string }[]} */ ([]))
@@ -292,6 +316,7 @@ export default function DS160IsraelForm({
     reset({
       ...data,
       travelCompanions: companions,
+      mondayItemId: String(data.mondayItemId || ''),
       passportScan: undefined,
       existingVisaScan: undefined,
       socialSecurityScan: undefined,
@@ -543,6 +568,9 @@ export default function DS160IsraelForm({
     }
   }
 
+  /** Controlled by VITE_I94_ENABLED env var. Defaults to enabled when not set. */
+  const i94Enabled = import.meta.env.VITE_I94_ENABLED !== 'false'
+
   const wI94FirstEn = watch('firstNameEnglish')
   const wI94LastEn = watch('lastNameEnglish')
   const wI94FirstHe = watch('firstName')
@@ -604,7 +632,113 @@ export default function DS160IsraelForm({
     }
   }
 
+  /** Returns a Set of field names that are blank/missing for required fields. */
+  function validateForTranslation(values) {
+    const missing = new Set()
+    const req = (field) => {
+      const v = values[field]
+      if (v == null || String(v).trim() === '' || (Array.isArray(v) && v.length === 0)) {
+        missing.add(field)
+      }
+    }
+
+    // Always required
+    req('passportId')
+    req('firstName')
+    req('lastName')
+    req('firstNameEnglish')
+    req('lastNameEnglish')
+    req('sex')
+    req('maritalStatus')
+    req('birthDateDay')
+    req('birthDateMonth')
+    req('birthDateYear')
+    req('birthCity')
+    req('idNumber')
+    req('passportIssuingCountry')
+    req('addressStreet')
+    req('addressCity')
+    req('phone')
+    req('email')
+    req('plannedDepartureDate')
+    req('plannedStayDuration')
+    req('accommodationInUS')
+    req('tripFundingSource')
+    req('fatherFullName')
+    req('motherFullName')
+    // fatherBirthDate + motherBirthDate are NOT required
+    req('languages')
+    req('currentOccupation')
+
+    // Conditional
+    if (values.hadPreviousName === 'yes') req('previousNameValue')
+    if (values.hasForeignCitizenship === 'yes') {
+      req('foreignCitizenshipCountry')
+      req('foreignCitizenshipId')
+    }
+    if (values.visitedUSBefore === 'yes') req('previousUSVisits')
+    if (values.hadUSVisa === 'yes') {
+      req('lastVisaIssueDate')
+      req('lastVisaExpirationDate')
+    }
+    if (values.visaRefused === 'yes') req('visaRefusalExplanation')
+    if (values.deniedEntryToUS === 'yes') req('deniedEntryDetails')
+    if (values.illegalStayInUS === 'yes') req('illegalStayDetails')
+    if (values.appliedForGreenCard === 'yes') req('greenCardDetails')
+    if (values.hasSocialSecurityNumber === 'yes') req('socialSecurityNumber')
+    if (values.hasTaxpayerID === 'yes') req('taxpayerIDNumber')
+    if (values.hasUSDriversLicense === 'yes') req('driversLicenseDetails')
+    if (values.passportLostOrStolen === 'yes') {
+      req('lostPassportWhen')
+      req('lostPassportCountry')
+      req('lostPassportDescription')
+    }
+    if (values.hasUSContact === 'yes') {
+      req('contactFullName')
+      req('contactPhone')
+      req('contactAddress')
+    }
+    if (values.hasCloseRelativesInUS === 'yes') req('relativeFullName')
+    if (values.currentOccupation === 'עובד') {
+      req('employerName')
+      req('employerStreet')
+      req('employerCity')
+      req('jobTitle')
+      req('employerPhone')
+      req('employmentStartDate')
+    }
+    if (values.currentOccupation === 'חייל') {
+      req('militaryCountry')
+      req('militaryBranch')
+      req('militaryRole')
+    }
+    if (values.workedAnotherJobLast5Years === 'yes') {
+      req('prevEmployerName')
+      req('prevJobTitle')
+    }
+    if (values.attendedHighSchool === 'yes') req('highSchoolDetails')
+    if (values.hasAcademicDegree === 'yes') {
+      req('institutionName')
+      req('fieldOfStudy')
+    }
+    if (values.visitedAbroadLast5Years === 'yes') req('countriesVisitedLast5Years')
+    if (values.servedInMilitary === 'yes') {
+      req('milHistoryBranch')
+      req('milHistoryRole')
+    }
+
+    return missing
+  }
+
   async function handleTranslateToEnglish() {
+    const values = getValues()
+    const missing = validateForTranslation(values)
+    if (missing.size > 0) {
+      setTranslationErrors(missing)
+      setTranslateUi((s) => ({ ...s, loading: false, error: '' }))
+      return
+    }
+    setTranslationErrors(new Set())
     setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
     try {
       const values = getValues()
@@ -657,7 +791,7 @@ export default function DS160IsraelForm({
       setMondayUi((s) => ({ ...s, error: 'אין PDF זמין — הרץ תרגום מחדש.' }))
       return
     }
-    setMondayUi({ loading: true, error: '', success: false, itemId: '' })
+    setMondayUi({ loading: true, error: '', success: false, itemId: '', itemUrl: '', isNew: false })
     try {
       const values = getValues()
       const en = `${values.firstNameEnglish || ''} ${values.lastNameEnglish || ''}`.trim()
@@ -666,17 +800,26 @@ export default function DS160IsraelForm({
       const result = await sendPdfToMonday({
         applicantName,
         pdfBase64: translateUi.pdfBase64,
+        phone: String(values.phone || '').trim(),
+        email: String(values.email || '').trim(),
+        mondayItemId: String(values.mondayItemId || '').trim(),
         status: 'DS-160 English summary',
         metadata: {
           formId: storageFormId,
           clientTimestamp: new Date().toISOString(),
         },
       })
+      // Persist the item id so future sends skip lookup/create
+      if (result.itemId) {
+        setValue('mondayItemId', result.itemId, { shouldDirty: true })
+      }
       setMondayUi({
         loading: false,
         error: '',
         success: true,
         itemId: result.itemId,
+        itemUrl: result.itemUrl || '',
+        isNew: result.isNew === true,
       })
     } catch (e) {
       setMondayUi({
@@ -684,6 +827,8 @@ export default function DS160IsraelForm({
         error: e?.message || 'שליחה ל-Monday נכשלה',
         success: false,
         itemId: '',
+        itemUrl: '',
+        isNew: false,
       })
     }
   }
@@ -716,8 +861,13 @@ export default function DS160IsraelForm({
   }
 
   function getFieldError(path) {
-    if (!path || !errors) return undefined
-    return path.split('.').reduce((acc, key) => (acc == null ? undefined : acc[key]), errors)
+    if (!path) return undefined
+    const rhfErr = errors
+      ? path.split('.').reduce((acc, key) => (acc == null ? undefined : /** @type {Record<string, unknown>} */ (acc)[key]), /** @type {unknown} */ (errors))
+      : undefined
+    if (rhfErr) return rhfErr
+    if (translationErrors.has(path)) return { message: 'שדה חובה' }
+    return undefined
   }
 
   return (
@@ -787,10 +937,13 @@ export default function DS160IsraelForm({
                     type="text"
                     autoComplete="off"
                     {...register('passportId')}
-                    className="border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 font-mono w-full max-w-md"
+                    className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 font-mono w-full max-w-md border ${translationErrors.has('passportId') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     dir="ltr"
                     placeholder="למשל 201381722"
                   />
+                  {translationErrors.has('passportId') && (
+                    <span className="text-red-500 text-sm mt-1">שדה חובה</span>
+                  )}
                   <span className="text-xs text-gray-500 mt-1">
                     מזהה טיוטה בפורמט{' '}
                     <span className="font-mono" dir="ltr">
@@ -853,10 +1006,13 @@ export default function DS160IsraelForm({
               <div className="flex flex-col mb-4">
                 <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
                 <div className="flex gap-2">
-                  <input type="text" {...register('birthDateDay')} placeholder="יום" className="border border-gray-300 rounded-md p-2 w-full" />
-                  <input type="text" {...register('birthDateMonth')} placeholder="חודש" className="border border-gray-300 rounded-md p-2 w-full" />
-                  <input type="text" {...register('birthDateYear')} placeholder="שנה" className="border border-gray-300 rounded-md p-2 w-full" />
+                  <input type="text" {...register('birthDateDay')} placeholder="יום" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateDay') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                  <input type="text" {...register('birthDateMonth')} placeholder="חודש" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateMonth') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                  <input type="text" {...register('birthDateYear')} placeholder="שנה" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateYear') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
                 </div>
+                {(translationErrors.has('birthDateDay') || translationErrors.has('birthDateMonth') || translationErrors.has('birthDateYear')) && (
+                  <span className="text-red-500 text-sm mt-1">שדה חובה — יש למלא יום, חודש ושנה</span>
+                )}
               </div>
 
               <FormRadioGroup register={register} getFieldError={getFieldError} label="מתחת ל 14?" name="isUnder14" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
@@ -870,7 +1026,16 @@ export default function DS160IsraelForm({
               <FormInput register={register} getFieldError={getFieldError} label="כתובת מגורים נוכחית - רחוב" name="addressStreet" />
               <FormInput register={register} getFieldError={getFieldError} label="(מספר דירה / apt number)" name="addressApt" />
               <FormInput register={register} getFieldError={getFieldError} label="עיר" name="addressCity" />
-              <FormInput register={register} getFieldError={getFieldError} label="טלפון" name="phone" hint="אין מקום לכתוב מקף. Format: 0000000000" />
+              <FormInput
+                register={register}
+                getFieldError={getFieldError}
+                label="טלפון"
+                name="phone"
+                type="tel"
+                placeholder="+972..."
+                hint="Format: +972542344505 (כולל קידומת מדינה)"
+                dir="ltr"
+              />
               <FormInput register={register} getFieldError={getFieldError} label="Email" name="email" type="email" />
 
               <FormRadioGroup register={register} getFieldError={getFieldError} label="אזרחות זרה?" name="hasForeignCitizenship" options={[{ label: 'לא', value: 'no' }, { label: 'של איזה מדינה?', value: 'yes' }]} />
@@ -945,7 +1110,7 @@ export default function DS160IsraelForm({
                 />
               )}
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50/90 p-4 space-y-3">
+              {i94Enabled && <div className="rounded-lg border border-slate-200 bg-slate-50/90 p-4 space-y-3">
                 <h3 className="text-lg font-bold text-gray-800">היסטוריית כניסות (I-94)</h3>
                 <p className="text-sm text-gray-600">
                   צילום דרכון, ויזה קודמת, סושיאל ורישיון — מופיעים למעלה ליד השאלות הרלוונטיות.
@@ -1018,7 +1183,7 @@ export default function DS160IsraelForm({
                     )}
                   </div>
                 )}
-              </div>
+              </div>}
 
               <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
                 <div className="flex flex-col xl:flex-row gap-4 xl:items-start xl:gap-6">
@@ -1308,7 +1473,7 @@ export default function DS160IsraelForm({
               </div>
             )}
 
-            <div className="flex flex-col mb-4">
+            <div className={`flex flex-col mb-4 ${translationErrors.has('languages') ? 'rounded-md bg-red-50 p-2' : ''}`}>
               <label className="font-semibold mb-2 text-gray-700">שפות</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {['עברית', 'אנגלית', 'ערבית', 'רוסית', 'ספרדית', 'צרפתית', 'אחר'].map((lang) => (
@@ -1318,6 +1483,9 @@ export default function DS160IsraelForm({
                   </label>
                 ))}
               </div>
+              {translationErrors.has('languages') && (
+                <span className="text-red-500 text-sm mt-1">יש לסמן לפחות שפה אחת</span>
+              )}
             </div>
           </section>
 
@@ -1391,6 +1559,15 @@ export default function DS160IsraelForm({
           </section>
 
           <div className="pt-6 border-t flex flex-col items-end gap-2">
+            {translationErrors.size > 0 && (
+              <div
+                className="w-full rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 text-right"
+                dir="rtl"
+                role="alert"
+              >
+                יש למלא {translationErrors.size} שד{translationErrors.size === 1 ? 'ה' : 'ות'} חובה המסומנ{translationErrors.size === 1 ? 'ות' : 'ות'} באדום לפני התרגום.
+              </div>
+            )}
             {asyncFlow.phase === 'working' && (
               <p className="text-sm text-blue-600">שומר במכשיר, מעלה ל-S3 אם הוגדר, שומר בענן…</p>
             )}
@@ -1513,7 +1690,7 @@ export default function DS160IsraelForm({
                   type="button"
                   className="text-sm px-3 py-1.5 rounded-md bg-gray-900 text-white hover:bg-gray-800"
                   onClick={() => {
-                    setMondayUi({ loading: false, error: '', success: false, itemId: '' })
+                    setMondayUi({ loading: false, error: '', success: false, itemId: '', itemUrl: '', isNew: false })
                     setTranslateUi((s) => ({ ...s, open: false }))
                   }}
                 >
@@ -1529,8 +1706,22 @@ export default function DS160IsraelForm({
                   </p>
                 ) : null}
                 {mondayUi.success ? (
-                  <p className="text-green-700">
-                    נוצר פריט ב-Monday. מזהה: <span className="font-mono">{mondayUi.itemId}</span>
+                  <p className="text-green-700 flex flex-wrap items-center gap-2">
+                    {mondayUi.isNew ? (
+                      <>נוצר פריט חדש ב-Monday — מזהה: <span className="font-mono">{mondayUi.itemId}</span></>
+                    ) : (
+                      <>PDF עודכן בפריט קיים ב-Monday — מזהה: <span className="font-mono">{mondayUi.itemId}</span></>
+                    )}
+                    {mondayUi.itemUrl && (
+                      <a
+                        href={mondayUi.itemUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-blue-600 underline underline-offset-2 hover:text-blue-800"
+                      >
+                        פתח ב-Monday ↗
+                      </a>
+                    )}
                   </p>
                 ) : null}
               </div>

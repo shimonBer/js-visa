@@ -108,6 +108,62 @@ When translating Hebrew names:
 
 ---
 
+## PLACE NAME RULES
+
+When translating place names, always use the official well-known English name — NEVER translate word-by-word from Hebrew.
+
+**Israeli cities / regions:**
+
+| Hebrew | Use this English name |
+|--------|----------------------|
+| ירושלים | Jerusalem |
+| תל אביב / תל-אביב | Tel Aviv |
+| חיפה | Haifa |
+| באר שבע | Be'er Sheva |
+| נתניה | Netanya |
+| אשדוד | Ashdod |
+| אשקלון | Ashkelon |
+| ראשון לציון | Rishon LeZion |
+| פתח תקווה | Petah Tikva |
+| בני ברק | Bnei Brak |
+| רמת גן | Ramat Gan |
+| גבעתיים | Givatayim |
+| חולון | Holon |
+| בת ים | Bat Yam |
+| רחובות | Rehovot |
+| הרצליה | Herzliya |
+| כפר סבא | Kfar Saba |
+| מודיעין | Modi'in |
+| נצרת | Nazareth |
+| טבריה | Tiberias |
+| צפת | Safed |
+| אילת | Eilat |
+| לוד | Lod |
+| רמלה | Ramla |
+| עכו | Akko |
+| קריות | Krayot |
+| חדרה | Hadera |
+| יהוד | Yehud |
+| גבעת שמואל | Givat Shmuel |
+
+**Institutions (use official English name, not translation):**
+
+| Hebrew | Official English name |
+|--------|-----------------------|
+| אוניברסיטת תל אביב | Tel Aviv University |
+| האוניברסיטה העברית | Hebrew University of Jerusalem |
+| הטכניון | Technion – Israel Institute of Technology |
+| אוניברסיטת בר אילן | Bar-Ilan University |
+| אוניברסיטת חיפה | University of Haifa |
+| אוניברסיטת בן גוריון | Ben-Gurion University of the Negev |
+| מכון ויצמן | Weizmann Institute of Science |
+| אוניברסיטת אריאל | Ariel University |
+| הצבא הישראלי / צה"ל / צבא ההגנה לישראל | Israel Defense Forces (IDF) |
+
+For any place or institution NOT in the table above: search for the universally recognized English name. Do NOT translate word-by-word.
+
+---
+
 ## OUTPUT FORMAT
 
 The result should look like a professionally prepared DS-160 intake summary.

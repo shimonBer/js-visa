@@ -348,6 +348,11 @@ export default async function handler(req, res) {
     return jsonResponse(res, 405, { error: 'Method not allowed' })
   }
 
+  if (process.env.I94_ENABLED === 'false') {
+    logBv('handler I94_ENABLED=false — feature disabled')
+    return jsonResponse(res, 503, { error: 'I-94 lookup is disabled', code: 'I94_DISABLED' })
+  }
+
   const apiKey = process.env.BROWSER_USE_API_KEY?.trim()
   if (!apiKey) {
     logBv('handler BROWSER_USE_API_KEY missing')

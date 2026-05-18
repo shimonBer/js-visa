@@ -24,10 +24,13 @@ export function getMondayApiBase(opts = {}) {
  * @param {object} payload
  * @param {string} payload.applicantName
  * @param {string} payload.pdfBase64
+ * @param {string} [payload.phone] — applicant phone for Monday lookup / column population
+ * @param {string} [payload.email] — applicant email for Monday lookup / column population
+ * @param {string} [payload.mondayItemId] — pre-stored Monday item id (skips lookup)
  * @param {string} [payload.status]
  * @param {Record<string, unknown>} [payload.metadata]
  * @param {{ apiBase?: string }} [opts]
- * @returns {Promise<{ success: boolean, itemId: string, fileUpload: Record<string, unknown> }>}
+ * @returns {Promise<{ success: boolean, itemId: string, isNew: boolean, itemUrl: string, fileUpload: Record<string, unknown> }>}
  */
 export async function sendPdfToMonday(payload, opts = {}) {
   const postUrl = getMondayApiBase(opts)
@@ -43,6 +46,11 @@ export async function sendPdfToMonday(payload, opts = {}) {
     body: JSON.stringify({
       applicantName: payload.applicantName,
       pdfBase64: payload.pdfBase64,
+      ...(payload.phone != null && String(payload.phone).trim() ? { phone: String(payload.phone).trim() } : {}),
+      ...(payload.email != null && String(payload.email).trim() ? { email: String(payload.email).trim() } : {}),
+      ...(payload.mondayItemId != null && String(payload.mondayItemId).trim()
+        ? { mondayItemId: String(payload.mondayItemId).trim() }
+        : {}),
       ...(payload.status != null && payload.status !== '' ? { status: payload.status } : {}),
       ...(payload.metadata && typeof payload.metadata === 'object' ? { metadata: payload.metadata } : {}),
     }),
@@ -61,13 +69,15 @@ export async function sendPdfToMonday(payload, opts = {}) {
     throw new Error(err)
   }
 
-  if (json.success !== true || typeof json.itemId !== 'string' || !json.fileUpload || typeof json.fileUpload !== 'object') {
+  if (json.success !== true || typeof json.itemId !== 'string') {
     throw new Error('Monday API returned an unexpected success payload')
   }
 
   return {
     success: true,
     itemId: json.itemId,
-    fileUpload: /** @type {Record<string, unknown>} */ (json.fileUpload),
+    isNew: json.isNew === true,
+    itemUrl: typeof json.itemUrl === 'string' ? json.itemUrl : '',
+    fileUpload: /** @type {Record<string, unknown>} */ (json.fileUpload ?? {}),
   }
 }
