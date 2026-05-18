@@ -177,12 +177,19 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { payload } = await readBodyJson(req)
+      const body = await readBodyJson(req)
+      const { payload, pathname: pathnameOverride } = body
       if (!payload || typeof payload !== 'object') {
         res.status(400).json({ error: 'Missing payload' })
         return
       }
-      const pathname = blobPathnameForPayload(payload)
+      // Use the client-supplied pathname (original blob key) when available so
+      // re-saves always overwrite the same file regardless of any form data changes.
+      const isValidOverride =
+        typeof pathnameOverride === 'string' &&
+        pathnameOverride.startsWith('forms/') &&
+        pathnameOverride.endsWith('.json')
+      const pathname = isValidOverride ? pathnameOverride : blobPathnameForPayload(payload)
       const json = JSON.stringify(payload)
       await put(pathname, json, {
         access: 'private',

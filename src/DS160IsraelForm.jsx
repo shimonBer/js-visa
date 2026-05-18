@@ -197,6 +197,8 @@ export default function DS160IsraelForm({
 } = {}) {
   /** ISO date (YYYY-MM-DD) when this form session started; used for draft/S3 id, not user-editable. */
   const formStartedDateRef = useRef(new Date().toISOString().slice(0, 10))
+  /** Blob pathname this form was loaded from; used to overwrite the same file on re-save. */
+  const loadedBlobKeyRef = useRef(/** @type {string | null} */ (initialBlobKey))
 
   const { register, watch, handleSubmit, getValues, setValue, reset, control, formState: { errors } } = useForm({
     defaultValues: {
@@ -380,9 +382,11 @@ export default function DS160IsraelForm({
       s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
       const body = buildN8nBody('submit', fid, data, uploads)
       saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'submit', ...body })
-      // Blob backup is independent of n8n: runs first; failures are non-blocking for n8n.
       try {
-        await saveFormBlobPayload(body)
+        const blobResult = await saveFormBlobPayload(body, loadedBlobKeyRef.current ?? undefined)
+        if (blobResult?.pathname && typeof blobResult.pathname === 'string') {
+          loadedBlobKeyRef.current = blobResult.pathname
+        }
       } catch (e) {
         console.warn('[blob]', e)
       }
@@ -417,25 +421,39 @@ export default function DS160IsraelForm({
     setAsyncFlow({ phase: 'working', message: '' })
     try {
       const fid = buildFormId(values.passportId, formStartedDateRef.current)
-      const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
-        { name: 'passportScan', file: firstFile(values.passportScan) },
-        { name: 'existingVisaScan', file: firstFile(values.existingVisaScan) },
-        { name: 'socialSecurityScan', file: firstFile(values.socialSecurityScan) },
-        { name: 'americanLicenseScan', file: firstFile(values.americanLicenseScan) },
-        { name: 'extraDocumentScan1', file: firstFile(values.extraDocumentScan1) },
-        { name: 'extraDocumentScan2', file: firstFile(values.extraDocumentScan2) },
-        { name: 'extraDocumentScan3', file: firstFile(values.extraDocumentScan3) },
-      ])
-      s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
-      const body = buildN8nBody('draft', fid, values, uploads)
-      saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'draft', ...body })
-      await saveFormBlobPayload(body)
+      // Save to blob immediately with current s3 docs — don't wait for S3 upload.
+      const quickBody = buildN8nBody('draft', fid, values, [])
+      saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'draft', ...quickBody })
+      const blobResult = await saveFormBlobPayload(quickBody, loadedBlobKeyRef.current ?? undefined)
+      // Store the pathname returned by the server so subsequent saves use the same key.
+      if (blobResult?.pathname && typeof blobResult.pathname === 'string') {
+        loadedBlobKeyRef.current = blobResult.pathname
+      }
       setAsyncFlow({ phase: 'idle', message: 'Saved successfully' })
-      console.log('[draft] S3 + Vercel Blob (+ local):', body)
+      // S3 upload runs after the success message — failures are non-blocking.
+      try {
+        const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
+          { name: 'passportScan', file: firstFile(values.passportScan) },
+          { name: 'existingVisaScan', file: firstFile(values.existingVisaScan) },
+          { name: 'socialSecurityScan', file: firstFile(values.socialSecurityScan) },
+          { name: 'americanLicenseScan', file: firstFile(values.americanLicenseScan) },
+          { name: 'extraDocumentScan1', file: firstFile(values.extraDocumentScan1) },
+          { name: 'extraDocumentScan2', file: firstFile(values.extraDocumentScan2) },
+          { name: 'extraDocumentScan3', file: firstFile(values.extraDocumentScan3) },
+        ])
+        s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
+        // Re-save blob with updated s3Documents if any files were uploaded.
+        if (uploads.length > 0) {
+          const fullBody = buildN8nBody('draft', fid, values, uploads)
+          await saveFormBlobPayload(fullBody, loadedBlobKeyRef.current ?? undefined)
+        }
+      } catch (s3Err) {
+        console.warn('[draft] S3 upload failed (blob already saved):', s3Err?.message)
+      }
     } catch (e) {
       setAsyncFlow({
         phase: 'error',
-        message: e?.message || 'Save failed (S3 upload or Vercel Blob)',
+        message: e?.message || 'Save failed',
       })
     }
   }

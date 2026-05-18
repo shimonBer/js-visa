@@ -3,11 +3,16 @@
  * Requires BLOB_READ_WRITE_TOKEN on the deployment linked to store (e.g. js-visa-blob).
  */
 
-export async function saveFormBlobPayload(payload) {
+/**
+ * @param {object} payload
+ * @param {string} [pathnameOverride] — if provided, the server will write to this exact pathname
+ *   instead of generating one from form data. Pass the blob key the form was originally loaded from.
+ */
+export async function saveFormBlobPayload(payload, pathnameOverride) {
   const res = await fetch('/api/form-blob', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ payload }),
+    body: JSON.stringify({ payload, ...(pathnameOverride ? { pathname: pathnameOverride } : {}) }),
   })
   const text = await res.text()
   if (!res.ok) {
