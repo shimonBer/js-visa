@@ -76,10 +76,14 @@ Any missing or unclear information MUST be marked EXACTLY as:
 
 Examples:
 
-* Father's Date of Birth: ❗ MISSING
 * Passport Book Number: ❗ MISSING
 
 Never invent personal information.
+
+**Exception — optional fields:** The following fields are intentionally optional and must be omitted entirely from the output (do NOT print the label and do NOT print ❗ MISSING) if they have no value:
+
+* Father's Date of Birth
+* Mother's Date of Birth
 
 ---
 
