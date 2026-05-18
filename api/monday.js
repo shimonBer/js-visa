@@ -226,19 +226,17 @@ export async function createMondayItem({ apiToken, boardId, applicantName, group
   const hasCols = columnValues && Object.keys(columnValues).length > 0
   const hasGroup = typeof groupId === 'string' && groupId.trim()
 
-  const extraArgs = [
-    hasGroup ? ', $groupId: String' : '',
-    hasCols ? ', $colVals: String' : '',
-  ].join('')
-  const extraCallArgs = [
-    hasGroup ? ', group_id: $groupId' : '',
-    hasCols ? ', column_values: $colVals' : '',
-  ].join('')
+  const extraArgs = hasGroup ? ', $groupId: String' : ''
+  // column_values must be inlined as a JSON string literal — Monday's JSON scalar
+  // does not reliably accept the value via a GraphQL variable.
+  const colValsInline = hasCols
+    ? `, column_values: ${JSON.stringify(JSON.stringify(columnValues))}`
+    : ''
+  const groupInline = hasGroup ? ', group_id: $groupId' : ''
 
-  /** Monday's `column_values` arg expects a JSON-encoded string. */
   const query = `
     mutation CreateItem($boardId: ID!, $itemName: String!${extraArgs}) {
-      create_item(board_id: $boardId, item_name: $itemName${extraCallArgs}) {
+      create_item(board_id: $boardId, item_name: $itemName${groupInline}${colValsInline}) {
         id
         name
       }
@@ -252,7 +250,6 @@ export async function createMondayItem({ apiToken, boardId, applicantName, group
       boardId: String(boardId),
       itemName: itemName.slice(0, 255),
       ...(hasGroup ? { groupId: String(groupId).trim() } : {}),
-      ...(hasCols ? { colVals: JSON.stringify(columnValues) } : {}),
     },
   })
 
