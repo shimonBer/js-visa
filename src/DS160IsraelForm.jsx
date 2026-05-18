@@ -309,6 +309,10 @@ export default function DS160IsraelForm({
   useEffect(() => {
     if (!initialBlob?.data || typeof initialBlob.data !== 'object') return
     const { passportDate: _omitBlobPd, ...data } = initialBlob.data
+    // Restore the original formStartedDate so re-saves overwrite the same blob filename.
+    if (typeof data.formStartedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.formStartedDate)) {
+      formStartedDateRef.current = data.formStartedDate
+    }
     const companions =
       Array.isArray(data.travelCompanions) && data.travelCompanions.length > 0
         ? data.travelCompanions

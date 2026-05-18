@@ -228,14 +228,14 @@ export async function createMondayItem({ apiToken, boardId, applicantName, group
 
   const extraArgs = [
     hasGroup ? ', $groupId: String' : '',
-    hasCols ? ', $colVals: JSON' : '',
+    hasCols ? ', $colVals: String' : '',
   ].join('')
   const extraCallArgs = [
     hasGroup ? ', group_id: $groupId' : '',
     hasCols ? ', column_values: $colVals' : '',
   ].join('')
 
-  /** Monday's `column_values` arg expects a JSON scalar (serialized as object in variables). */
+  /** Monday's `column_values` arg expects a JSON-encoded string. */
   const query = `
     mutation CreateItem($boardId: ID!, $itemName: String!${extraArgs}) {
       create_item(board_id: $boardId, item_name: $itemName${extraCallArgs}) {
@@ -252,7 +252,7 @@ export async function createMondayItem({ apiToken, boardId, applicantName, group
       boardId: String(boardId),
       itemName: itemName.slice(0, 255),
       ...(hasGroup ? { groupId: String(groupId).trim() } : {}),
-      ...(hasCols ? { colVals: columnValues } : {}),
+      ...(hasCols ? { colVals: JSON.stringify(columnValues) } : {}),
     },
   })
 
