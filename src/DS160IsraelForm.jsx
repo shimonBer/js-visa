@@ -14,7 +14,6 @@ import { fetchI94TravelHistory } from './lib/browserUse.js'
 import { translateFormToEnglish } from './lib/translateForm.js'
 import {
   buildTranslationFingerprint,
-  loadTranslationCache,
   saveTranslationCache,
 } from './lib/translationCache.js'
 import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
@@ -805,28 +804,14 @@ export default function DS160IsraelForm({
     setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
     try {
       const values = getValues()
-      const fp = buildTranslationFingerprint(values)
-      let cached = null
-      try {
-        cached = await loadTranslationCache(storageFormId)
-      } catch (e) {
-        console.warn('[translation cache] load failed', e)
-      }
-      if (cached && cached.fingerprint === fp) {
-        setTranslateUi({
-          open: true,
-          text: cached.translated,
-          attachmentLabels: cached.attachmentLabels,
-          pdfBase64: cached.pdfBase64,
-          loading: false,
-          error: '',
-        })
-        return
-      }
+      // Always translate with the current form values — never skip based on cache.
+      // The cache is only used to restore the last result on page load (below).
       const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(values, {
         s3Documents: s3DocumentsRef.current,
       })
+      // Save to cache so the result can be restored if the user refreshes.
       try {
+        const fp = buildTranslationFingerprint(values)
         await saveTranslationCache(storageFormId, {
           fingerprint: fp,
           translated,
