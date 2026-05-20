@@ -18,6 +18,51 @@ export function getMondayApiBase(opts = {}) {
 }
 
 /**
+ * Derives the monday-lookup endpoint URL from the monday base URL.
+ * @param {{ apiBase?: string }} [opts]
+ */
+function getMondayLookupUrl(opts = {}) {
+  return getMondayApiBase(opts).replace(/\/monday$/, '/monday-lookup')
+}
+
+/**
+ * Search for an existing Monday board item by phone and/or email.
+ * Returns the first match found (phone takes priority over email).
+ *
+ * @param {{ phone?: string, email?: string }} params
+ * @param {{ apiBase?: string }} [opts]
+ * @returns {Promise<{ found: true, itemId: string, itemName: string } | { found: false }>}
+ */
+export async function searchMondayItem({ phone, email } = {}, opts = {}) {
+  const url = getMondayLookupUrl(opts)
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...(phone ? { phone: String(phone).trim() } : {}),
+      ...(email ? { email: String(email).trim() } : {}),
+    }),
+  })
+
+  const text = await res.text()
+  let json
+  try {
+    json = text ? JSON.parse(text) : {}
+  } catch {
+    throw new Error(`Monday lookup returned invalid JSON (${res.status}): ${text.slice(0, 200)}`)
+  }
+
+  if (!res.ok) {
+    throw new Error(typeof json.error === 'string' ? json.error : `Lookup failed (${res.status})`)
+  }
+
+  if (json.found === true && typeof json.itemId === 'string') {
+    return { found: true, itemId: json.itemId, itemName: String(json.itemName || json.itemId) }
+  }
+  return { found: false }
+}
+
+/**
  * Send the DS-160 translation PDF to Monday (creates item + uploads file).
  *
  * @param {object} payload

@@ -18,7 +18,7 @@ import {
 } from './lib/translationCache.js'
 import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
 import { getS3UploadApiBase } from './lib/uploadFormDocuments.js'
-import { sendPdfToMonday } from './lib/monday.js'
+import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
 
 /**
  * Keeps latest S3 object per document field (passport / visa / SSN card / license) for translate + PDF when the browser has no File.
@@ -296,15 +296,30 @@ export default function DS160IsraelForm({
     pdfBase64: '',
   })
 
-  /** Monday.com send from translation modal. */
+  /** Monday.com multi-step UI state (search → confirm → upload). */
   const [mondayUi, setMondayUi] = useState({
-    loading: false,
-    error: '',
-    success: false,
-    itemId: '',
-    itemUrl: '',
-    isNew: false,
+    // search phase
+    searching: false,
+    searchError: '',
+    /** @type {{ itemId: string, itemName: string } | 'not_found' | null} */
+    searchResult: null,
+    // upload phase
+    uploading: false,
+    uploadError: '',
+    uploadSuccess: false,
+    uploadItemId: '',
+    uploadItemUrl: '',
+    uploadIsNew: false,
   })
+
+  /** Reset Monday UI to initial state (called on modal close / new translation). */
+  function resetMondayUi() {
+    setMondayUi({
+      searching: false, searchError: '', searchResult: null,
+      uploading: false, uploadError: '', uploadSuccess: false,
+      uploadItemId: '', uploadItemUrl: '', uploadIsNew: false,
+    })
+  }
 
   /** Fields that failed the "translate" pre-flight validation (Set of field names). */
   const [translationErrors, setTranslationErrors] = useState(/** @type {Set<string>} */ (new Set()))
@@ -834,12 +849,55 @@ export default function DS160IsraelForm({
     }
   }
 
-  async function handleSendToMonday() {
-    if (!translateUi.pdfBase64?.trim()) {
-      setMondayUi((s) => ({ ...s, error: 'אין PDF זמין — הרץ תרגום מחדש.' }))
-      return
+  /** Search Monday board for an existing item by phone / email. */
+  async function handleMondaySearch() {
+    const values = getValues()
+    const phone = String(values.phone || '').trim()
+    const email = String(values.email || '').trim()
+    setMondayUi((s) => ({ ...s, searching: true, searchError: '', searchResult: null }))
+    try {
+      const result = await searchMondayItem({ phone, email })
+      setMondayUi((s) => ({
+        ...s,
+        searching: false,
+        searchResult: result.found ? { itemId: result.itemId, itemName: result.itemName } : 'not_found',
+      }))
+    } catch (e) {
+      setMondayUi((s) => ({ ...s, searching: false, searchError: e?.message || 'חיפוש נכשל' }))
     }
-    setMondayUi({ loading: true, error: '', success: false, itemId: '', itemUrl: '', isNew: false })
+  }
+
+  /**
+   * Upload the PDF to an existing Monday item (no column changes — file only).
+   * @param {string} itemId
+   */
+  async function handleMondayUpload(itemId) {
+    if (!translateUi.pdfBase64?.trim()) return
+    setMondayUi((s) => ({ ...s, uploading: true, uploadError: '' }))
+    try {
+      const result = await sendPdfToMonday({
+        applicantName: '',
+        pdfBase64: translateUi.pdfBase64,
+        mondayItemId: itemId,
+      })
+      setValue('mondayItemId', result.itemId, { shouldDirty: true })
+      setMondayUi((s) => ({
+        ...s,
+        uploading: false,
+        uploadSuccess: true,
+        uploadItemId: result.itemId,
+        uploadItemUrl: result.itemUrl || '',
+        uploadIsNew: false,
+      }))
+    } catch (e) {
+      setMondayUi((s) => ({ ...s, uploading: false, uploadError: e?.message || 'העלאה נכשלה' }))
+    }
+  }
+
+  /** Create a new Monday item and upload the PDF to it. */
+  async function handleMondayCreate() {
+    if (!translateUi.pdfBase64?.trim()) return
+    setMondayUi((s) => ({ ...s, uploading: true, uploadError: '' }))
     try {
       const values = getValues()
       const he = `${values.firstName || ''} ${values.lastName || ''}`.trim()
@@ -850,30 +908,19 @@ export default function DS160IsraelForm({
         pdfBase64: translateUi.pdfBase64,
         phone: String(values.phone || '').trim(),
         email: String(values.email || '').trim(),
-        mondayItemId: String(values.mondayItemId || '').trim(),
         status: 'DS-160 English summary',
       })
-      // Persist the item id so future sends skip lookup/create
-      if (result.itemId) {
-        setValue('mondayItemId', result.itemId, { shouldDirty: true })
-      }
-      setMondayUi({
-        loading: false,
-        error: '',
-        success: true,
-        itemId: result.itemId,
-        itemUrl: result.itemUrl || '',
-        isNew: result.isNew === true,
-      })
+      setValue('mondayItemId', result.itemId, { shouldDirty: true })
+      setMondayUi((s) => ({
+        ...s,
+        uploading: false,
+        uploadSuccess: true,
+        uploadItemId: result.itemId,
+        uploadItemUrl: result.itemUrl || '',
+        uploadIsNew: true,
+      }))
     } catch (e) {
-      setMondayUi({
-        loading: false,
-        error: e?.message || 'שליחה ל-Monday נכשלה',
-        success: false,
-        itemId: '',
-        itemUrl: '',
-        isNew: false,
-      })
+      setMondayUi((s) => ({ ...s, uploading: false, uploadError: e?.message || 'יצירה נכשלה' }))
     }
   }
 
@@ -903,6 +950,7 @@ export default function DS160IsraelForm({
     visitedAbroadLast5Years: watch('visitedAbroadLast5Years'),
     servedInMilitary: watch('servedInMilitary'),
     maritalStatus: watch('maritalStatus'),
+    mondayItemId: watch('mondayItemId'),
   }
 
   function getFieldError(path) {
@@ -1048,7 +1096,41 @@ export default function DS160IsraelForm({
               <FormRadioGroup register={register} getFieldError={getFieldError} label="מין" name="sex" options={[{ label: 'זכר', value: 'male' }, { label: 'נקבה', value: 'female' }]} />
               <FormSelect register={register} getFieldError={getFieldError} label="סטטוס" name="maritalStatus" options={['רווק', 'נשוי', 'גרוש', 'אלמן', 'נשוי אזרחית', 'פרוד', 'חיים משותפים']} />
 
-              {w.maritalStatus && w.maritalStatus !== 'רווק' && (
+              {(w.maritalStatus === 'גרוש' || w.maritalStatus === 'פרוד') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                    <h3 className="font-bold text-gray-800 text-base">פרטי בן זוג לשעבר</h3>
+                    <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name="exSpouseName" />
+                    <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="exSpouseBirthCityCountry" />
+                    <div className="flex flex-col">
+                      <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
+                      <div className="flex gap-2">
+                        <input type="text" {...register('exSpouseBirthDateDay')} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
+                        <input type="text" {...register('exSpouseBirthDateMonth')} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
+                        <input type="text" {...register('exSpouseBirthDateYear')} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
+                      </div>
+                    </div>
+                    <FormInput register={register} getFieldError={getFieldError} label="תאריך חתונה" name="exSpouseMarriageDate" />
+                    <FormInput register={register} getFieldError={getFieldError} label="במידה והתגרשו- תאריך גירושים" name="exSpouseDivorceDate" />
+                    <FormInput register={register} getFieldError={getFieldError} label="במידה והתגרשו- התגרשם בישראל?" name="exSpouseDivorcedInIsrael" />
+                  </div>
+                  <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם התגרשת יותר מפעם אחת?" name="divorcedMoreThanOnce" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  </div>
+                </div>
+              )}
+
+              {w.maritalStatus === 'אלמן' && (
+                <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                  <h3 className="font-bold text-gray-800 text-base">פרטי בן הזוג שנפטרו</h3>
+                  <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name="deceasedSpouseName" />
+                  <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה" name="deceasedSpouseBirthDate" />
+                  <FormInput register={register} getFieldError={getFieldError} label="אזרחות" name="deceasedSpouseCitizenship" />
+                  <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="deceasedSpouseBirthCityCountry" />
+                </div>
+              )}
+
+              {w.maritalStatus && w.maritalStatus !== 'רווק' && w.maritalStatus !== 'גרוש' && w.maritalStatus !== 'פרוד' && w.maritalStatus !== 'אלמן' && (
                 <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
                   <h3 className="font-bold text-gray-800 text-base">פרטי בן בת הזוג</h3>
                   <FormInput register={register} getFieldError={getFieldError} label="שם בן\בת הזוג" name="spouseName" />
@@ -1110,6 +1192,15 @@ export default function DS160IsraelForm({
                     getFieldError={getFieldError}
                     label="מספר זיהות באזרחות הזו (ת.ז. / מספר אזרחות וכו׳)"
                     name="foreignCitizenshipId"
+                  />
+                  <DocumentFileSlot
+                    label="צילום תעודת האזרחות הזרה"
+                    name="foreignCitizenshipScan"
+                    register={register}
+                    setValue={setValue}
+                    getFieldError={getFieldError}
+                    watchedValue={watch('foreignCitizenshipScan')}
+                    accept="image/*,application/pdf"
                   />
                 </div>
               )}
@@ -1776,14 +1867,6 @@ export default function DS160IsraelForm({
                     >
                       Download PDF
                     </button>
-                    <button
-                      type="button"
-                      disabled={mondayUi.loading}
-                      className="text-sm px-3 py-1.5 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50 disabled:opacity-40"
-                      onClick={() => void handleSendToMonday()}
-                    >
-                      {mondayUi.loading ? 'שולח…' : 'שלח ל-Monday'}
-                    </button>
                   </>
                 ) : null}
                 <button
@@ -1803,7 +1886,7 @@ export default function DS160IsraelForm({
                   type="button"
                   className="text-sm px-3 py-1.5 rounded-md bg-gray-900 text-white hover:bg-gray-800"
                   onClick={() => {
-                    setMondayUi({ loading: false, error: '', success: false, itemId: '', itemUrl: '', isNew: false })
+                    resetMondayUi()
                     setTranslateUi((s) => ({ ...s, open: false }))
                   }}
                 >
@@ -1811,32 +1894,101 @@ export default function DS160IsraelForm({
                 </button>
               </div>
             </div>
-            {(mondayUi.error || mondayUi.success) && (
-              <div className="px-4 py-2 text-sm border-b text-left" dir="ltr">
-                {mondayUi.error ? (
-                  <p className="text-red-600" role="alert">
-                    {mondayUi.error}
-                  </p>
-                ) : null}
-                {mondayUi.success ? (
-                  <p className="text-green-700 flex flex-wrap items-center gap-2">
-                    {mondayUi.isNew ? (
-                      <>נוצר פריט חדש ב-Monday — מזהה: <span className="font-mono">{mondayUi.itemId}</span></>
-                    ) : (
-                      <>PDF עודכן בפריט קיים ב-Monday — מזהה: <span className="font-mono">{mondayUi.itemId}</span></>
-                    )}
-                    {mondayUi.itemUrl && (
-                      <a
-                        href={mondayUi.itemUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-blue-600 underline underline-offset-2 hover:text-blue-800"
-                      >
+
+            {/* ── Monday.com integration panel ── */}
+            {translateUi.pdfBase64 && (
+              <div className="px-4 py-3 border-b text-sm" dir="rtl">
+                <p className="font-semibold text-gray-700 mb-2">Monday.com</p>
+
+                {/* Upload result */}
+                {mondayUi.uploadSuccess ? (
+                  <div className="flex flex-wrap items-center gap-2 text-green-700">
+                    <span>
+                      {mondayUi.uploadIsNew
+                        ? <>✅ נוצר פריט חדש — מזהה: <span className="font-mono">{mondayUi.uploadItemId}</span></>
+                        : <>✅ PDF נוסף לפריט — מזהה: <span className="font-mono">{mondayUi.uploadItemId}</span></>
+                      }
+                    </span>
+                    {mondayUi.uploadItemUrl && (
+                      <a href={mondayUi.uploadItemUrl} target="_blank" rel="noopener noreferrer"
+                        className="text-blue-600 underline underline-offset-2 hover:text-blue-800">
                         פתח ב-Monday ↗
                       </a>
                     )}
-                  </p>
-                ) : null}
+                  </div>
+                ) : mondayUi.uploading ? (
+                  <p className="text-gray-500">⏳ מעלה PDF…</p>
+                ) : (
+                  <>
+                    {/* Saved item ID already in form */}
+                    {w.mondayItemId && !mondayUi.searchResult ? (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-gray-700">
+                          פריט שמור: <span className="font-mono text-violet-700">#{w.mondayItemId}</span>
+                        </span>
+                        <button type="button"
+                          className="px-3 py-1 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50"
+                          onClick={() => void handleMondayUpload(w.mondayItemId)}>
+                          הוסף PDF לפריט
+                        </button>
+                        <button type="button"
+                          className="px-2 py-1 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 text-xs"
+                          onClick={() => setMondayUi((s) => ({ ...s, searchResult: null })) || void handleMondaySearch()}>
+                          חפש אחר
+                        </button>
+                      </div>
+                    ) : mondayUi.searching ? (
+                      <p className="text-gray-500">🔍 מחפש…</p>
+                    ) : mondayUi.searchResult === 'not_found' ? (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-gray-600">לא נמצא פריט תואם בלוח.</span>
+                        <button type="button"
+                          className="px-3 py-1 rounded-md border border-green-600 text-green-700 hover:bg-green-50"
+                          onClick={() => void handleMondayCreate()}>
+                          צור פריט חדש
+                        </button>
+                        <button type="button"
+                          className="px-2 py-1 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 text-xs"
+                          onClick={() => setMondayUi((s) => ({ ...s, searchResult: null, searchError: '' }))}>
+                          חפש שוב
+                        </button>
+                      </div>
+                    ) : mondayUi.searchResult && mondayUi.searchResult !== 'not_found' ? (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-gray-700">
+                          נמצא: <span className="font-medium">{mondayUi.searchResult.itemName}</span>
+                          {' '}<span className="font-mono text-xs text-gray-500">(#{mondayUi.searchResult.itemId})</span>
+                        </span>
+                        <button type="button"
+                          className="px-3 py-1 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50"
+                          onClick={() => void handleMondayUpload(mondayUi.searchResult.itemId)}>
+                          הוסף PDF לפריט
+                        </button>
+                        <button type="button"
+                          className="px-2 py-1 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 text-xs"
+                          onClick={() => setMondayUi((s) => ({ ...s, searchResult: null, searchError: '' }))}>
+                          חפש שוב
+                        </button>
+                      </div>
+                    ) : (
+                      /* Initial state — no saved ID, not searched yet */
+                      <button type="button"
+                        className="px-3 py-1.5 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50"
+                        onClick={() => void handleMondaySearch()}>
+                        🔍 חפש פריט קיים לפי טלפון / אימייל
+                      </button>
+                    )}
+
+                    {/* Search error */}
+                    {mondayUi.searchError && (
+                      <p className="text-red-600 mt-1">{mondayUi.searchError}</p>
+                    )}
+                    {/* Upload error */}
+                    {mondayUi.uploadError && (
+                      <p className="text-red-600 mt-1">{mondayUi.uploadError}</p>
+                    )}
+                  </>
+                )}
               </div>
             )}
             {translateUi.attachmentLabels?.length > 0 && (

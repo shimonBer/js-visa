@@ -1,12 +1,12 @@
 /**
  * POST /api/monday-lookup
- * Body: { phone: string }
+ * Body: { phone?: string, email?: string }
  * Response: { found: boolean, itemId?: string, itemName?: string }
  *
  * Safety — read-only: uses GraphQL `items_page_by_column_values` (query only). No mutations.
  *
- * When MONDAY_API_TOKEN, MONDAY_BOARD_ID, or MONDAY_PHONE_COLUMN_ID is missing,
- * or phone is blank, returns { found: false } (HTTP 200) so the UI degrades gracefully.
+ * Search order: phone first (if provided), then email (if phone not found).
+ * When required env vars are missing returns { found: false } (HTTP 200) for graceful degradation.
  */
 
 import { mondayGraphqlRequest } from './monday.js'
@@ -44,7 +44,7 @@ function jsonResponse(res, status, body) {
 }
 
 const LOOKUP_QUERY = `
-  query ItemsByPhone($boardId: ID!, $columnId: String!, $val: String!) {
+  query ItemsByColumn($boardId: ID!, $columnId: String!, $val: String!) {
     items_page_by_column_values(
       limit: 1
       board_id: $boardId
@@ -59,6 +59,38 @@ const LOOKUP_QUERY = `
 `
 
 /**
+ * @param {{ apiToken: string, boardId: string, columnId: string, value: string }} opts
+ * @returns {Promise<{ id: string, name: string } | null>}
+ */
+async function lookupByColumn({ apiToken, boardId, columnId, value }) {
+  if (!columnId || !value) return null
+  try {
+    const json = await mondayGraphqlRequest({
+      apiToken,
+      query: LOOKUP_QUERY,
+      variables: { boardId, columnId, val: value },
+    })
+    const data = json && typeof json === 'object' ? /** @type {Record<string, unknown>} */ (json).data : null
+    const page =
+      data && typeof data === 'object'
+        ? /** @type {Record<string, unknown>} */ (data).items_page_by_column_values
+        : null
+    const items =
+      page && typeof page === 'object' && Array.isArray(/** @type {{ items?: unknown }} */ (page).items)
+        ? /** @type {{ id?: string, name?: string }[]} */ (/** @type {{ items: unknown }} */ (page).items)
+        : []
+    const first = items[0]
+    if (first && typeof first.id === 'string' && first.id) {
+      return { id: first.id, name: typeof first.name === 'string' ? first.name : '' }
+    }
+    return null
+  } catch (e) {
+    console.warn('[monday-lookup] column lookup failed:', e?.message || e)
+    return null
+  }
+}
+
+/**
  * @param {import('http').IncomingMessage} req
  * @param {import('http').ServerResponse} res
  */
@@ -70,9 +102,10 @@ export default async function handler(req, res) {
 
   const apiToken = process.env.MONDAY_API_TOKEN?.trim()
   const boardId = process.env.MONDAY_BOARD_ID?.trim()
-  const phoneColumnId = process.env.MONDAY_PHONE_COLUMN_ID?.trim()
+  const phoneColumnId = process.env.MONDAY_PHONE_COLUMN_ID?.trim() || ''
+  const emailColumnId = process.env.MONDAY_EMAIL_COLUMN_ID?.trim() || ''
 
-  if (!apiToken || !boardId || !phoneColumnId) {
+  if (!apiToken || !boardId) {
     return jsonResponse(res, 200, { found: false })
   }
 
@@ -84,45 +117,22 @@ export default async function handler(req, res) {
   }
 
   const rawPhone = typeof body.phone === 'string' ? body.phone.trim() : ''
-  if (!rawPhone || !rawPhone.startsWith('+') || rawPhone.length < 8) {
-    return jsonResponse(res, 200, { found: false })
-  }
+  const rawEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
 
-  /** Monday phone search: digits-only partial/full match (see items_page_by_column_values docs). */
-  const searchVal = rawPhone.replace(/\D/g, '')
-  if (searchVal.length < 7) {
-    return jsonResponse(res, 200, { found: false })
-  }
-
-  try {
-    const json = await mondayGraphqlRequest({
-      apiToken,
-      query: LOOKUP_QUERY,
-      variables: {
-        boardId,
-        columnId: phoneColumnId,
-        val: searchVal,
-      },
-    })
-
-    const data = json && typeof json === 'object' ? /** @type {Record<string, unknown>} */ (json).data : null
-    const page =
-      data && typeof data === 'object'
-        ? /** @type {Record<string, unknown>} */ (data).items_page_by_column_values
-        : null
-    const items =
-      page && typeof page === 'object' && Array.isArray(/** @type {{ items?: unknown }} */ (page).items)
-        ? /** @type {{ id?: string, name?: string }[]} */ (/** @type {{ items: unknown }} */ (page).items)
-        : []
-    const first = items[0]
-    const id = first && typeof first.id === 'string' ? first.id : ''
-    const name = first && typeof first.name === 'string' ? first.name : ''
-    if (id) {
-      return jsonResponse(res, 200, { found: true, itemId: id, itemName: name || id })
+  // 1. Search by phone (digits-only for Monday phone column)
+  if (phoneColumnId && rawPhone && rawPhone.startsWith('+') && rawPhone.length >= 8) {
+    const digits = rawPhone.replace(/\D/g, '')
+    if (digits.length >= 7) {
+      const hit = await lookupByColumn({ apiToken, boardId, columnId: phoneColumnId, value: digits })
+      if (hit) return jsonResponse(res, 200, { found: true, itemId: hit.id, itemName: hit.name || hit.id })
     }
-    return jsonResponse(res, 200, { found: false })
-  } catch (e) {
-    console.error('[api/monday-lookup]', e?.message || e)
-    return jsonResponse(res, 200, { found: false })
   }
+
+  // 2. Fallback: search by email
+  if (emailColumnId && rawEmail && rawEmail.includes('@')) {
+    const hit = await lookupByColumn({ apiToken, boardId, columnId: emailColumnId, value: rawEmail })
+    if (hit) return jsonResponse(res, 200, { found: true, itemId: hit.id, itemName: hit.name || hit.id })
+  }
+
+  return jsonResponse(res, 200, { found: false })
 }
