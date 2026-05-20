@@ -1497,9 +1497,9 @@ export default function DS160IsraelForm({
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">הורים בני זוג ומשפחה</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormInput register={register} getFieldError={getFieldError} label="שם האבא" name="fatherFullName" />
-              <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה של האבא" name="fatherBirthDate" placeholder="No Date Of Birth for Parent" />
+              <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה של האבא" name="fatherBirthDate" />
               <FormInput register={register} getFieldError={getFieldError} label="שם האמא" name="motherFullName" />
-              <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה של האמא" name="motherBirthDate" placeholder="No Date Of Birth for Parent" />
+              <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה של האמא" name="motherBirthDate" />
             </div>
 
             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך משפחה מקרבה ראשונה בארה״ב?" name="hasCloseRelativesInUS" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }, { label: 'יש רחוקה', value: 'distant' }]} />

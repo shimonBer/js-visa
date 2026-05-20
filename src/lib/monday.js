@@ -14,8 +14,7 @@ export function getMondayApiBase(opts = {}) {
   if (opts.apiBase) return String(opts.apiBase).replace(/\/$/, '')
   const explicit = import.meta.env.VITE_MONDAY_API_URL
   if (explicit) return String(explicit).replace(/\/$/, '')
-  if (import.meta.env.PROD) return '/api/monday'
-  return ''
+  return '/api/monday'
 }
 
 /**
