@@ -193,10 +193,13 @@ function FormSelect({ label, name, options, register, getFieldError }) {
 export default function DS160IsraelForm({
   initialBlob = null,
   initialBlobKey = null,
+  formUUID = null,
   onExitToHome = null,
 } = {}) {
   /** ISO date (YYYY-MM-DD) when this form session started; used for draft/S3 id, not user-editable. */
   const formStartedDateRef = useRef(new Date().toISOString().slice(0, 10))
+  /** Canonical form UUID — set from prop or restored from blob. Used as S3 prefix and blob key. */
+  const formUUIDRef = useRef(formUUID || '')
   /** Blob pathname this form was loaded from; used to overwrite the same file on re-save. */
   const loadedBlobKeyRef = useRef(/** @type {string | null} */ (initialBlobKey))
 
@@ -217,6 +220,7 @@ export default function DS160IsraelForm({
       travelingWithOthers: 'no',
       travelCompanions: [{ fullName: '', relation: '' }],
       visitedUSBefore: 'no',
+      previousUSVisits: [{ visit: '' }],
       hadUSVisa: 'no',
       lastVisaIssueDate: '',
       lastVisaExpirationDate: '',
@@ -254,6 +258,12 @@ export default function DS160IsraelForm({
       name: 'travelCompanions',
     })
 
+  const { fields: previousVisitFields, append: appendPreviousVisit, remove: removePreviousVisit } =
+    useFieldArray({
+      control,
+      name: 'previousUSVisits',
+    })
+
   const passportIdWatch = watch('passportId')
   const passportScanWatch = watch('passportScan')
   const existingVisaScanWatch = watch('existingVisaScan')
@@ -266,8 +276,12 @@ export default function DS160IsraelForm({
     () => buildFormId(passportIdWatch, formStartedDateRef.current),
     [passportIdWatch],
   )
-  /** localStorage key: stable id when passport+date set, else shared incomplete slot */
-  const storageFormId = useMemo(() => formId || 'incomplete', [formId])
+  /** Storage key: UUID if available, else passport-based id, else 'incomplete' */
+  const storageFormId = useMemo(
+    () => formUUIDRef.current || formId || 'incomplete',
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [formId],
+  )
   const [asyncFlow, setAsyncFlow] = useState({ phase: 'idle', message: '' })
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
@@ -315,13 +329,26 @@ export default function DS160IsraelForm({
     if (typeof data.formStartedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.formStartedDate)) {
       formStartedDateRef.current = data.formStartedDate
     }
+    // Restore UUID so S3/blob saves use the same key
+    if (typeof data.formUUID === 'string' && data.formUUID.trim()) {
+      formUUIDRef.current = data.formUUID.trim()
+    }
     const companions =
       Array.isArray(data.travelCompanions) && data.travelCompanions.length > 0
         ? data.travelCompanions
         : [{ fullName: '', relation: '' }]
+    // Convert legacy string previousUSVisits to array format
+    let restoredVisits = data.previousUSVisits
+    if (typeof restoredVisits === 'string') {
+      restoredVisits = restoredVisits.split('\n').filter(Boolean).map((v) => ({ visit: v }))
+    }
+    if (!Array.isArray(restoredVisits) || restoredVisits.length === 0) {
+      restoredVisits = [{ visit: '' }]
+    }
     reset({
       ...data,
       travelCompanions: companions,
+      previousUSVisits: restoredVisits,
       mondayItemId: String(data.mondayItemId || ''),
       passportScan: undefined,
       existingVisaScan: undefined,
@@ -350,16 +377,17 @@ export default function DS160IsraelForm({
     }
   }, [initialBlobKey, initialBlob, setValue])
 
-  function buildN8nBody(event, fid, values, s3Documents) {
+  function buildN8nBody(event, values, s3Documents) {
     const { data, fileMeta } = serializeFormValuesForJson(values)
     return {
       event,
-      formId: fid || null,
+      formId: storageFormId,
       clientTimestamp: new Date().toISOString(),
       schema: 'ds160_israel_form_v1',
       data: {
         ...data,
         formStartedDate: formStartedDateRef.current,
+        formUUID: formUUIDRef.current || null,
       },
       fileMeta,
       s3Documents,
@@ -367,10 +395,9 @@ export default function DS160IsraelForm({
   }
 
   const onSubmit = async (data) => {
-    const fid = buildFormId(data.passportId, formStartedDateRef.current)
     setAsyncFlow({ phase: 'working', message: '' })
     try {
-      const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
+      const uploads = await uploadFormDocumentsToS3(storageFormId, [
         { name: 'passportScan', file: firstFile(data.passportScan) },
         { name: 'existingVisaScan', file: firstFile(data.existingVisaScan) },
         { name: 'socialSecurityScan', file: firstFile(data.socialSecurityScan) },
@@ -380,8 +407,8 @@ export default function DS160IsraelForm({
         { name: 'extraDocumentScan3', file: firstFile(data.extraDocumentScan3) },
       ])
       s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
-      const body = buildN8nBody('submit', fid, data, uploads)
-      saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'submit', ...body })
+      const body = buildN8nBody('submit', data, uploads)
+      saveFormDraftToBrowser(storageFormId, { lastEvent: 'submit', ...body })
       try {
         const blobResult = await saveFormBlobPayload(body, loadedBlobKeyRef.current ?? undefined)
         if (blobResult?.pathname && typeof blobResult.pathname === 'string') {
@@ -420,10 +447,8 @@ export default function DS160IsraelForm({
     }
     setAsyncFlow({ phase: 'working', message: '' })
     try {
-      const fid = buildFormId(values.passportId, formStartedDateRef.current)
-      // Save to blob immediately with current s3 docs — don't wait for S3 upload.
-      const quickBody = buildN8nBody('draft', fid, values, [])
-      saveFormDraftToBrowser(fid || 'incomplete', { lastEvent: 'draft', ...quickBody })
+      const quickBody = buildN8nBody('draft', values, [])
+      saveFormDraftToBrowser(storageFormId, { lastEvent: 'draft', ...quickBody })
       const blobResult = await saveFormBlobPayload(quickBody, loadedBlobKeyRef.current ?? undefined)
       // Store the pathname returned by the server so subsequent saves use the same key.
       if (blobResult?.pathname && typeof blobResult.pathname === 'string') {
@@ -432,7 +457,7 @@ export default function DS160IsraelForm({
       setAsyncFlow({ phase: 'idle', message: 'Saved successfully' })
       // S3 upload runs after the success message — failures are non-blocking.
       try {
-        const uploads = await uploadFormDocumentsToS3(fid || 'unscoped', [
+        const uploads = await uploadFormDocumentsToS3(storageFormId, [
           { name: 'passportScan', file: firstFile(values.passportScan) },
           { name: 'existingVisaScan', file: firstFile(values.existingVisaScan) },
           { name: 'socialSecurityScan', file: firstFile(values.socialSecurityScan) },
@@ -444,7 +469,7 @@ export default function DS160IsraelForm({
         s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
         // Re-save blob with updated s3Documents if any files were uploaded.
         if (uploads.length > 0) {
-          const fullBody = buildN8nBody('draft', fid, values, uploads)
+          const fullBody = buildN8nBody('draft', values, uploads)
           await saveFormBlobPayload(fullBody, loadedBlobKeyRef.current ?? undefined)
         }
       } catch (s3Err) {
@@ -470,9 +495,17 @@ export default function DS160IsraelForm({
       Array.isArray(restData.travelCompanions) && restData.travelCompanions.length > 0
         ? restData.travelCompanions
         : [{ fullName: '', relation: '' }]
+    let restoredVisits = restData.previousUSVisits
+    if (typeof restoredVisits === 'string') {
+      restoredVisits = restoredVisits.split('\n').filter(Boolean).map((v) => ({ visit: v }))
+    }
+    if (!Array.isArray(restoredVisits) || restoredVisits.length === 0) {
+      restoredVisits = [{ visit: '' }]
+    }
     reset({
       ...restData,
       travelCompanions: companions,
+      previousUSVisits: restoredVisits,
       passportScan: undefined,
       existingVisaScan: undefined,
       socialSecurityScan: undefined,
@@ -605,7 +638,8 @@ export default function DS160IsraelForm({
   const wPreviousUSVisits = watch('previousUSVisits')
 
   const i94SkipBecausePriorVisits = useMemo(
-    () => Boolean(String(wPreviousUSVisits ?? '').trim()),
+    () =>
+      Array.isArray(wPreviousUSVisits) && wPreviousUSVisits.some((v) => String(v?.visit ?? '').trim()),
     [wPreviousUSVisits],
   )
 
@@ -619,7 +653,8 @@ export default function DS160IsraelForm({
   }, [wI94FirstEn, wI94LastEn, wI94FirstHe, wI94LastHe, wI94Day, wI94Month, wI94Year, wI94Passport, wI94Country])
 
   async function handleI94Lookup() {
-    if (String(getValues('previousUSVisits') ?? '').trim()) {
+    const existingVisits = getValues('previousUSVisits')
+    if (Array.isArray(existingVisits) && existingVisits.some((v) => String(v?.visit ?? '').trim())) {
       return
     }
     setI94State({ status: 'loading', error: '', data: null })
@@ -640,13 +675,14 @@ export default function DS160IsraelForm({
       setI94State({ status: 'idle', error: '', data })
 
       if (data.success && Array.isArray(data.history) && data.history.length > 0) {
-        const lines = data.history
-          .map((row) => [row.date, row.type, row.location].map((s) => String(s ?? '').trim()).filter(Boolean).join(' — '))
-          .filter(Boolean)
-          .join('\n')
-        if (lines) {
+        const visitRows = data.history
+          .map((row) => ({
+            visit: [row.date, row.type, row.location].map((s) => String(s ?? '').trim()).filter(Boolean).join(' — '),
+          }))
+          .filter((r) => r.visit)
+        if (visitRows.length > 0) {
           setValue('visitedUSBefore', 'yes', { shouldDirty: true })
-          setValue('previousUSVisits', lines, { shouldDirty: true })
+          setValue('previousUSVisits', visitRows, { shouldDirty: true })
         }
       }
     } catch (e) {
@@ -698,7 +734,12 @@ export default function DS160IsraelForm({
       req('foreignCitizenshipCountry')
       req('foreignCitizenshipId')
     }
-    if (values.visitedUSBefore === 'yes') req('previousUSVisits')
+    if (values.visitedUSBefore === 'yes') {
+      const visits = values.previousUSVisits
+      if (!Array.isArray(visits) || visits.every((v) => !String(v?.visit ?? '').trim())) {
+        missing.add('previousUSVisits')
+      }
+    }
     if (values.hadUSVisa === 'yes') {
       req('lastVisaIssueDate')
       req('lastVisaExpirationDate')
@@ -816,9 +857,9 @@ export default function DS160IsraelForm({
     setMondayUi({ loading: true, error: '', success: false, itemId: '', itemUrl: '', isNew: false })
     try {
       const values = getValues()
-      const en = `${values.firstNameEnglish || ''} ${values.lastNameEnglish || ''}`.trim()
       const he = `${values.firstName || ''} ${values.lastName || ''}`.trim()
-      const applicantName = en || he || 'Applicant'
+      const en = `${values.firstNameEnglish || ''} ${values.lastNameEnglish || ''}`.trim()
+      const applicantName = he || en || 'Applicant'
       const result = await sendPdfToMonday({
         applicantName,
         pdfBase64: translateUi.pdfBase64,
@@ -826,10 +867,6 @@ export default function DS160IsraelForm({
         email: String(values.email || '').trim(),
         mondayItemId: String(values.mondayItemId || '').trim(),
         status: 'DS-160 English summary',
-        metadata: {
-          formId: storageFormId,
-          clientTimestamp: new Date().toISOString(),
-        },
       })
       // Persist the item id so future sends skip lookup/create
       if (result.itemId) {
@@ -880,6 +917,7 @@ export default function DS160IsraelForm({
     hasAdditionalAcademicDegree: watch('hasAdditionalAcademicDegree'),
     visitedAbroadLast5Years: watch('visitedAbroadLast5Years'),
     servedInMilitary: watch('servedInMilitary'),
+    maritalStatus: watch('maritalStatus'),
   }
 
   function getFieldError(path) {
@@ -903,7 +941,7 @@ export default function DS160IsraelForm({
               טופס מותאם לישראל. שדות מותנים יוצגו אוטומטית בהתאם לתשובות. מומלץ לשמור טיוטה לעיתים קרובות.
             </p>
             <p className="mt-3 text-sm font-mono bg-blue-700/50 rounded-md px-3 py-2 inline-block" dir="ltr">
-              מזהה טופס: {formId || 'לא מוגדר — טיוטה תישמר תחת מפתח כללי בדפדפן'}
+              מזהה טופס: {storageFormId !== 'incomplete' ? storageFormId : 'לא מוגדר — טיוטה תישמר תחת מפתח כללי בדפדפן'}
               <span className="block text-xs text-blue-100 mt-1 font-sans" dir="rtl">
                 תאריך בסיומת המזהה (אוטומטי): {formStartedDateRef.current}
               </span>
@@ -1025,6 +1063,24 @@ export default function DS160IsraelForm({
               <FormRadioGroup register={register} getFieldError={getFieldError} label="מין" name="sex" options={[{ label: 'זכר', value: 'male' }, { label: 'נקבה', value: 'female' }]} />
               <FormSelect register={register} getFieldError={getFieldError} label="סטטוס" name="maritalStatus" options={['רווק', 'נשוי', 'גרוש', 'אלמן', 'נשוי אזרחית', 'פרוד', 'חיים משותפים']} />
 
+              {w.maritalStatus && w.maritalStatus !== 'רווק' && (
+                <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                  <h3 className="font-bold text-gray-800 text-base">פרטי בן בת הזוג</h3>
+                  <FormInput register={register} getFieldError={getFieldError} label="שם בן\בת הזוג" name="spouseName" />
+                  <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="spouseBirthCityCountry" />
+                  <div className="flex flex-col">
+                    <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
+                    <div className="flex gap-2">
+                      <input type="text" {...register('spouseBirthDateDay')} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
+                      <input type="text" {...register('spouseBirthDateMonth')} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
+                      <input type="text" {...register('spouseBirthDateYear')} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
+                    </div>
+                  </div>
+                  <FormInput register={register} getFieldError={getFieldError} label="אזרחות עיקרית" name="spouseCitizenship" />
+                  <FormInput register={register} getFieldError={getFieldError} label="במידה ולא גרים באותה הכתובת" name="spouseAddress" />
+                </div>
+              )}
+
               <div className="flex flex-col mb-4">
                 <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
                 <div className="flex gap-2">
@@ -1088,7 +1144,7 @@ export default function DS160IsraelForm({
                       className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
                     >
                       <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name={`travelCompanions.${index}.fullName`} />
-                      <FormInput register={register} getFieldError={getFieldError} label="קרבה אליך" name={`travelCompanions.${index}.relation`} />
+                      <FormInput register={register} getFieldError={getFieldError} label="קרבה" name={`travelCompanions.${index}.relation`} />
                       <div className="flex justify-end md:justify-start pb-1">
                         {index > 0 && (
                           <button
@@ -1124,12 +1180,62 @@ export default function DS160IsraelForm({
             <div className="grid grid-cols-1 gap-4">
               <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אי פעם ביקרת בארה״ב?" name="visitedUSBefore" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
               {w.visitedUSBefore === 'yes' && (
-                <FormInput register={register} getFieldError={getFieldError}
-                  label="בערך מתי ולכמה זמן [עד 5 אחרונות]"
-                  name="previousUSVisits"
-                  type="textarea"
-                  hint="ניתן למלא ידנית או להריץ 'בדוק היסטוריית כניסות' (I-94) בשדה שמופיע מיד מתחת — הרשומות יועתקו לכאן אוטומטית."
-                />
+                <div className="flex flex-col mb-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-semibold text-gray-700">בערך מתי ולכמה זמן [עד 5 אחרונות]</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => appendPreviousVisit({ visit: '' })}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-green-100 text-green-700 hover:bg-green-200 text-lg font-bold"
+                        title="הוסף ביקור"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setValue('previousUSVisits', [{ visit: '' }], { shouldDirty: true })
+                        }}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-orange-100 text-orange-700 hover:bg-orange-200 text-sm font-bold"
+                        title="נקה הכל"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {previousVisitFields.map((field, index) => (
+                      <div key={field.id} className="flex gap-2 items-center">
+                        <span className="text-sm text-gray-500 font-medium shrink-0">
+                          ביקור {index + 1}
+                        </span>
+                        <input
+                          {...register(`previousUSVisits.${index}.visit`)}
+                          placeholder="לדוגמה: ינואר 2020 — שלושה שבועות"
+                          className={`flex-1 rounded-md p-2 border ${translationErrors.has('previousUSVisits') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                          dir="rtl"
+                        />
+                        {previousVisitFields.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removePreviousVisit(index)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 text-sm font-bold shrink-0"
+                            title="הסר ביקור"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {translationErrors.has('previousUSVisits') && (
+                    <span className="text-red-500 text-sm mt-1">שדה חובה</span>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    ניתן למלא ידנית או להריץ &quot;בדוק היסטוריית כניסות&quot; (I-94) בשדה שמופיע מיד מתחת — הרשומות יועתקו לכאן אוטומטית.
+                  </p>
+                </div>
               )}
 
               {i94Enabled && <div className="rounded-lg border border-slate-200 bg-slate-50/90 p-4 space-y-3">

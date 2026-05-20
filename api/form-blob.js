@@ -18,12 +18,19 @@ function slugSegment(str) {
 
 /**
  * Readable path under forms/: forms/{first}_{last}_{formId}.json
- * formId = passportId_date (e.g. 1234455_2026-05-09) | incomplete
+ * formId = UUID (new forms) | passportId_date (legacy) | incomplete
  */
 function blobPathnameForPayload(payload) {
   const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
   const first = slugSegment(data.firstName) || 'unnamed'
   const last = slugSegment(data.lastName) || 'unnamed'
+
+  // UUID-based (new format)
+  if (typeof data.formUUID === 'string' && data.formUUID.trim()) {
+    return `${PREFIX}${first}_${last}_${data.formUUID.trim()}.json`
+  }
+
+  // Legacy: passportId_date
   const fidRaw =
     payload?.formId != null && String(payload.formId).trim() !== ''
       ? String(payload.formId).trim()
@@ -38,6 +45,16 @@ function parseReadableFilename(inner) {
     return {
       displayName: namePart.replace(/_/g, ' ').trim() || 'ללא שם',
       formId: 'incomplete',
+    }
+  }
+
+  // UUID format: <name>_<uuid>  e.g. שם_משפחה_a1b2c3d4-e5f6-7890-abcd-ef1234567890
+  const uuidRe = /^(.+)_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+  const um = inner.match(uuidRe)
+  if (um) {
+    return {
+      displayName: um[1].replace(/_/g, ' ').trim() || 'ללא שם',
+      formId: um[2],
     }
   }
 

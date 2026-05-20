@@ -501,13 +501,16 @@ function requireMondayEnv() {
       { code: 'MONDAY_DISABLED' },
     )
   }
+  // Build item URL from MONDAY_BOARD_ID: https://jvisa-team.monday.com/boards/<boardId>/pulses/<itemId>
+  const mondayBaseUrl = process.env.MONDAY_BASE_URL?.trim() || 'https://jvisa-team.monday.com'
+  const itemUrlPrefix = `${mondayBaseUrl}/boards/${boardId}/pulses`
   return {
     apiToken,
     boardId,
     phoneColumnId: process.env.MONDAY_PHONE_COLUMN_ID?.trim() || '',
     emailColumnId: process.env.MONDAY_EMAIL_COLUMN_ID?.trim() || '',
     groupId: process.env.MONDAY_GROUP_ID?.trim() || '',
-    itemUrlPrefix: process.env.MONDAY_ITEM_URL_PREFIX?.trim() || '',
+    itemUrlPrefix,
   }
 }
 
