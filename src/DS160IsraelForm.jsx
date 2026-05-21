@@ -245,7 +245,8 @@ export default function DS160IsraelForm({
       interviewLocation: 'tel_aviv',
       languages: [],
       extraDocumentsNote: '',
-      phone: '',
+      phoneCountryCode: '972',
+      phoneNumber: '',
       email: '',
       mondayItemId: '',
     },
@@ -730,7 +731,8 @@ export default function DS160IsraelForm({
     req('passportIssuingCountry')
     req('addressStreet')
     req('addressCity')
-    req('phone')
+    req('phoneCountryCode')
+    req('phoneNumber')
     req('email')
     req('plannedDepartureDate')
     req('plannedStayDuration')
@@ -852,7 +854,7 @@ export default function DS160IsraelForm({
   /** Search Monday board for an existing item by phone / email. */
   async function handleMondaySearch() {
     const values = getValues()
-    const phone = String(values.phone || '').trim()
+    const phone = (String(values.phoneCountryCode || '').trim() + String(values.phoneNumber || '').trim())
     const email = String(values.email || '').trim()
     setMondayUi((s) => ({ ...s, searching: true, searchError: '', searchResult: null }))
     try {
@@ -906,7 +908,7 @@ export default function DS160IsraelForm({
       const result = await sendPdfToMonday({
         applicantName,
         pdfBase64: translateUi.pdfBase64,
-        phone: String(values.phone || '').trim(),
+        phone: (String(values.phoneCountryCode || '').trim() + String(values.phoneNumber || '').trim()),
         email: String(values.email || '').trim(),
         status: 'DS-160 English summary',
       })
@@ -1171,16 +1173,32 @@ export default function DS160IsraelForm({
               <FormInput register={register} getFieldError={getFieldError} label="כתובת מגורים נוכחית - רחוב" name="addressStreet" />
               <FormInput register={register} getFieldError={getFieldError} label="(מספר דירה / apt number)" name="addressApt" />
               <FormInput register={register} getFieldError={getFieldError} label="עיר" name="addressCity" />
-              <FormInput
-                register={register}
-                getFieldError={getFieldError}
-                label="טלפון"
-                name="phone"
-                type="tel"
-                placeholder="+972..."
-                hint="Format: +972542344505 (כולל קידומת מדינה)"
-                dir="ltr"
-              />
+              <div className="flex flex-col mb-4">
+                <label className="font-semibold mb-1 text-gray-700">טלפון</label>
+                <div className="flex gap-2 items-start">
+                  <div className="flex flex-col w-24">
+                    <input
+                      type="tel"
+                      {...register('phoneCountryCode')}
+                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border text-center ${getFieldError('phoneCountryCode') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                      placeholder="972"
+                      dir="ltr"
+                    />
+                    {getFieldError('phoneCountryCode') && <span className="text-red-500 text-sm mt-1">{getFieldError('phoneCountryCode')?.message || 'שגיאה'}</span>}
+                  </div>
+                  <div className="flex flex-col flex-1">
+                    <input
+                      type="tel"
+                      {...register('phoneNumber')}
+                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${getFieldError('phoneNumber') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                      placeholder="543344505"
+                      dir="ltr"
+                    />
+                    {getFieldError('phoneNumber') && <span className="text-red-500 text-sm mt-1">{getFieldError('phoneNumber')?.message || 'שגיאה'}</span>}
+                  </div>
+                </div>
+                <span className="text-xs text-gray-400 mt-1">קידומת מדינה + מספר (ללא 0 בהתחלה)</span>
+              </div>
               <FormInput register={register} getFieldError={getFieldError} label="Email" name="email" type="email" />
 
               <FormRadioGroup register={register} getFieldError={getFieldError} label="אזרחות זרה?" name="hasForeignCitizenship" options={[{ label: 'לא', value: 'no' }, { label: 'של איזה מדינה?', value: 'yes' }]} />
