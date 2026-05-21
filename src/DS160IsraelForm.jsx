@@ -189,6 +189,103 @@ function FormSelect({ label, name, options, register, getFieldError }) {
   )
 }
 
+const COUNTRY_CODES = [
+  { code: '972', flag: '🇮🇱', name: 'Israel' },
+  { code: '1', flag: '🇺🇸', name: 'USA / Canada' },
+  { code: '44', flag: '🇬🇧', name: 'UK' },
+  { code: '49', flag: '🇩🇪', name: 'Germany' },
+  { code: '33', flag: '🇫🇷', name: 'France' },
+  { code: '39', flag: '🇮🇹', name: 'Italy' },
+  { code: '34', flag: '🇪🇸', name: 'Spain' },
+  { code: '31', flag: '🇳🇱', name: 'Netherlands' },
+  { code: '32', flag: '🇧🇪', name: 'Belgium' },
+  { code: '41', flag: '🇨🇭', name: 'Switzerland' },
+  { code: '43', flag: '🇦🇹', name: 'Austria' },
+  { code: '46', flag: '🇸🇪', name: 'Sweden' },
+  { code: '47', flag: '🇳🇴', name: 'Norway' },
+  { code: '45', flag: '🇩🇰', name: 'Denmark' },
+  { code: '358', flag: '🇫🇮', name: 'Finland' },
+  { code: '48', flag: '🇵🇱', name: 'Poland' },
+  { code: '420', flag: '🇨🇿', name: 'Czech Republic' },
+  { code: '36', flag: '🇭🇺', name: 'Hungary' },
+  { code: '40', flag: '🇷🇴', name: 'Romania' },
+  { code: '30', flag: '🇬🇷', name: 'Greece' },
+  { code: '351', flag: '🇵🇹', name: 'Portugal' },
+  { code: '7', flag: '🇷🇺', name: 'Russia' },
+  { code: '380', flag: '🇺🇦', name: 'Ukraine' },
+  { code: '375', flag: '🇧🇾', name: 'Belarus' },
+  { code: '90', flag: '🇹🇷', name: 'Turkey' },
+  { code: '20', flag: '🇪🇬', name: 'Egypt' },
+  { code: '27', flag: '🇿🇦', name: 'South Africa' },
+  { code: '234', flag: '🇳🇬', name: 'Nigeria' },
+  { code: '254', flag: '🇰🇪', name: 'Kenya' },
+  { code: '212', flag: '🇲🇦', name: 'Morocco' },
+  { code: '216', flag: '🇹🇳', name: 'Tunisia' },
+  { code: '213', flag: '🇩🇿', name: 'Algeria' },
+  { code: '218', flag: '🇱🇾', name: 'Libya' },
+  { code: '249', flag: '🇸🇩', name: 'Sudan' },
+  { code: '251', flag: '🇪🇹', name: 'Ethiopia' },
+  { code: '233', flag: '🇬🇭', name: 'Ghana' },
+  { code: '255', flag: '🇹🇿', name: 'Tanzania' },
+  { code: '256', flag: '🇺🇬', name: 'Uganda' },
+  { code: '260', flag: '🇿🇲', name: 'Zambia' },
+  { code: '263', flag: '🇿🇼', name: 'Zimbabwe' },
+  { code: '91', flag: '🇮🇳', name: 'India' },
+  { code: '86', flag: '🇨🇳', name: 'China' },
+  { code: '81', flag: '🇯🇵', name: 'Japan' },
+  { code: '82', flag: '🇰🇷', name: 'South Korea' },
+  { code: '65', flag: '🇸🇬', name: 'Singapore' },
+  { code: '60', flag: '🇲🇾', name: 'Malaysia' },
+  { code: '62', flag: '🇮🇩', name: 'Indonesia' },
+  { code: '63', flag: '🇵🇭', name: 'Philippines' },
+  { code: '66', flag: '🇹🇭', name: 'Thailand' },
+  { code: '84', flag: '🇻🇳', name: 'Vietnam' },
+  { code: '880', flag: '🇧🇩', name: 'Bangladesh' },
+  { code: '92', flag: '🇵🇰', name: 'Pakistan' },
+  { code: '94', flag: '🇱🇰', name: 'Sri Lanka' },
+  { code: '977', flag: '🇳🇵', name: 'Nepal' },
+  { code: '95', flag: '🇲🇲', name: 'Myanmar' },
+  { code: '855', flag: '🇰🇭', name: 'Cambodia' },
+  { code: '856', flag: '🇱🇦', name: 'Laos' },
+  { code: '673', flag: '🇧🇳', name: 'Brunei' },
+  { code: '975', flag: '🇧🇹', name: 'Bhutan' },
+  { code: '960', flag: '🇲🇻', name: 'Maldives' },
+  { code: '993', flag: '🇹🇲', name: 'Turkmenistan' },
+  { code: '998', flag: '🇺🇿', name: 'Uzbekistan' },
+  { code: '996', flag: '🇰🇬', name: 'Kyrgyzstan' },
+  { code: '992', flag: '🇹🇯', name: 'Tajikistan' },
+  { code: '7', flag: '🇰🇿', name: 'Kazakhstan' },
+  { code: '994', flag: '🇦🇿', name: 'Azerbaijan' },
+  { code: '995', flag: '🇬🇪', name: 'Georgia' },
+  { code: '374', flag: '🇦🇲', name: 'Armenia' },
+  { code: '98', flag: '🇮🇷', name: 'Iran' },
+  { code: '964', flag: '🇮🇶', name: 'Iraq' },
+  { code: '963', flag: '🇸🇾', name: 'Syria' },
+  { code: '961', flag: '🇱🇧', name: 'Lebanon' },
+  { code: '962', flag: '🇯🇴', name: 'Jordan' },
+  { code: '966', flag: '🇸🇦', name: 'Saudi Arabia' },
+  { code: '971', flag: '🇦🇪', name: 'UAE' },
+  { code: '974', flag: '🇶🇦', name: 'Qatar' },
+  { code: '973', flag: '🇧🇭', name: 'Bahrain' },
+  { code: '968', flag: '🇴🇲', name: 'Oman' },
+  { code: '967', flag: '🇾🇪', name: 'Yemen' },
+  { code: '965', flag: '🇰🇼', name: 'Kuwait' },
+  { code: '970', flag: '🇵🇸', name: 'Palestine' },
+  { code: '52', flag: '🇲🇽', name: 'Mexico' },
+  { code: '55', flag: '🇧🇷', name: 'Brazil' },
+  { code: '54', flag: '🇦🇷', name: 'Argentina' },
+  { code: '56', flag: '🇨🇱', name: 'Chile' },
+  { code: '57', flag: '🇨🇴', name: 'Colombia' },
+  { code: '51', flag: '🇵🇪', name: 'Peru' },
+  { code: '58', flag: '🇻🇪', name: 'Venezuela' },
+  { code: '593', flag: '🇪🇨', name: 'Ecuador' },
+  { code: '591', flag: '🇧🇴', name: 'Bolivia' },
+  { code: '595', flag: '🇵🇾', name: 'Paraguay' },
+  { code: '598', flag: '🇺🇾', name: 'Uruguay' },
+  { code: '61', flag: '🇦🇺', name: 'Australia' },
+  { code: '64', flag: '🇳🇿', name: 'New Zealand' },
+]
+
 export default function DS160IsraelForm({
   initialBlob = null,
   initialBlobKey = null,
@@ -1175,15 +1272,19 @@ export default function DS160IsraelForm({
               <FormInput register={register} getFieldError={getFieldError} label="עיר" name="addressCity" />
               <div className="flex flex-col mb-4">
                 <label className="font-semibold mb-1 text-gray-700">טלפון</label>
-                <div className="flex gap-2 items-start">
-                  <div className="flex flex-col w-24">
-                    <input
-                      type="tel"
+                <div className="flex gap-2 items-start" dir="ltr">
+                  <div className="flex flex-col shrink-0">
+                    <select
                       {...register('phoneCountryCode')}
-                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border text-center ${getFieldError('phoneCountryCode') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                      placeholder="972"
+                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border h-[42px] ${getFieldError('phoneCountryCode') ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
                       dir="ltr"
-                    />
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <option key={`${c.flag}-${c.code}`} value={c.code}>
+                          {c.flag} +{c.code} {c.name}
+                        </option>
+                      ))}
+                    </select>
                     {getFieldError('phoneCountryCode') && <span className="text-red-500 text-sm mt-1">{getFieldError('phoneCountryCode')?.message || 'שגיאה'}</span>}
                   </div>
                   <div className="flex flex-col flex-1">
@@ -1197,7 +1298,7 @@ export default function DS160IsraelForm({
                     {getFieldError('phoneNumber') && <span className="text-red-500 text-sm mt-1">{getFieldError('phoneNumber')?.message || 'שגיאה'}</span>}
                   </div>
                 </div>
-                <span className="text-xs text-gray-400 mt-1">קידומת מדינה + מספר (ללא 0 בהתחלה)</span>
+                <span className="text-xs text-gray-400 mt-1">מספר ללא 0 בהתחלה</span>
               </div>
               <FormInput register={register} getFieldError={getFieldError} label="Email" name="email" type="email" />
 
