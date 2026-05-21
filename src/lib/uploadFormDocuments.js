@@ -35,11 +35,11 @@ export function firstFile(value) {
  * @param {string} formId
  * @param {{ name: string, file: File|null }[]} items
  * @param {{ uploadUrl?: string }} [opts]
- * @returns {Promise<{ field: string, bucket: string, key: string }[]>}
+ * @returns {Promise<{ results: { field: string, bucket: string, key: string }[], s3Disabled: boolean }>}
  */
 export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
   const base = resolveUploadApiBase(opts)
-  if (!base) return []
+  if (!base) return { results: [], s3Disabled: true }
 
   const results = []
   for (const { name, file } of items) {
@@ -65,7 +65,7 @@ export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
       if (builtin && uploadRes.status === 503) {
         try {
           const j = JSON.parse(text)
-          if (j.code === 'S3_DISABLED') return []
+          if (j.code === 'S3_DISABLED') return { results: [], s3Disabled: true }
         } catch {
           /* fall through */
         }
@@ -76,5 +76,5 @@ export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
     const { key, bucket } = await uploadRes.json()
     results.push({ field: name, bucket: bucket || S3_DOCUMENTS_BUCKET, key })
   }
-  return results
+  return { results, s3Disabled: false }
 }

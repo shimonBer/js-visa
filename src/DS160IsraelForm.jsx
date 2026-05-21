@@ -510,7 +510,7 @@ export default function DS160IsraelForm({
   const onSubmit = async (data) => {
     setAsyncFlow({ phase: 'working', message: '' })
     try {
-      const uploads = await uploadFormDocumentsToS3(storageFormId, [
+      const { results: uploads, s3Disabled } = await uploadFormDocumentsToS3(storageFormId, [
         { name: 'passportScan', file: firstFile(data.passportScan) },
         { name: 'existingVisaScan', file: firstFile(data.existingVisaScan) },
         { name: 'socialSecurityScan', file: firstFile(data.socialSecurityScan) },
@@ -519,6 +519,9 @@ export default function DS160IsraelForm({
         { name: 'extraDocumentScan2', file: firstFile(data.extraDocumentScan2) },
         { name: 'extraDocumentScan3', file: firstFile(data.extraDocumentScan3) },
       ])
+      if (s3Disabled) {
+        console.warn('[submit] S3 not configured — document files were NOT uploaded.')
+      }
       s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
       const body = buildN8nBody('submit', data, s3DocumentsRef.current)
       saveFormDraftToBrowser(storageFormId, { lastEvent: 'submit', ...body })
@@ -571,7 +574,7 @@ export default function DS160IsraelForm({
       setAsyncFlow({ phase: 'idle', message: 'Saved successfully' })
       // S3 upload runs after the success message — failures are non-blocking.
       try {
-        const uploads = await uploadFormDocumentsToS3(storageFormId, [
+        const { results: uploads, s3Disabled } = await uploadFormDocumentsToS3(storageFormId, [
           { name: 'passportScan', file: firstFile(values.passportScan) },
           { name: 'existingVisaScan', file: firstFile(values.existingVisaScan) },
           { name: 'socialSecurityScan', file: firstFile(values.socialSecurityScan) },
@@ -580,6 +583,13 @@ export default function DS160IsraelForm({
           { name: 'extraDocumentScan2', file: firstFile(values.extraDocumentScan2) },
           { name: 'extraDocumentScan3', file: firstFile(values.extraDocumentScan3) },
         ])
+        const hasFiles = [
+          values.passportScan, values.existingVisaScan, values.socialSecurityScan,
+          values.americanLicenseScan, values.extraDocumentScan1, values.extraDocumentScan2, values.extraDocumentScan3,
+        ].some((v) => firstFile(v) instanceof File)
+        if (s3Disabled && hasFiles) {
+          setAsyncFlow({ phase: 'error', message: 'שמירה הצליחה, אבל קבצי הסריקה לא הועלו ל-S3 (נא לוודא שמפתחות AWS מוגדרים בסביבה).' })
+        }
         s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
         // Re-save blob with merged s3Documents (new uploads + previously known refs).
         if (uploads.length > 0) {
@@ -587,7 +597,7 @@ export default function DS160IsraelForm({
           await saveFormBlobPayload(fullBody, loadedBlobKeyRef.current ?? undefined)
         }
       } catch (s3Err) {
-        console.warn('[draft] S3 upload failed (blob already saved):', s3Err?.message)
+        setAsyncFlow({ phase: 'error', message: `שמירה הצליחה, אבל העלאת הקבצים ל-S3 נכשלה: ${s3Err?.message || 'שגיאה'}` })
       }
     } catch (e) {
       setAsyncFlow({
@@ -739,7 +749,11 @@ export default function DS160IsraelForm({
 
   async function uploadDocumentImmediately(fieldName, file) {
     try {
-      const uploads = await uploadFormDocumentsToS3(storageFormId, [{ name: fieldName, file }])
+      const { results: uploads, s3Disabled } = await uploadFormDocumentsToS3(storageFormId, [{ name: fieldName, file }])
+      if (s3Disabled) {
+        console.warn(`[upload] S3 not configured — ${fieldName} was not uploaded.`)
+        return
+      }
       if (uploads.length > 0) {
         s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
       }
