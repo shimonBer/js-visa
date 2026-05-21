@@ -214,6 +214,7 @@ export default async function handler(req, res) {
   }
 
   if (!accessKeyId || !secretAccessKey) {
+    console.error('[upload] S3_DISABLED — AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY not set')
     res.status(503).json({
       error: 'S3 upload not configured',
       code: 'S3_DISABLED',
@@ -248,11 +249,19 @@ export default async function handler(req, res) {
   }
 
   if (!body?.length) {
+    console.warn('[upload] empty body', { formId, fileName, contentType })
     res.status(400).json({ error: 'Empty body' })
     return
   }
 
   const client = makeS3Client(accessKeyId, secretAccessKey, sessionToken)
+
+  console.log('[upload] starting PutObject', {
+    key,
+    bucket,
+    contentType,
+    sizeBytes: body.length,
+  })
 
   try {
     await client.send(
@@ -263,9 +272,17 @@ export default async function handler(req, res) {
         ContentType: contentType,
       }),
     )
+    console.log('[upload] PutObject success', { key, bucket, sizeBytes: body.length })
     res.status(200).json({ key, bucket })
   } catch (e) {
-    console.error('[upload] PutObject', e)
+    console.error('[upload] PutObject failed', {
+      key,
+      bucket,
+      errorName: e?.name,
+      errorMessage: e?.message,
+      httpStatus: e?.$metadata?.httpStatusCode,
+      requestId: e?.$metadata?.requestId,
+    })
     res.status(500).json({
       error: 'S3 upload failed',
       code: 'UPLOAD_FAILED',
