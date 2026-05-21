@@ -1,0 +1,230 @@
+/**
+ * /api/guest-form
+ *
+ * POST ?action=generate  (admin token required)
+ *   Body: { pathname: string }
+ *   → Adds a guestToken to the blob, updates the status index, returns { guestLink, guestToken }
+ *
+ * GET ?token=<guestToken>  (public)
+ *   → Returns { formContext: { name }, missingFields: [{field, label, type, options?}] }
+ *
+ * PATCH ?token=<guestToken>  (public)
+ *   Body: { answers: { [field]: value } }
+ *   → Merges only the allowed missing fields into the blob, saves it back
+ */
+import crypto from 'crypto'
+import { put, list, get } from '@vercel/blob'
+import { verifyRequest } from './lib/verifyToken.js'
+import { calculateCompleteness } from '../src/lib/formCompleteness.js'
+
+const PREFIX = 'forms/'
+const STATUS_PATH = 'forms-meta/status.json'
+
+function blobToken() {
+  return process.env.BLOB_READ_WRITE_TOKEN
+}
+
+async function readBodyJson(req) {
+  if (typeof req.body === 'object' && req.body !== null && !Buffer.isBuffer(req.body)) {
+    return req.body
+  }
+  const chunks = []
+  for await (const chunk of req) chunks.push(chunk)
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'))
+  } catch {
+    return {}
+  }
+}
+
+async function streamToUtf8(stream) {
+  const buf = await new Response(stream).arrayBuffer()
+  return Buffer.from(buf).toString('utf8')
+}
+
+async function readStatusIndex(token) {
+  try {
+    const result = await get(STATUS_PATH, { access: 'private', token })
+    if (!result || result.statusCode !== 200 || !result.stream) return {}
+    return JSON.parse(await streamToUtf8(result.stream))
+  } catch {
+    return {}
+  }
+}
+
+async function writeStatusIndex(token, index) {
+  try {
+    await put(STATUS_PATH, JSON.stringify(index), {
+      access: 'private',
+      token,
+      contentType: 'application/json',
+      allowOverwrite: true,
+    })
+  } catch (e) {
+    console.warn('[guest-form] status index write failed:', e?.message)
+  }
+}
+
+async function readBlob(pathname, token) {
+  const result = await get(pathname, { access: 'private', token })
+  if (!result || result.statusCode !== 200 || !result.stream) return null
+  return JSON.parse(await streamToUtf8(result.stream))
+}
+
+/** Find the blob pathname for a given guestToken by scanning the status index. */
+async function findPathnameByToken(guestToken, token) {
+  const index = await readStatusIndex(token)
+  for (const [pathname, entry] of Object.entries(index)) {
+    if (entry.guestToken === guestToken) return { pathname, entry }
+  }
+  // Fallback: scan all blobs (handles legacy entries without index)
+  let cursor
+  let hasMore = true
+  while (hasMore) {
+    const page = await list({ prefix: PREFIX, token, cursor, limit: 1000 })
+    for (const b of page.blobs) {
+      try {
+        const payload = await readBlob(b.pathname, token)
+        if (payload?.guestToken === guestToken) return { pathname: b.pathname, entry: {} }
+      } catch {
+        // skip
+      }
+    }
+    hasMore = page.hasMore
+    cursor = page.cursor
+  }
+  return null
+}
+
+/** @param {import('http').IncomingMessage} req */
+export default async function handler(req, res) {
+  const token = blobToken()
+  if (!token) return res.status(503).json({ error: 'Blob not configured' })
+
+  const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+  const action = url.searchParams.get('action')
+  const guestToken = url.searchParams.get('token')
+
+  try {
+    // ── POST ?action=generate ─────────────────────────────────────────────
+    if (req.method === 'POST' && action === 'generate') {
+      const auth = verifyRequest(req)
+      if (!auth.ok) return res.status(auth.status).json({ error: auth.error })
+
+      const body = await readBodyJson(req)
+      const pathname =
+        typeof body.pathname === 'string' && body.pathname.startsWith('forms/') ? body.pathname : null
+      if (!pathname) return res.status(400).json({ error: 'Invalid pathname' })
+
+      const payload = await readBlob(pathname, token)
+      if (!payload) return res.status(404).json({ error: 'Form not found' })
+
+      // Re-use existing token or generate new one
+      const existingToken = payload.guestToken || null
+      const newToken = existingToken || crypto.randomUUID()
+
+      const enriched = { ...payload, guestToken: newToken }
+      await put(pathname, JSON.stringify(enriched), {
+        access: 'private',
+        token,
+        contentType: 'application/json',
+        allowOverwrite: true,
+      })
+
+      const statusIndex = await readStatusIndex(token)
+      statusIndex[pathname] = {
+        ...(statusIndex[pathname] || {}),
+        guestToken: newToken,
+      }
+      await writeStatusIndex(token, statusIndex)
+
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : url.origin
+      const guestLink = `${baseUrl}/fill/${newToken}`
+
+      return res.status(200).json({ guestLink, guestToken: newToken })
+    }
+
+    // ── GET ?token=xxx ────────────────────────────────────────────────────
+    if (req.method === 'GET' && guestToken) {
+      const found = await findPathnameByToken(guestToken, token)
+      if (!found) return res.status(404).json({ error: 'קישור לא תקף או שפג תוקפו' })
+
+      const payload = await readBlob(found.pathname, token)
+      if (!payload) return res.status(404).json({ error: 'הטופס לא נמצא' })
+
+      const formData = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+      const { missingFields } = calculateCompleteness(formData)
+      const name = [formData.firstName, formData.lastName].filter(Boolean).join(' ')
+
+      return res.status(200).json({
+        formContext: { name: name || 'לקוח' },
+        missingFields,
+      })
+    }
+
+    // ── PATCH ?token=xxx ──────────────────────────────────────────────────
+    if (req.method === 'PATCH' && guestToken) {
+      const found = await findPathnameByToken(guestToken, token)
+      if (!found) return res.status(404).json({ error: 'קישור לא תקף' })
+
+      const payload = await readBlob(found.pathname, token)
+      if (!payload) return res.status(404).json({ error: 'הטופס לא נמצא' })
+
+      const body = await readBodyJson(req)
+      const answers = body?.answers && typeof body.answers === 'object' ? body.answers : {}
+
+      const formData = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+
+      // Whitelist: only allow fields that were actually missing
+      const { missingFields } = calculateCompleteness(formData)
+      const allowedFields = new Set(missingFields.map((f) => f.field))
+
+      const mergedData = { ...formData }
+      for (const [field, value] of Object.entries(answers)) {
+        if (allowedFields.has(field)) {
+          mergedData[field] = value
+        }
+      }
+
+      const newCompleteness = calculateCompleteness(mergedData)
+      const updatedPayload = {
+        ...payload,
+        data: { ...payload.data, ...mergedData },
+        completeness: newCompleteness,
+        // Remove guestToken if form is now complete
+        ...(newCompleteness.isComplete ? { guestToken: null } : {}),
+      }
+
+      await put(found.pathname, JSON.stringify(updatedPayload), {
+        access: 'private',
+        token,
+        contentType: 'application/json',
+        allowOverwrite: true,
+      })
+
+      // Update status index
+      const statusIndex = await readStatusIndex(token)
+      statusIndex[found.pathname] = {
+        ...(statusIndex[found.pathname] || {}),
+        isComplete: newCompleteness.isComplete,
+        missingCount: newCompleteness.missingFields.length,
+        guestToken: newCompleteness.isComplete ? null : guestToken,
+      }
+      await writeStatusIndex(token, statusIndex)
+
+      return res.status(200).json({
+        ok: true,
+        isComplete: newCompleteness.isComplete,
+        remainingMissing: newCompleteness.missingFields.length,
+      })
+    }
+
+    res.setHeader('Allow', 'GET, POST, PATCH')
+    return res.status(405).json({ error: 'Method not allowed' })
+  } catch (e) {
+    console.error('[guest-form]', e)
+    return res.status(500).json({ error: e?.message || 'שגיאת שרת' })
+  }
+}

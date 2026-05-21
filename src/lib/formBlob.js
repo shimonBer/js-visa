@@ -2,6 +2,7 @@
  * Server-side Vercel Blob storage for full form JSON (via /api/form-blob).
  * Requires BLOB_READ_WRITE_TOKEN on the deployment linked to store (e.g. js-visa-blob).
  */
+import { authHeaders } from './auth.js'
 
 /**
  * @param {object} payload
@@ -11,7 +12,7 @@
 export async function saveFormBlobPayload(payload, pathnameOverride) {
   const res = await fetch('/api/form-blob', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ payload, ...(pathnameOverride ? { pathname: pathnameOverride } : {}) }),
   })
   const text = await res.text()
@@ -26,7 +27,7 @@ export async function saveFormBlobPayload(payload, pathnameOverride) {
 }
 
 export async function listFormBlobsFromApi() {
-  const res = await fetch('/api/form-blob')
+  const res = await fetch('/api/form-blob', { headers: authHeaders() })
   const text = await res.text()
   if (!res.ok) {
     throw new Error(text.slice(0, 400) || `List failed (${res.status})`)
@@ -35,7 +36,9 @@ export async function listFormBlobsFromApi() {
 }
 
 export async function fetchFormBlobPayload(pathname) {
-  const res = await fetch(`/api/form-blob?pathname=${encodeURIComponent(pathname)}`)
+  const res = await fetch(`/api/form-blob?pathname=${encodeURIComponent(pathname)}`, {
+    headers: authHeaders(),
+  })
   const text = await res.text()
   if (!res.ok) {
     throw new Error(text.slice(0, 400) || `Load failed (${res.status})`)
@@ -53,7 +56,7 @@ export async function fetchFormBlobPayload(pathname) {
 export async function deleteFormFromCloud(pathname) {
   const res = await fetch('/api/delete-form', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ pathname }),
   })
   const text = await res.text()

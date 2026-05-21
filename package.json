@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
+    "@supabase/supabase-js": "^2.106.1",
     "@vercel/blob": "^2.3.3",
     "fuse.js": "^7.3.0",
     "pdf-lib": "^1.17.1",

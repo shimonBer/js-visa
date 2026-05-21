@@ -6,6 +6,7 @@
 
 import { get, del } from '@vercel/blob'
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { verifyRequest } from './lib/verifyToken.js'
 
 const PREFIX = 'forms/'
 
@@ -95,6 +96,11 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const authResult = verifyRequest(req)
+  if (!authResult.ok) {
+    return res.status(authResult.status).json({ error: authResult.error })
   }
 
   const token = blobToken()

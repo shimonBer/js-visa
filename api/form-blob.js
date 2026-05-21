@@ -1,6 +1,9 @@
 import { put, list, get } from '@vercel/blob'
+import { verifyRequest } from './lib/verifyToken.js'
+import { calculateCompleteness } from '../src/lib/formCompleteness.js'
 
 const PREFIX = 'forms/'
+const STATUS_PATH = 'forms-meta/status.json'
 
 function blobToken() {
   return process.env.BLOB_READ_WRITE_TOKEN
@@ -127,12 +130,44 @@ async function streamToUtf8(stream) {
   return Buffer.from(buf).toString('utf8')
 }
 
+/** Read the forms-meta/status.json index. Returns {} on any error. */
+async function readStatusIndex(token) {
+  try {
+    const result = await get(STATUS_PATH, { access: 'private', token })
+    if (!result || result.statusCode !== 200 || !result.stream) return {}
+    const text = await streamToUtf8(result.stream)
+    return JSON.parse(text)
+  } catch {
+    return {}
+  }
+}
+
+/** Write the forms-meta/status.json index. Failures are non-fatal. */
+async function writeStatusIndex(token, index) {
+  try {
+    await put(STATUS_PATH, JSON.stringify(index), {
+      access: 'private',
+      token,
+      contentType: 'application/json',
+      allowOverwrite: true,
+    })
+  } catch (e) {
+    console.warn('[form-blob] status index write failed:', e?.message)
+  }
+}
+
 /** @param {import('http').IncomingMessage} req */
 export default async function handler(req, res) {
   const token = blobToken()
   if (!token) {
     res.status(503).json({ error: 'Blob not configured', code: 'BLOB_DISABLED' })
     return
+  }
+
+  // All endpoints require a valid admin session
+  const auth = verifyRequest(req)
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error })
   }
 
   try {
@@ -164,32 +199,45 @@ export default async function handler(req, res) {
         return
       }
 
-      const out = []
-      let cursor
-      let hasMore = true
-      while (hasMore) {
-        const page = await list({
-          prefix: PREFIX,
-          token,
-          cursor,
-          limit: 1000,
-        })
-        for (const b of page.blobs) {
-          const parsed = parseListEntry(b.pathname)
-          out.push({
-            pathname: b.pathname,
-            displayName: parsed.displayName,
-            formId: parsed.formId,
-            uploadedAt: b.uploadedAt?.toISOString?.() ?? null,
-            size: b.size,
-          })
-        }
-        hasMore = page.hasMore
-        cursor = page.cursor
-      }
+      // List all forms and merge completeness from status index
+      const [blobPage, statusIndex] = await Promise.all([
+        (async () => {
+          const out = []
+          let cursor
+          let hasMore = true
+          while (hasMore) {
+            const page = await list({ prefix: PREFIX, token, cursor, limit: 1000 })
+            for (const b of page.blobs) {
+              const parsed = parseListEntry(b.pathname)
+              out.push({
+                pathname: b.pathname,
+                displayName: parsed.displayName,
+                formId: parsed.formId,
+                uploadedAt: b.uploadedAt?.toISOString?.() ?? null,
+                size: b.size,
+              })
+            }
+            hasMore = page.hasMore
+            cursor = page.cursor
+          }
+          return out
+        })(),
+        readStatusIndex(token),
+      ])
 
-      out.sort((a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')))
-      res.status(200).json({ forms: out })
+      blobPage.sort((a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')))
+
+      const forms = blobPage.map((f) => {
+        const status = statusIndex[f.pathname]
+        return {
+          ...f,
+          isComplete: status?.isComplete ?? null,
+          missingCount: status?.missingCount ?? null,
+          guestToken: status?.guestToken ?? null,
+        }
+      })
+
+      res.status(200).json({ forms })
       return
     }
 
@@ -200,20 +248,35 @@ export default async function handler(req, res) {
         res.status(400).json({ error: 'Missing payload' })
         return
       }
-      // Use the client-supplied pathname (original blob key) when available so
-      // re-saves always overwrite the same file regardless of any form data changes.
       const isValidOverride =
         typeof pathnameOverride === 'string' &&
         pathnameOverride.startsWith('forms/') &&
         pathnameOverride.endsWith('.json')
       const pathname = isValidOverride ? pathnameOverride : blobPathnameForPayload(payload)
-      const json = JSON.stringify(payload)
+
+      // Calculate completeness and attach to payload
+      const formData = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+      const completeness = calculateCompleteness(formData)
+      const enriched = { ...payload, completeness }
+
+      const json = JSON.stringify(enriched)
       await put(pathname, json, {
         access: 'private',
         token,
         contentType: 'application/json',
         allowOverwrite: true,
       })
+
+      // Update status index (non-blocking on failure)
+      const statusIndex = await readStatusIndex(token)
+      const prev = statusIndex[pathname] || {}
+      statusIndex[pathname] = {
+        isComplete: completeness.isComplete,
+        missingCount: completeness.missingFields.length,
+        guestToken: prev.guestToken ?? null,
+      }
+      await writeStatusIndex(token, statusIndex)
+
       res.status(200).json({ pathname, ok: true })
       return
     }
