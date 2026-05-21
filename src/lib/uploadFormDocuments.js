@@ -39,6 +39,7 @@ export function firstFile(value) {
  */
 export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
   const base = resolveUploadApiBase(opts)
+  console.log('[upload] base URL:', base || '(empty — S3 disabled/dev mode)', '| PROD:', import.meta.env.PROD)
   if (!base) return { results: [], s3Disabled: true }
 
   const results = []
@@ -61,6 +62,7 @@ export async function uploadFormDocumentsToS3(formId, items, opts = {}) {
 
     if (!uploadRes.ok) {
       const text = await uploadRes.text()
+      console.error('[upload] server error', { field: name, status: uploadRes.status, body: text.slice(0, 300) })
       const builtin = base === '/api/upload' || base.endsWith('/api/upload')
       if (builtin && uploadRes.status === 503) {
         try {
