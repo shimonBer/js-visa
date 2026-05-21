@@ -1,16 +1,25 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Renders a single form field based on its type from FIELD_META.
+ * Renders a single editable form field.
  */
-function GuestField({ field, label, type, options, value, onChange }) {
+function GuestField({ field, label, type, options, value, onChange, isFilled }) {
   const baseInput =
-    'w-full rounded-md border border-gray-300 px-3 py-2 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+    'w-full rounded-md border px-3 py-2 text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ' +
+    (isFilled ? 'border-green-400 bg-green-50' : 'border-gray-300 focus:border-blue-500')
+
+  const savedBadge = isFilled ? (
+    <span className="text-xs text-green-700 font-medium bg-green-100 px-2 py-0.5 rounded-full">
+      ✓ נשמר
+    </span>
+  ) : null
 
   if (type === 'radio' && Array.isArray(options)) {
     return (
       <fieldset>
-        <legend className="block text-sm font-medium text-gray-700 mb-1">{label}</legend>
+        <legend className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+          {label} {savedBadge}
+        </legend>
         <div className="flex gap-4 flex-wrap">
           {options.map((opt) => (
             <label key={opt} className="flex items-center gap-1.5 text-sm text-gray-800 cursor-pointer">
@@ -33,12 +42,10 @@ function GuestField({ field, label, type, options, value, onChange }) {
   if (type === 'select' && Array.isArray(options)) {
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={baseInput}
-        >
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+          {label} {savedBadge}
+        </label>
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={baseInput}>
           <option value="">— בחר —</option>
           {options.map((opt) => (
             <option key={opt} value={opt}>{opt}</option>
@@ -51,7 +58,9 @@ function GuestField({ field, label, type, options, value, onChange }) {
   if (type === 'textarea') {
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+          {label} {savedBadge}
+        </label>
         <textarea
           rows={3}
           value={value}
@@ -64,9 +73,16 @@ function GuestField({ field, label, type, options, value, onChange }) {
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+        {label} {savedBadge}
+      </label>
       <input
-        type={type === 'number' ? 'number' : type === 'date' ? 'date' : type === 'email' ? 'email' : 'text'}
+        type={
+          type === 'number' ? 'number'
+          : type === 'date' ? 'date'
+          : type === 'email' ? 'email'
+          : 'text'
+        }
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={baseInput}
@@ -78,7 +94,8 @@ function GuestField({ field, label, type, options, value, onChange }) {
 export default function MiniFormGuest({ guestToken }) {
   const [phase, setPhase] = useState('loading') // loading | form | submitting | success | error
   const [formContext, setFormContext] = useState(null)
-  const [missingFields, setMissingFields] = useState([])
+  /** All fields the client was originally invited to fill, annotated with currentValue + isFilled */
+  const [guestFields, setGuestFields] = useState([])
   const [answers, setAnswers] = useState({})
   const [submitError, setSubmitError] = useState('')
   const [loadError, setLoadError] = useState('')
@@ -99,10 +116,14 @@ export default function MiniFormGuest({ guestToken }) {
           return
         }
         setFormContext(json.formContext)
-        setMissingFields(json.missingFields || [])
+
+        const fields = json.guestFields || json.missingFields || []
+        setGuestFields(fields)
+
+        // Pre-populate with current saved values (empty string for unfilled)
         const initial = {}
-        for (const f of json.missingFields || []) {
-          initial[f.field] = ''
+        for (const f of fields) {
+          initial[f.field] = f.currentValue ?? ''
         }
         setAnswers(initial)
         setPhase('form')
@@ -175,6 +196,9 @@ export default function MiniFormGuest({ guestToken }) {
   }
 
   const isSubmitting = phase === 'submitting'
+  const filledCount = guestFields.filter((f) => f.isFilled).length
+  const pendingCount = guestFields.length - filledCount
+  const allDone = pendingCount === 0
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 py-10 px-4 font-sans">
@@ -184,17 +208,35 @@ export default function MiniFormGuest({ guestToken }) {
             השלמת פרטים — {formContext?.name}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            אנא מלא את השדות החסרים הבאים כדי שנוכל להגיש את בקשת הוויזה שלך.
+            אנא מלא את השדות הנדרשים כדי שנוכל להגיש את בקשת הוויזה שלך.
           </p>
+          {guestFields.length > 0 && (
+            <div className="mt-3 flex gap-3 text-xs">
+              {filledCount > 0 && (
+                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                  ✓ {filledCount} שדות נשמרו
+                </span>
+              )}
+              {pendingCount > 0 && (
+                <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">
+                  {pendingCount} שדות ממתינים
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {missingFields.length === 0 ? (
+        {allDone ? (
           <p className="text-green-700 text-sm bg-green-50 border border-green-200 rounded-md px-3 py-2">
-            כל הפרטים מלאים! אין צורך בהשלמה.
+            כל הפרטים שהתבקשת למלא כבר נשמרו. תוכל לעדכן אותם ולשלוח שוב אם תרצה.
           </p>
+        ) : null}
+
+        {guestFields.length === 0 ? (
+          <p className="text-gray-500 text-sm">אין שדות להשלמה.</p>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
-            {missingFields.map((f) => (
+            {guestFields.map((f) => (
               <GuestField
                 key={f.field}
                 field={f.field}
@@ -203,6 +245,7 @@ export default function MiniFormGuest({ guestToken }) {
                 options={f.options}
                 value={answers[f.field] ?? ''}
                 onChange={(v) => setAnswer(f.field, v)}
+                isFilled={f.isFilled}
               />
             ))}
 
@@ -217,7 +260,7 @@ export default function MiniFormGuest({ guestToken }) {
               disabled={isSubmitting}
               className="w-full py-3 px-4 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50"
             >
-              {isSubmitting ? 'שולח…' : 'שלח פרטים'}
+              {isSubmitting ? 'שולח…' : allDone ? 'עדכן פרטים' : 'שלח פרטים'}
             </button>
           </form>
         )}

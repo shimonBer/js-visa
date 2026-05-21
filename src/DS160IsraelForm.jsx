@@ -1838,6 +1838,7 @@ export default function DS160IsraelForm({
             ]} />
           </section>
 
+          {import.meta.env.VITE_EXTRA_DOCS === 'true' && (
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מסמכים נוספים (לא מתוכננים בטופס)</h2>
             <p className="text-sm text-gray-600">
@@ -1881,6 +1882,7 @@ export default function DS160IsraelForm({
               />
             </div>
           </section>
+          )}
 
           <div className="pt-6 border-t flex flex-col items-end gap-2">
             {translationErrors.size > 0 && (

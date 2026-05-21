@@ -180,7 +180,15 @@ export default async function handler(req, res) {
       const existingToken = payload.guestToken || null
       const newToken = existingToken || crypto.randomUUID()
 
-      const enriched = { ...payload, guestToken: newToken }
+      // Store the original list of invited fields so the client can see already-filled ones on return
+      const formData = payload?.data && typeof payload.data === 'object' ? payload.data : {}
+      const { missingFields: currentMissing } = calculateCompleteness(formData)
+      // Preserve existing guestFields if re-generating for the same form
+      const guestFields = payload.guestFields && payload.guestFields.length > 0
+        ? payload.guestFields
+        : currentMissing
+
+      const enriched = { ...payload, guestToken: newToken, guestFields }
       await put(pathname, JSON.stringify(enriched), {
         access: 'private',
         token,
@@ -212,12 +220,28 @@ export default async function handler(req, res) {
       if (!payload) return res.status(404).json({ error: 'הטופס לא נמצא' })
 
       const formData = payload?.data && typeof payload.data === 'object' ? payload.data : {}
-      const { missingFields } = calculateCompleteness(formData)
       const name = [formData.firstName, formData.lastName].filter(Boolean).join(' ')
+
+      // Use the stored original invited fields so returning clients see what they already filled.
+      // Fall back to current missing fields for older tokens that predate guestFields storage.
+      const { missingFields: currentMissing } = calculateCompleteness(formData)
+      const baseFields = Array.isArray(payload.guestFields) && payload.guestFields.length > 0
+        ? payload.guestFields
+        : currentMissing
+
+      // Annotate each field with its current saved value and whether it's already filled
+      const missingFieldKeys = new Set(currentMissing.map((f) => f.field))
+      const guestFields = baseFields.map((f) => {
+        const rawVal = formData[f.field]
+        const isFilled = !missingFieldKeys.has(f.field)
+        const currentValue = rawVal != null ? rawVal : ''
+        return { ...f, currentValue, isFilled }
+      })
 
       return res.status(200).json({
         formContext: { name: name || 'לקוח' },
-        missingFields,
+        missingFields: currentMissing,
+        guestFields,
       })
     }
 
