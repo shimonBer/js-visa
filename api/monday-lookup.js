@@ -1,11 +1,13 @@
 /**
  * POST /api/monday-lookup
- * Body: { phone?: string, email?: string }
+ * Body: { phone: string }
  * Response: { found: boolean, itemId?: string, itemName?: string }
  *
  * Safety — read-only: uses GraphQL `items_page_by_column_values` (query only). No mutations.
  *
- * Search order: phone first (if provided), then email (if phone not found).
+ * Searches by phone only (digits-only, e.g. "9725433454").
+ * Board is read from MONDAY_BOARD_ID env var.
+ * Phone column id is read from MONDAY_PHONE_COLUMN_ID env var (column type: phone, id: "phone").
  * When required env vars are missing returns { found: false } (HTTP 200) for graceful degradation.
  */
 
@@ -102,8 +104,7 @@ export default async function handler(req, res) {
 
   const apiToken = process.env.MONDAY_API_TOKEN?.trim()
   const boardId = process.env.MONDAY_BOARD_ID?.trim()
-  const phoneColumnId = process.env.MONDAY_PHONE_COLUMN_ID?.trim() || ''
-  const emailColumnId = process.env.MONDAY_EMAIL_COLUMN_ID?.trim() || ''
+  const phoneColumnId = process.env.MONDAY_PHONE_COLUMN_ID?.trim() || 'phone'
 
   if (!apiToken || !boardId) {
     return jsonResponse(res, 200, { found: false })
@@ -117,22 +118,14 @@ export default async function handler(req, res) {
   }
 
   const rawPhone = typeof body.phone === 'string' ? body.phone.trim() : ''
-  const rawEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+  const digits = rawPhone.replace(/\D/g, '')
 
-  // 1. Search by phone (digits-only for Monday phone column)
-  if (phoneColumnId && rawPhone && rawPhone.startsWith('+') && rawPhone.length >= 8) {
-    const digits = rawPhone.replace(/\D/g, '')
-    if (digits.length >= 7) {
-      const hit = await lookupByColumn({ apiToken, boardId, columnId: phoneColumnId, value: digits })
-      if (hit) return jsonResponse(res, 200, { found: true, itemId: hit.id, itemName: hit.name || hit.id })
-    }
+  if (!digits || digits.length < 7) {
+    return jsonResponse(res, 200, { found: false })
   }
 
-  // 2. Fallback: search by email
-  if (emailColumnId && rawEmail && rawEmail.includes('@')) {
-    const hit = await lookupByColumn({ apiToken, boardId, columnId: emailColumnId, value: rawEmail })
-    if (hit) return jsonResponse(res, 200, { found: true, itemId: hit.id, itemName: hit.name || hit.id })
-  }
+  const hit = await lookupByColumn({ apiToken, boardId, columnId: phoneColumnId, value: digits })
+  if (hit) return jsonResponse(res, 200, { found: true, itemId: hit.id, itemName: hit.name || hit.id })
 
   return jsonResponse(res, 200, { found: false })
 }

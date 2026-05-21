@@ -26,22 +26,18 @@ function getMondayLookupUrl(opts = {}) {
 }
 
 /**
- * Search for an existing Monday board item by phone and/or email.
- * Returns the first match found (phone takes priority over email).
+ * Search for an existing Monday board item by phone (digits only, e.g. "9725433454").
  *
  * @param {{ phone?: string, email?: string }} params
  * @param {{ apiBase?: string }} [opts]
  * @returns {Promise<{ found: true, itemId: string, itemName: string } | { found: false }>}
  */
-export async function searchMondayItem({ phone, email } = {}, opts = {}) {
+export async function searchMondayItem({ phone } = {}, opts = {}) {
   const url = getMondayLookupUrl(opts)
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      ...(phone ? { phone: String(phone).trim() } : {}),
-      ...(email ? { email: String(email).trim() } : {}),
-    }),
+    body: JSON.stringify({ phone: String(phone || '').trim() }),
   })
 
   const text = await res.text()
