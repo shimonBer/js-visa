@@ -1,6 +1,10 @@
 /**
  * /api/guest-form
  *
+ * POST ?action=login  (public)
+ *   Body: { userId, password }
+ *   → Validates against Supabase users table, returns { token, isAdmin }
+ *
  * POST ?action=generate  (admin token required)
  *   Body: { pathname: string }
  *   → Adds a guestToken to the blob, updates the status index, returns { guestLink, guestToken }
@@ -14,8 +18,38 @@
  */
 import crypto from 'crypto'
 import { put, list, get } from '@vercel/blob'
+import { createClient } from '@supabase/supabase-js'
 import { verifyRequest } from './lib/verifyToken.js'
 import { calculateCompleteness } from '../src/lib/formCompleteness.js'
+
+// ── Auth helpers (formerly api/auth.js) ──────────────────────────────────────
+
+function supabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Supabase env vars not configured')
+  return createClient(url, key, { auth: { persistSession: false } })
+}
+
+function verifyPassword(plaintext, stored) {
+  try {
+    const [iterStr, salt, expected] = stored.split(':')
+    const iterations = parseInt(iterStr, 10)
+    const actual = crypto.pbkdf2Sync(plaintext, salt, iterations, 64, 'sha512').toString('hex')
+    return crypto.timingSafeEqual(Buffer.from(actual, 'hex'), Buffer.from(expected, 'hex'))
+  } catch {
+    return false
+  }
+}
+
+function buildToken(userId, isAdmin) {
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error('JWT_SECRET not configured')
+  const exp = Date.now() + 8 * 60 * 60 * 1000
+  const payload = Buffer.from(JSON.stringify({ u: userId, a: isAdmin, e: exp })).toString('base64')
+  const sig = crypto.createHmac('sha256', secret).update(payload).digest('base64')
+  return `${payload}.${sig}`
+}
 
 const PREFIX = 'forms/'
 const STATUS_PATH = 'forms-meta/status.json'
@@ -106,6 +140,29 @@ export default async function handler(req, res) {
   const guestToken = url.searchParams.get('token')
 
   try {
+    // ── POST ?action=login ────────────────────────────────────────────────
+    if (req.method === 'POST' && action === 'login') {
+      const body = await readBodyJson(req)
+      const { userId, password } = body
+      if (!userId || !password) {
+        return res.status(400).json({ error: 'Missing userId or password' })
+      }
+      const db = supabase()
+      const { data: user, error } = await db
+        .from('users')
+        .select('user_id, password_hash, is_admin')
+        .eq('user_id', String(userId).trim())
+        .single()
+      if (error || !user) {
+        return res.status(401).json({ error: 'שם משתמש או סיסמה שגויים' })
+      }
+      if (!verifyPassword(String(password), user.password_hash)) {
+        return res.status(401).json({ error: 'שם משתמש או סיסמה שגויים' })
+      }
+      const sessionToken = buildToken(user.user_id, user.is_admin)
+      return res.status(200).json({ token: sessionToken, isAdmin: user.is_admin })
+    }
+
     // ── POST ?action=generate ─────────────────────────────────────────────
     if (req.method === 'POST' && action === 'generate') {
       const auth = verifyRequest(req)

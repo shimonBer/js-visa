@@ -12,7 +12,7 @@ export default function LoginPage({ onLogin }) {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch('/api/auth', {
+      const res = await fetch('/api/guest-form?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: userId.trim(), password }),
