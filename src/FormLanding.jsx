@@ -191,7 +191,7 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                   ? { symbol: '🟢', title: 'טופס מלא' }
                   : f.isComplete === false
                     ? { symbol: '🔴', title: `חסרים ${f.missingCount ?? ''} שדות` }
-                    : null
+                    : { symbol: '🟡', title: 'סטטוס לא ידוע — פתח ושמור טיוטה כדי לרענן' }
 
               return (
                 <li key={f.pathname} className="space-y-1">
@@ -213,13 +213,13 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                       </span>
                     </button>
 
-                    {/* Send-to-client button — only for incomplete forms */}
-                    {f.isComplete === false && (
+                    {/* Send-to-client button — for incomplete or unknown-status forms */}
+                    {f.isComplete !== true && (
                       <button
                         type="button"
                         disabled={!!deletingPathname || panel?.loading}
                         onClick={() => void handleGenerateGuestLink(f)}
-                        title="שלח ללקוח לימלא שדות חסרים"
+                        title={f.isComplete === false ? `שלח ללקוח לימלא שדות חסרים (${f.missingCount ?? '?'} שדות)` : 'שלח ללקוח לימלא שדות חסרים'}
                         className="shrink-0 px-3 py-2 rounded-md border border-blue-200 text-blue-700 text-sm font-medium hover:bg-blue-50 disabled:opacity-40"
                       >
                         {panel?.loading ? '…' : '📤'}

@@ -227,6 +227,38 @@ export default async function handler(req, res) {
 
       blobPage.sort((a, b) => String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || '')))
 
+      // Backfill completeness for forms missing from the status index (up to 15, in parallel).
+      const missing = blobPage.filter((f) => statusIndex[f.pathname] === undefined)
+      if (missing.length > 0) {
+        const toFetch = missing.slice(0, 15)
+        const backfilled = await Promise.allSettled(
+          toFetch.map(async (f) => {
+            try {
+              const result = await get(f.pathname, { access: 'private', token })
+              if (!result || result.statusCode !== 200 || !result.stream) return null
+              const text = await streamToUtf8(result.stream)
+              const payload = JSON.parse(text)
+              const formData =
+                payload?.data && typeof payload.data === 'object' ? payload.data : {}
+              const { isComplete, missingFields } = calculateCompleteness(formData)
+              const prev = statusIndex[f.pathname] || {}
+              statusIndex[f.pathname] = {
+                isComplete,
+                missingCount: missingFields.length,
+                guestToken: prev.guestToken ?? null,
+              }
+              return f.pathname
+            } catch {
+              return null
+            }
+          }),
+        )
+        const anyUpdated = backfilled.some((r) => r.status === 'fulfilled' && r.value != null)
+        if (anyUpdated) {
+          await writeStatusIndex(token, statusIndex)
+        }
+      }
+
       const forms = blobPage.map((f) => {
         const status = statusIndex[f.pathname]
         return {

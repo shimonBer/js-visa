@@ -736,6 +736,17 @@ export default function DS160IsraelForm({
     }
   }
 
+  async function uploadDocumentImmediately(fieldName, file) {
+    try {
+      const uploads = await uploadFormDocumentsToS3(storageFormId, [{ name: fieldName, file }])
+      if (uploads.length > 0) {
+        s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
+      }
+    } catch (e) {
+      console.warn(`[upload] immediate upload of ${fieldName} failed:`, e?.message)
+    }
+  }
+
   /** Controlled by VITE_I94_ENABLED env var. Defaults to enabled when not set. */
   const i94Enabled = import.meta.env.VITE_I94_ENABLED !== 'false'
 
@@ -1171,6 +1182,7 @@ export default function DS160IsraelForm({
                     accept="image/*,application/pdf"
                     onFilePicked={(f) => {
                       void runPassportOcrFromFile(f)
+                      void uploadDocumentImmediately('passportScan', f)
                     }}
                   />
                 </div>
@@ -1541,6 +1553,7 @@ export default function DS160IsraelForm({
                           accept="image/*,application/pdf"
                           onFilePicked={(f) => {
                             void runPreviousVisaOcrFromFile(f)
+                            void uploadDocumentImmediately('existingVisaScan', f)
                           }}
                         />
                       </div>
@@ -1609,6 +1622,7 @@ export default function DS160IsraelForm({
                           accept="image/*,application/pdf"
                           onFilePicked={(f) => {
                             void runSocialSecurityOcrFromFile(f)
+                            void uploadDocumentImmediately('socialSecurityScan', f)
                           }}
                         />
                       </div>
@@ -1653,6 +1667,7 @@ export default function DS160IsraelForm({
                           accept="image/*,application/pdf"
                           onFilePicked={(f) => {
                             void runUsLicenseOcrFromFile(f)
+                            void uploadDocumentImmediately('americanLicenseScan', f)
                           }}
                         />
                       </div>
@@ -1861,6 +1876,7 @@ export default function DS160IsraelForm({
                 getFieldError={getFieldError}
                 watchedValue={extraDocumentScan1Watch}
                 accept="image/*,application/pdf"
+                onFilePicked={(f) => void uploadDocumentImmediately('extraDocumentScan1', f)}
               />
               <DocumentFileSlot
                 label="מסמך נוסף 2"
@@ -1870,6 +1886,7 @@ export default function DS160IsraelForm({
                 getFieldError={getFieldError}
                 watchedValue={extraDocumentScan2Watch}
                 accept="image/*,application/pdf"
+                onFilePicked={(f) => void uploadDocumentImmediately('extraDocumentScan2', f)}
               />
               <DocumentFileSlot
                 label="מסמך נוסף 3"
@@ -1879,6 +1896,7 @@ export default function DS160IsraelForm({
                 getFieldError={getFieldError}
                 watchedValue={extraDocumentScan3Watch}
                 accept="image/*,application/pdf"
+                onFilePicked={(f) => void uploadDocumentImmediately('extraDocumentScan3', f)}
               />
             </div>
           </section>
