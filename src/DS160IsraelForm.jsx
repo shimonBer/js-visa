@@ -520,7 +520,7 @@ export default function DS160IsraelForm({
         { name: 'extraDocumentScan3', file: firstFile(data.extraDocumentScan3) },
       ])
       s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
-      const body = buildN8nBody('submit', data, uploads)
+      const body = buildN8nBody('submit', data, s3DocumentsRef.current)
       saveFormDraftToBrowser(storageFormId, { lastEvent: 'submit', ...body })
       try {
         const blobResult = await saveFormBlobPayload(body, loadedBlobKeyRef.current ?? undefined)
@@ -560,7 +560,8 @@ export default function DS160IsraelForm({
     }
     setAsyncFlow({ phase: 'working', message: '' })
     try {
-      const quickBody = buildN8nBody('draft', values, [])
+      // Quick save: include already-known s3Documents so re-saves never wipe previous refs.
+      const quickBody = buildN8nBody('draft', values, s3DocumentsRef.current)
       saveFormDraftToBrowser(storageFormId, { lastEvent: 'draft', ...quickBody })
       const blobResult = await saveFormBlobPayload(quickBody, loadedBlobKeyRef.current ?? undefined)
       // Store the pathname returned by the server so subsequent saves use the same key.
@@ -580,9 +581,9 @@ export default function DS160IsraelForm({
           { name: 'extraDocumentScan3', file: firstFile(values.extraDocumentScan3) },
         ])
         s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
-        // Re-save blob with updated s3Documents if any files were uploaded.
+        // Re-save blob with merged s3Documents (new uploads + previously known refs).
         if (uploads.length > 0) {
-          const fullBody = buildN8nBody('draft', values, uploads)
+          const fullBody = buildN8nBody('draft', values, s3DocumentsRef.current)
           await saveFormBlobPayload(fullBody, loadedBlobKeyRef.current ?? undefined)
         }
       } catch (s3Err) {
