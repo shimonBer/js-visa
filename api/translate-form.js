@@ -324,6 +324,7 @@ CONTACT INFORMATION
 * Passport Number
 
 * Passport Book Number
+  Rule: only relevant for Israeli passports. If passportIssuingCountry is not Israel or the value is absent → output: No
 
 * Country of Issuance
 
