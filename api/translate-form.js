@@ -603,7 +603,8 @@ RELATIVES IN THE U.S.
 * School / Institution Name
 * Address
 * Course of Study
-  Rule: use fieldOfStudy from JSON; if empty or absent → ❗ MISSING
+  Rule: for high school entries use highSchoolFieldOfStudy; for academic degree entries use fieldOfStudy.
+  If the relevant field is empty or absent → ❗ MISSING
 * Attendance From
 * Attendance To
 

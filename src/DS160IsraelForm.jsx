@@ -1805,17 +1805,23 @@ export default function DS160IsraelForm({
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">לימודים</h2>
 
             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם למדת בתיכון?" name="attendedHighSchool" options={[{ label: 'לא למדתי בתיכון', value: 'no' }, { label: 'פרט, שם התיכון וכתובת', value: 'yes' }]} />
-            {w.attendedHighSchool === 'yes' && <FormInput register={register} getFieldError={getFieldError} label="שם התיכון וכתובת" name="highSchoolDetails" type="textarea" />}
-
-            <FormSelect register={register} getFieldError={getFieldError} label="תחום לימודים (Course of Study)" name="fieldOfStudy" options={['תיכון', 'קורסים אקדמיים', 'תואר ראשון — B.A./B.S.', 'תואר שני — M.A./M.S.', 'תואר שלישי — Ph.D./Doctorate', 'תואר מקצועי — J.D./M.D./D.D.S.', 'הכשרה מקצועית', 'אחר']} />
+            {w.attendedHighSchool === 'yes' && (
+              <div className="space-y-3 bg-gray-50 p-4 rounded border border-gray-200">
+                <FormInput register={register} getFieldError={getFieldError} label="שם התיכון וכתובת" name="highSchoolDetails" type="textarea" />
+                <FormSelect register={register} getFieldError={getFieldError} label="תחום לימודים" name="highSchoolFieldOfStudy" options={['תיכון', 'הכשרה מקצועית', 'אחר']} />
+              </div>
+            )}
 
             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש תואר אקדמאי?" name="hasAcademicDegree" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
             {w.hasAcademicDegree === 'yes' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
-                <h3 className="col-span-full font-bold text-lg">מוסד לימודים 1</h3>
+                <h3 className="col-span-full font-bold text-lg">מוסד לימודים</h3>
                 <FormInput register={register} getFieldError={getFieldError} label="שם מוסד הלימודים" name="institutionName" />
                 <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב" name="institutionStreet" />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר" name="institutionCity" />
+                <div className="col-span-full">
+                  <FormSelect register={register} getFieldError={getFieldError} label="תחום לימודים" name="fieldOfStudy" options={['קורסים אקדמיים', 'תואר ראשון — B.A./B.S.', 'תואר שני — M.A./M.S.', 'תואר שלישי — Ph.D./Doctorate', 'תואר מקצועי — J.D./M.D./D.D.S.', 'הכשרה מקצועית', 'אחר']} />
+                </div>
                 <FormInput register={register} getFieldError={getFieldError} label="שנת וחודש התחלה" name="studyStartYearMonth" />
                 <FormInput register={register} getFieldError={getFieldError} label="שנת וחודש סיום" name="studyEndYearMonth" />
 
