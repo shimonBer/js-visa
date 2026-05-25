@@ -923,7 +923,6 @@ export default function DS160IsraelForm({
     if (values.attendedHighSchool === 'yes') req('highSchoolDetails')
     if (values.hasAcademicDegree === 'yes') {
       req('institutionName')
-      req('fieldOfStudy')
     }
     if (values.visitedAbroadLast5Years === 'yes') req('countriesVisitedLast5Years')
     if (values.servedInMilitary === 'yes') {
@@ -1805,10 +1804,10 @@ export default function DS160IsraelForm({
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">לימודים</h2>
 
-            <FormSelect register={register} getFieldError={getFieldError} label="רמת / תחום הלימודים הגבוהה ביותר" name="fieldOfStudy" options={['תיכון', 'קורסים אקדמיים', 'תואר ראשון — B.A./B.S.', 'תואר שני — M.A./M.S.', 'תואר שלישי — Ph.D./Doctorate', 'תואר מקצועי — J.D./M.D./D.D.S.', 'הכשרה מקצועית', 'אחר']} />
-
             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם למדת בתיכון?" name="attendedHighSchool" options={[{ label: 'לא למדתי בתיכון', value: 'no' }, { label: 'פרט, שם התיכון וכתובת', value: 'yes' }]} />
             {w.attendedHighSchool === 'yes' && <FormInput register={register} getFieldError={getFieldError} label="שם התיכון וכתובת" name="highSchoolDetails" type="textarea" />}
+
+            <FormSelect register={register} getFieldError={getFieldError} label="תחום לימודים (Course of Study)" name="fieldOfStudy" options={['תיכון', 'קורסים אקדמיים', 'תואר ראשון — B.A./B.S.', 'תואר שני — M.A./M.S.', 'תואר שלישי — Ph.D./Doctorate', 'תואר מקצועי — J.D./M.D./D.D.S.', 'הכשרה מקצועית', 'אחר']} />
 
             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש תואר אקדמאי?" name="hasAcademicDegree" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
             {w.hasAcademicDegree === 'yes' && (
