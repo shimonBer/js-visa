@@ -300,6 +300,7 @@ CONTACT INFORMATION
 
 * Primary Phone Number
 * Secondary Phone Number
+  Rule: if absent or empty → output: NONE
 * Work Phone Number
 * Email Address
 
