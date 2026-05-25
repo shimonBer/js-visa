@@ -274,6 +274,19 @@ PERSONAL INFORMATION 2
   Rule: if hasTaxpayerID is "no" or absent → output: NO
   If hasTaxpayerID is "yes" → output the taxpayerIDNumber value
 
+SOCIAL MEDIA
+
+* Have you used social media platforms in the last 5 years? YES/NO
+
+  * IF NO:
+    Social Media Platforms: N/A
+  * IF YES:
+
+    * Platform Name
+    * Username / Identifier
+
+(REPEATABLE GROUP)
+
 ━━━━━━━━━━━━━━━━━━━━
 
 🟦 ADDRESS AND PHONE INFORMATION
@@ -350,8 +363,6 @@ CONTACT INFORMATION
     * Arrival Date
     * Arrival City
 
-* Locations You Plan to Visit
-
 * Intended Length of Stay
 
 * Address Where You Will Stay in the U.S.
@@ -359,6 +370,14 @@ CONTACT INFORMATION
 PERSON/ENTITY PAYING FOR TRIP
 
 * Who is paying for the trip?
+  Rule: if tripFundingSource indicates self-payment (e.g. "עצמי", "myself", "I", "applicant", "עצמאי") →
+    output: Self
+    Name: N/A
+    Relationship: N/A
+    Phone Number: N/A
+    Email Address: N/A
+    Address: N/A
+  Otherwise → output all fields below:
 * Name
 * Relationship
 * Phone Number
@@ -391,7 +410,6 @@ PERSON/ENTITY PAYING FOR TRIP
   * IF YES:
 
     * Arrival Date
-    * Departure Date
     * Length of Stay
 
 (REPEATABLE GROUP)
@@ -401,8 +419,11 @@ PERSON/ENTITY PAYING FOR TRIP
   * IF NO:
     Previous Visa Details: N/A
   * IF YES:
+    Rule: populate from existingVisaScan attachment first; fall back to hadUSVisa JSON fields.
+    If a specific sub-field is unavailable → N/A (not ❗ MISSING)
 
     * Visa Issue Date
+    * Visa Expiration Date
     * Visa Number
     * Same Visa Type? YES/NO
 
@@ -514,7 +535,7 @@ RELATIVES IN THE U.S.
     * Spouse City of Birth
     * Spouse Country of Birth
     * Spouse Address
-      Rule: if spouseAddressSame is true or spouseAddress is empty → use applicant’s home address (addressStreet + addressCity + Israel)
+      Rule: if spouseAddressSame is true or spouseAddress is empty → output: Same address
       Otherwise → use spouseAddress value
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -581,6 +602,7 @@ RELATIVES IN THE U.S.
 * School / Institution Name
 * Address
 * Course of Study
+  Rule: use fieldOfStudy from JSON; if empty or absent → ❗ MISSING
 * Attendance From
 * Attendance To
 
@@ -597,19 +619,6 @@ TRAVEL HISTORY
 LANGUAGES
 
 * Languages spoken
-
-SOCIAL MEDIA
-
-* Have you used social media platforms in the last 5 years? YES/NO
-
-  * IF NO:
-    Social Media Platforms: N/A
-  * IF YES:
-
-    * Platform Name
-    * Username / Identifier
-
-(REPEATABLE GROUP)
 
 ORGANIZATIONS
 
@@ -761,11 +770,9 @@ passportScan:
 
 existingVisaScan:
 
-* extract visa class
-* issue date
-* expiration date
-* visa number
-* entries
+* primary source for PREVIOUS U.S. VISA fields
+* extract: visa class, issue date, expiration date, visa number, entries
+* if existingVisaScan is absent and hadUSVisa is "yes" → use N/A for sub-fields that cannot be determined
 
 socialSecurityScan:
 
