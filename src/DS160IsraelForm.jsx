@@ -314,6 +314,7 @@ export default function DS160IsraelForm({
       hasForeignCitizenship: 'no',
       foreignCitizenshipCountry: '',
       foreignCitizenshipId: '',
+      visaClass: 'B1/B2',
       travelingWithOthers: 'no',
       travelCompanions: [{ fullName: '', relation: '' }],
       visitedUSBefore: 'no',
@@ -331,6 +332,7 @@ export default function DS160IsraelForm({
       hasTaxpayerID: 'no',
       hasUSDriversLicense: 'no',
       passportLostOrStolen: 'no',
+      spouseAddressSame: true,
       hasUSContact: 'no',
       hasCloseRelativesInUS: 'no',
       workedAnotherJobLast5Years: 'no',
@@ -858,7 +860,6 @@ export default function DS160IsraelForm({
     req('phoneCountryCode')
     req('phoneNumber')
     req('email')
-    req('plannedDepartureDate')
     req('plannedStayDuration')
     req('accommodationInUS')
     req('tripFundingSource')
@@ -1076,6 +1077,7 @@ export default function DS160IsraelForm({
     visitedAbroadLast5Years: watch('visitedAbroadLast5Years'),
     servedInMilitary: watch('servedInMilitary'),
     maritalStatus: watch('maritalStatus'),
+    spouseAddressSame: watch('spouseAddressSame'),
     mondayItemId: watch('mondayItemId'),
   }
 
@@ -1271,7 +1273,15 @@ export default function DS160IsraelForm({
                     </div>
                   </div>
                   <FormInput register={register} getFieldError={getFieldError} label="אזרחות עיקרית" name="spouseCitizenship" />
-                  <FormInput register={register} getFieldError={getFieldError} label="במידה ולא גרים באותה הכתובת" name="spouseAddress" />
+                  <div className="col-span-full">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input type="checkbox" {...register('spouseAddressSame')} className="w-4 h-4 rounded border-gray-300" />
+                      <span className="text-sm font-medium text-gray-700">גרים באותה הכתובת</span>
+                    </label>
+                  </div>
+                  {!w.spouseAddressSame && (
+                    <FormInput register={register} getFieldError={getFieldError} label="כתובת בן/בת הזוג" name="spouseAddress" />
+                  )}
                 </div>
               )}
 
@@ -1357,6 +1367,7 @@ export default function DS160IsraelForm({
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">תכנון נסיעה לארה&quot;ב</h2>
             <div className="grid grid-cols-1 gap-4">
+              <FormSelect register={register} getFieldError={getFieldError} label="מטרת הנסיעה / סוג הויזה" name="visaClass" options={['B1/B2 — תיירות ועסקים', 'F1/M1 — ויזת סטודנט']} />
               <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אתה מתכנן לטוס עם אנשים נוספים?" name="travelingWithOthers" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
               {w.travelingWithOthers === 'yes' && (
                 <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4">
@@ -1391,7 +1402,6 @@ export default function DS160IsraelForm({
                   </button>
                 </div>
               )}
-              <FormInput register={register} getFieldError={getFieldError} label="מתי התכנון לטוס לארה״ב?" name="plannedDepartureDate" />
               <FormInput register={register} getFieldError={getFieldError} label="לכמה זמן?" name="plannedStayDuration" />
               <FormInput register={register} getFieldError={getFieldError} label="איפה תלון בארה״ב?" name="accommodationInUS" type="textarea" />
               <FormInput register={register} getFieldError={getFieldError} label="מי משלם בעבור מגיש הבקשה על הנסיעה?" name="tripFundingSource" />
@@ -1712,6 +1722,7 @@ export default function DS160IsraelForm({
                 <FormSelect register={register} getFieldError={getFieldError} label="קרבת איש הקשר עבורך" name="contactRelationship" options={['קרוב משפחה', 'חבר', 'מעסיק אמריקאי', 'שותף / לקוח עסקי', 'בעל או אישה', 'מוסד לימודים אמריקאי', 'אחר']} />
                 <FormInput register={register} getFieldError={getFieldError} label="שם מלא של איש הקשר" name="contactFullName" />
                 <FormInput register={register} getFieldError={getFieldError} label="טלפון של איש הקשר" name="contactPhone" />
+                <FormInput register={register} getFieldError={getFieldError} label="אימייל של איש הקשר" name="contactEmail" />
                 <div className="col-span-1 md:col-span-2">
                   <FormInput register={register} getFieldError={getFieldError} label="כתובת מלאה של איש הקשר" name="contactAddress" type="textarea" />
                 </div>
@@ -1753,6 +1764,9 @@ export default function DS160IsraelForm({
                 <FormInput register={register} getFieldError={getFieldError} label="טלפון בחברה" name="employerPhone" />
                 <FormInput register={register} getFieldError={getFieldError} label="תאריך התחלה" name="employmentStartDate" />
                 <FormInput register={register} getFieldError={getFieldError} label="שכר חודשי ברוטו" name="monthlySalaryGross" />
+                <div className="col-span-full">
+                  <FormInput register={register} getFieldError={getFieldError} label="תאר את תפקידך ותחומי האחריות שלך" name="jobDuties" type="textarea" />
+                </div>
               </div>
             )}
 
@@ -1801,7 +1815,7 @@ export default function DS160IsraelForm({
                 <FormInput register={register} getFieldError={getFieldError} label="שם מוסד הלימודים" name="institutionName" />
                 <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב" name="institutionStreet" />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר" name="institutionCity" />
-                <FormInput register={register} getFieldError={getFieldError} label="מה למדת?" name="fieldOfStudy" />
+                <FormSelect register={register} getFieldError={getFieldError} label="תחום לימודים" name="fieldOfStudy" options={['תיכון', 'קורסים אקדמיים', 'תואר ראשון — B.A./B.S.', 'תואר שני — M.A./M.S.', 'תואר שלישי — Ph.D./Doctorate', 'תואר מקצועי — J.D./M.D./D.D.S.', 'הכשרה מקצועית', 'אחר']} />
                 <FormInput register={register} getFieldError={getFieldError} label="שנת וחודש התחלה" name="studyStartYearMonth" />
                 <FormInput register={register} getFieldError={getFieldError} label="שנת וחודש סיום" name="studyEndYearMonth" />
 

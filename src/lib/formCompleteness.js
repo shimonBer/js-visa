@@ -21,7 +21,6 @@ export const FIELD_META = {
   addressCity:              { label: 'עיר מגורים',                    type: 'text' },
   phoneNumber:              { label: 'מספר טלפון',                    type: 'text' },
   email:                    { label: 'דואר אלקטרוני',                 type: 'email' },
-  plannedDepartureDate:     { label: 'תאריך יציאה מתוכנן',            type: 'date' },
   plannedStayDuration:      { label: 'משך שהייה מתוכנן',             type: 'text' },
   accommodationInUS:        { label: 'מקום לינה בארה״ב',              type: 'text' },
   tripFundingSource:        { label: 'מקור מימון הנסיעה',             type: 'text' },
@@ -114,7 +113,6 @@ export function calculateCompleteness(data) {
   req('addressCity')
   req('phoneNumber')
   req('email')
-  req('plannedDepartureDate')
   req('plannedStayDuration')
   req('accommodationInUS')
   req('tripFundingSource')

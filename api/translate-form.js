@@ -267,8 +267,12 @@ PERSONAL INFORMATION 2
 * National Identification Number
 
 * U.S. Social Security Number
+  Rule: if hasSocialSecurityNumber is "no" or absent → output: NO
+  If hasSocialSecurityNumber is "yes" → output the socialSecurityNumber value
 
 * U.S. Taxpayer ID Number
+  Rule: if hasTaxpayerID is "no" or absent → output: NO
+  If hasTaxpayerID is "yes" → output the taxpayerIDNumber value
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -331,9 +335,10 @@ CONTACT INFORMATION
 
 🟦 TRAVEL INFORMATION
 
-* Purpose of Trip to the United States
-
-* Specific Visa Class
+* Purpose of Trip / Visa Class
+  Rule: read the visaClass field from JSON.
+  If visaClass starts with "B1/B2" or is absent/empty → output: B1/B2 — Tourism & Business
+  If visaClass starts with "F1/M1" → output: F1/M1 — Student Visa
 
 * Have you made specific travel plans? YES/NO
 
@@ -342,9 +347,7 @@ CONTACT INFORMATION
   * IF YES:
 
     * Arrival Date
-    * Departure Date
     * Arrival City
-    * Departure City
 
 * Locations You Plan to Visit
 
@@ -373,7 +376,6 @@ PERSON/ENTITY PAYING FOR TRIP
 
     * Full Name
     * Relationship
-    * Has Valid U.S. Visa? YES/NO
 
 (REPEATABLE GROUP)
 
@@ -440,6 +442,7 @@ CONTACT DETAILS
 
 * Phone Number
 * Email Address
+  Rule: if contactEmail is empty or absent → output: N/A
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -452,6 +455,7 @@ FATHER
 * Father’s Given Name
 
 * Father’s Date of Birth
+  Rule: if fatherBirthDate is empty or absent → output: N/A
 
 * Is your father in the United States? YES/NO
 
@@ -468,6 +472,7 @@ MOTHER
 * Mother’s Given Name
 
 * Mother’s Date of Birth
+  Rule: if motherBirthDate is empty or absent → output: N/A
 
 * Is your mother in the United States? YES/NO
 
@@ -508,6 +513,8 @@ RELATIVES IN THE U.S.
     * Spouse City of Birth
     * Spouse Country of Birth
     * Spouse Address
+      Rule: if spouseAddressSame is true or spouseAddress is empty → use applicant’s home address (addressStreet + addressCity + Israel)
+      Otherwise → use spouseAddress value
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -540,11 +547,10 @@ RELATIVES IN THE U.S.
 * Job Title / Position
 * Employer Address
 * Employer Phone Number
-* Supervisor Surname
-* Supervisor Given Name
 * Employment Start Date
 * Monthly Salary
 * Describe Your Duties
+  Rule: use jobDuties field from JSON; if empty or absent → N/A
 
 ━━━━━━━━━━━━━━━━━━━━
 
