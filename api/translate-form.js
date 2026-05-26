@@ -240,6 +240,7 @@ PERSONAL INFORMATION 1
 * City of Birth
 
 * State/Province of Birth
+  Rule: if absent or empty → N/A
 
 * Country of Birth
 
@@ -331,6 +332,7 @@ CONTACT INFORMATION
 * City of Issuance
 
 * State/Province of Issuance
+  Rule: if absent or empty → N/A
 
 * Passport Issue Date
 
