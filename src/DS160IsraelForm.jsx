@@ -860,6 +860,7 @@ export default function DS160IsraelForm({
     req('phoneCountryCode')
     req('phoneNumber')
     req('email')
+    req('plannedArrivalDate')
     req('plannedStayDuration')
     req('accommodationInUS')
     req('tripFundingSource')
@@ -884,6 +885,8 @@ export default function DS160IsraelForm({
     if (values.hadUSVisa === 'yes') {
       req('lastVisaIssueDate')
       req('lastVisaExpirationDate')
+      req('visaLostOrStolen')
+      req('tenPrinted')
     }
     if (values.visaRefused === 'yes') req('visaRefusalExplanation')
     if (values.deniedEntryToUS === 'yes') req('deniedEntryDetails')
@@ -903,6 +906,7 @@ export default function DS160IsraelForm({
       req('contactAddress')
     }
     if (values.hasCloseRelativesInUS === 'yes') req('relativeFullName')
+    if (values.hasCloseRelativesInUS === 'no') req('hasOtherRelativesInUS')
     if (values.currentOccupation === 'עובד') {
       req('employerName')
       req('employerStreet')

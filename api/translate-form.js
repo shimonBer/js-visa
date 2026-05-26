@@ -39,8 +39,7 @@ CORE REQUIREMENTS
 * ALL sections and subsections MUST always appear in the output.
 * All YES/NO questions MUST always have an answer.
 * If a YES/NO field is not explicitly answered or evidenced, default to NO.
-* If a conditional section is not applicable because the answer is NO, still show the subsection and write:
-  N/A
+* If a conditional section is not applicable because the answer is NO, OMIT the subsection entirely. Do NOT write N/A after it.
 * If a required factual field is unavailable, write:
   ❗ MISSING
 * Never invent personal information.
@@ -72,18 +71,18 @@ N/A vs ❗ MISSING RULES
 Use:
 
 * NO → for negative yes/no questions
-* N/A → for conditionally irrelevant subsections
 * ❗ MISSING → for required factual information that is unavailable
+* N/A → ONLY for optional fields that genuinely do not apply (e.g. state/province when not applicable)
+
+When a YES/NO question is answered NO, OMIT any sub-fields entirely. Do NOT write N/A below a NO answer.
 
 Examples:
 
 Have you ever used other names? NO
-Other Names: N/A
 
 National ID Number: ❗ MISSING
 
 Have you served in the military? NO
-Military Branch: N/A
 
 ━━━━━━━━━━━━━━━━━━━━
 PASSPORT PRIORITY RULES
@@ -215,8 +214,6 @@ PERSONAL INFORMATION 1
 
 * Have you ever used other names? YES/NO
 
-  * IF NO:
-    Other Names: N/A
   * IF YES:
 
     * Other Surnames
@@ -224,8 +221,6 @@ PERSONAL INFORMATION 1
 
 * Do you have a telecode that represents your name? YES/NO
 
-  * IF NO:
-    Telecode Name: N/A
   * IF YES:
 
     * Telecode Surname
@@ -250,8 +245,6 @@ PERSONAL INFORMATION 2
 
 * Do you hold or have you held another nationality? YES/NO
 
-  * IF NO:
-    Other Nationality Details: N/A
   * IF YES:
 
     * Other Nationality
@@ -259,8 +252,6 @@ PERSONAL INFORMATION 2
 
 * Are you a permanent resident of another country? YES/NO
 
-  * IF NO:
-    Permanent Residence Country: N/A
   * IF YES:
 
     * Country
@@ -279,8 +270,6 @@ SOCIAL MEDIA
 
 * Have you used social media platforms in the last 5 years? YES/NO
 
-  * IF NO:
-    Social Media Platforms: N/A
   * IF YES:
 
     * Platform Name
@@ -340,8 +329,6 @@ CONTACT INFORMATION
 
 * Have you ever lost a passport or had one stolen? YES/NO
 
-  * IF NO:
-    Lost Passport Details: N/A
   * IF YES:
 
     * Lost Passport Number
@@ -357,15 +344,13 @@ CONTACT INFORMATION
   If visaClass starts with "B1/B2" or is absent/empty → output: B1/B2 — Tourism & Business
   If visaClass starts with "F1/M1" → output: F1/M1 — Student Visa
 
-* Have you made specific travel plans? YES/NO
-  Rule: if plannedArrivalDate is non-empty → YES; otherwise → NO
+* Have you made specific travel plans? YES
 
-  * IF NO:
-    Travel Plans: N/A
-  * IF YES:
+* Intended Date of Arrival
+  Rule: use plannedArrivalDate; if empty or absent → ❗ MISSING
 
-    * Intended Date of Arrival: use plannedArrivalDate value
-    * Arrival City: infer from accommodationInUS if possible; otherwise N/A
+* Arrival City
+  Rule: infer from accommodationInUS if possible; otherwise N/A
 
 * Intended Length of Stay
 
@@ -390,8 +375,6 @@ PERSON/ENTITY PAYING FOR TRIP
 
 * Are there other persons traveling with you? YES/NO
 
-  * IF NO:
-    Travel Companions: N/A
   * IF YES:
 
     * Full Name
@@ -405,8 +388,6 @@ PERSON/ENTITY PAYING FOR TRIP
 
 * Have you ever been in the United States? YES/NO
 
-  * IF NO:
-    Previous U.S. Visits: N/A
   * IF YES:
 
     * Arrival Date
@@ -416,8 +397,6 @@ PERSON/ENTITY PAYING FOR TRIP
 
 * Have you ever been issued a U.S. visa? YES/NO
 
-  * IF NO:
-    Previous Visa Details: N/A
   * IF YES:
     Rule: populate from existingVisaScan attachment first; fall back to hadUSVisa JSON fields.
     If a specific sub-field is unavailable → N/A (not ❗ MISSING)
@@ -429,24 +408,20 @@ PERSON/ENTITY PAYING FOR TRIP
     * Are you applying in the same country where the visa above was issued, and is this your principal country of residence? YES/NO
       Rule: derive from visaIssuedInIsrael (yes → YES, no → NO); default YES if absent
     * Have you been ten-printed? YES/NO
-      Rule: derive from tenPrinted field (yes → YES, no → NO); default NO if absent
+      Rule: derive from tenPrinted field (yes → YES, no → NO); if absent → ❗ MISSING
     * Has your U.S. Visa ever been lost or stolen? YES/NO
-      Rule: derive from visaLostOrStolen field (yes → YES, no → NO); default NO if absent
+      Rule: derive from visaLostOrStolen field (yes → YES, no → NO); if absent → ❗ MISSING
     * Has your U.S. Visa ever been cancelled or revoked? YES/NO
-      Rule: derive from visaWasCancelled field (yes → YES, no → NO); default NO if absent
+      Rule: derive from visaWasCancelled field (yes → YES, no → NO); if absent → ❗ MISSING
 
 * Have you ever been refused a U.S. visa or denied admission? YES/NO
 
-  * IF NO:
-    Refusal Explanation: N/A
   * IF YES:
 
     * Full Explanation
 
 * Has anyone ever filed an immigrant petition on your behalf? YES/NO
 
-  * IF NO:
-    Petition Details: N/A
   * IF YES:
 
     * Petition Type
@@ -489,8 +464,6 @@ FATHER
 
 * Is your father in the United States? YES/NO
 
-  * IF NO:
-    Father U.S. Status: N/A
   * IF YES:
 
     * Status in the U.S.
@@ -506,8 +479,6 @@ MOTHER
 
 * Is your mother in the United States? YES/NO
 
-  * IF NO:
-    Mother U.S. Status: N/A
   * IF YES:
 
     * Status in the U.S.
@@ -517,8 +488,6 @@ RELATIVES IN THE U.S.
 * Do you have immediate relatives in the United States? YES/NO
   Rule: if hasCloseRelativesInUS === 'yes' → YES; otherwise → NO
 
-  * IF NO:
-    Relatives in U.S.: N/A
   * IF YES:
 
     * Relative Name
@@ -539,8 +508,6 @@ RELATIVES IN THE U.S.
 
 * Are you currently married? YES/NO
 
-  * IF NO:
-    Spouse Information: N/A
   * IF YES:
 
     * Spouse Surname
@@ -563,8 +530,6 @@ RELATIVES IN THE U.S.
     → NO
   Otherwise derive from presence of exSpouse fields or maritalStatus values 'גרוש'/'פרוד'/'אלמן'.
 
-  * IF NO:
-    Former Spouses: N/A
   * IF YES:
 
     * Former Spouse Surname
@@ -599,8 +564,6 @@ RELATIVES IN THE U.S.
 
 * Have you previously been employed? YES/NO
 
-  * IF NO:
-    Previous Employment: N/A
   * IF YES:
 
     * Employer Name
@@ -644,8 +607,6 @@ ORGANIZATIONS
 
 * Have you belonged to, contributed to, or worked for any professional, social, or charitable organizations? YES/NO
 
-  * IF NO:
-    Organizations: N/A
   * IF YES:
 
     * Organization Name
@@ -657,8 +618,6 @@ SPECIALIZED SKILLS
 
 * Do you possess specialized skills or training involving firearms, explosives, nuclear, biological, or chemical experience? YES/NO
 
-  * IF NO:
-    Specialized Skills: N/A
   * IF YES:
 
     * Full Description
@@ -669,8 +628,6 @@ SPECIALIZED SKILLS
 
 * Have you served in the military? YES/NO
 
-  * IF NO:
-    Military Service Details: N/A
   * IF YES:
 
     * Country
@@ -688,8 +645,7 @@ For ALL questions below:
 
 * ALWAYS output YES or NO
 * IF YES → explanation required
-* IF NO → write:
-  Explanation: N/A
+* IF NO → omit explanation line entirely
 
 MEDICAL & HEALTH
 
@@ -850,7 +806,7 @@ The output must:
 * include ALL sections and fields
 * always answer YES/NO questions
 * use NO when no evidence indicates YES
-* use N/A for non-applicable conditional subsections
+* omit subsection entirely when a YES/NO answer is NO — do NOT write N/A below it
 * use ❗ MISSING only for unavailable required factual information
 * never omit fields or sections
 
