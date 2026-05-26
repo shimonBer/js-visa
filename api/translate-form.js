@@ -1053,6 +1053,8 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           // Vision attachments require a vision-capable model. `gpt-4o-search-preview` is text-only and would skip image analysis.
           model: 'gpt-4o',
+          temperature: 0,
+          seed: 42,
           max_tokens: 16_384,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
