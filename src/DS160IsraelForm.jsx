@@ -1401,6 +1401,7 @@ export default function DS160IsraelForm({
                   </button>
                 </div>
               )}
+              <FormInput register={register} getFieldError={getFieldError} label="תאריך הגעה משוערת לארה״ב" name="plannedArrivalDate" hint="YYYY-MM-DD, משוער" />
               <FormInput register={register} getFieldError={getFieldError} label="לכמה זמן?" name="plannedStayDuration" />
               <FormInput register={register} getFieldError={getFieldError} label="איפה תלון בארה״ב?" name="accommodationInUS" type="textarea" />
               <FormInput register={register} getFieldError={getFieldError} label="מי משלם בעבור מגיש הבקשה על הנסיעה?" name="tripFundingSource" />
@@ -1596,7 +1597,9 @@ export default function DS160IsraelForm({
                         hint="מומלץ YYYY-MM-DD; ניתן למלא אוטומטית מצילום הויזה"
                       />
                       <FormRadioGroup register={register} getFieldError={getFieldError} label="האם הויזה הקודמת שלך הונפקה בישראל?" name="visaIssuedInIsrael" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
-                      <FormRadioGroup register={register} getFieldError={getFieldError} label="האם הויזה שלך בוטלה?" name="visaWasCancelled" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
+                      <FormRadioGroup register={register} getFieldError={getFieldError} label="האם הויזה שלך בוטלה או נשללה?" name="visaWasCancelled" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                      <FormRadioGroup register={register} getFieldError={getFieldError} label="האם הויזה שלך לארה״ב אי פעם אבדה או נגנבה?" name="visaLostOrStolen" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                      <FormRadioGroup register={register} getFieldError={getFieldError} label="האם עברת טביעות אצבעות של 10 אצבעות (ten-print) בארה״ב?" name="tenPrinted" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                     </div>
                   )}
                 </div>
@@ -1746,6 +1749,10 @@ export default function DS160IsraelForm({
                 <FormSelect register={register} getFieldError={getFieldError} label="קרבה אלייך" name="relativeRelationship" options={['הורה', 'אח/ות', 'ילד/ה', 'בעל/אישה']} />
                 <FormSelect register={register} getFieldError={getFieldError} label="סטטוס בארה״ב" name="relativeUSStatus" options={['גרין קארד (LPR)', 'אזרח', 'אשרת סטודנט', 'אשרת עבודה', 'מטייל', 'אחר']} />
               </div>
+            )}
+
+            {w.hasCloseRelativesInUS === 'no' && (
+              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך קרובי משפחה אחרים (לא מדרגה ראשונה) בארה״ב?" name="hasOtherRelativesInUS" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
             )}
           </section>
 

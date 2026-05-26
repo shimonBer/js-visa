@@ -358,13 +358,14 @@ CONTACT INFORMATION
   If visaClass starts with "F1/M1" → output: F1/M1 — Student Visa
 
 * Have you made specific travel plans? YES/NO
+  Rule: if plannedArrivalDate is non-empty → YES; otherwise → NO
 
   * IF NO:
     Travel Plans: N/A
   * IF YES:
 
-    * Arrival Date
-    * Arrival City
+    * Intended Date of Arrival: use plannedArrivalDate value
+    * Arrival City: infer from accommodationInUS if possible; otherwise N/A
 
 * Intended Length of Stay
 
@@ -374,12 +375,8 @@ PERSON/ENTITY PAYING FOR TRIP
 
 * Who is paying for the trip?
   Rule: if tripFundingSource indicates self-payment (e.g. "עצמי", "myself", "I", "applicant", "עצמאי") →
-    output: Self
-    Name: N/A
-    Relationship: N/A
-    Phone Number: N/A
-    Email Address: N/A
-    Address: N/A
+    output: Who is paying for the trip? Self
+    (omit Name / Relationship / Phone Number / Email Address / Address lines entirely)
   Otherwise → output all fields below:
 * Name
 * Relationship
@@ -429,6 +426,14 @@ PERSON/ENTITY PAYING FOR TRIP
     * Visa Expiration Date
     * Visa Number
     * Same Visa Type? YES/NO
+    * Are you applying in the same country where the visa above was issued, and is this your principal country of residence? YES/NO
+      Rule: derive from visaIssuedInIsrael (yes → YES, no → NO); default YES if absent
+    * Have you been ten-printed? YES/NO
+      Rule: derive from tenPrinted field (yes → YES, no → NO); default NO if absent
+    * Has your U.S. Visa ever been lost or stolen? YES/NO
+      Rule: derive from visaLostOrStolen field (yes → YES, no → NO); default NO if absent
+    * Has your U.S. Visa ever been cancelled or revoked? YES/NO
+      Rule: derive from visaWasCancelled field (yes → YES, no → NO); default NO if absent
 
 * Have you ever been refused a U.S. visa or denied admission? YES/NO
 
@@ -510,6 +515,7 @@ MOTHER
 RELATIVES IN THE U.S.
 
 * Do you have immediate relatives in the United States? YES/NO
+  Rule: if hasCloseRelativesInUS === 'yes' → YES; otherwise → NO
 
   * IF NO:
     Relatives in U.S.: N/A
@@ -520,6 +526,12 @@ RELATIVES IN THE U.S.
     * Immigration Status
 
 (REPEATABLE GROUP)
+
+* Do you have any other relatives in the United States? YES/NO
+  Rule:
+  - If hasCloseRelativesInUS === 'distant' → YES
+  - If hasOtherRelativesInUS === 'yes' → YES
+  - Otherwise → NO
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -546,6 +558,10 @@ RELATIVES IN THE U.S.
 🟦 PREVIOUS SPOUSES
 
 * Have you ever been married before? YES/NO
+  Rule: if maritalStatus is 'נשוי', 'נשוי אזרחית', or 'חיים משותפים'
+    AND no exSpouse fields (exSpouseName, exSpouseBirthCityCountry, etc.) are present in JSON
+    → NO
+  Otherwise derive from presence of exSpouse fields or maritalStatus values 'גרוש'/'פרוד'/'אלמן'.
 
   * IF NO:
     Former Spouses: N/A
