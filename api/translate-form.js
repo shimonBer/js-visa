@@ -1051,8 +1051,9 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          // Vision attachments require a vision-capable model. `gpt-4o-search-preview` is text-only and would skip image analysis.
-          model: 'gpt-4o',
+          // Vision attachments require a vision-capable model.
+          // gpt-4.1: better instruction-following than gpt-4o, 20% cheaper, 1M context, vision-capable.
+          model: 'gpt-4.1',
           temperature: 0,
           seed: 42,
           max_tokens: 16_384,
