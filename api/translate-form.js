@@ -243,6 +243,7 @@ PERSONAL INFORMATION 1
 * Date of Birth
 
 * City of Birth
+  Rule: if the passport or document shows the city name in Hebrew → append it in parentheses, e.g. Jerusalem (ירושלים)
 
 * State/Province of Birth
   Rule: if absent or empty → N/A
@@ -329,6 +330,10 @@ CONTACT INFORMATION
 * Country of Issuance
 
 * City of Issuance
+  Rule: if the passport shows the city name in Hebrew → append it in parentheses, e.g. Jerusalem (ירושלים)
+
+* Issuing Authority
+  Rule: extract the issuing authority name as printed on the passport; if shown in Hebrew → append it in parentheses, e.g. Ministry of Interior (משרד הפנים)
 
 * State/Province of Issuance
   Rule: if absent or empty → N/A
