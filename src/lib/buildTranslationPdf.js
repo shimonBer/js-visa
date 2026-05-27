@@ -45,7 +45,7 @@ function classifyPdfLine(raw, inSecurity) {
   return 'body'
 }
 
-const NOTO_SANS_TTF_URL = '/fonts/NotoSans-Regular.ttf'
+const NOTO_SANS_TTF_URL = '/fonts/DejaVuSans.ttf'
 
 /** @type {Uint8Array | null | undefined} undefined = not tried, null = failed */
 let cachedNotoBytes = undefined
