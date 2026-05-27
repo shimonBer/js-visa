@@ -277,6 +277,7 @@ SOCIAL MEDIA
 
     * Platform Name
     * Username / Identifier
+      Rule: output the value exactly as given. If empty or absent → N/A. Never use ❗ MISSING for this field.
 
 (REPEATABLE GROUP)
 
@@ -434,23 +435,28 @@ PERSON/ENTITY PAYING FOR TRIP
 
 🟦 U.S. CONTACT INFORMATION
 
-* Contact Person Surname
-* Contact Person Given Name
-* Organization Name
-* Relationship to You
+* Do you have a contact in the U.S.? YES/NO
+  Rule: if hasUSContact is "yes" → YES; otherwise → NO
 
-U.S. ADDRESS
+  * IF YES:
 
-* Street Address
-* City
-* State
-* ZIP Code
+    * Contact Person Surname
+    * Contact Person Given Name
+    * Organization Name
+    * Relationship to You
 
-CONTACT DETAILS
+    U.S. ADDRESS
 
-* Phone Number
-* Email Address
-  Rule: if contactEmail is empty or absent → output: N/A
+    * Street Address
+    * City
+    * State
+    * ZIP Code
+
+    CONTACT DETAILS
+
+    * Phone Number
+    * Email Address
+      Rule: if contactEmail is empty or absent → output: N/A
 
 ━━━━━━━━━━━━━━━━━━━━
 
