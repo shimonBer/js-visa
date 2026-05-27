@@ -2117,13 +2117,34 @@ export default function DS160IsraelForm({
                           'americanLicenseScan', 'extraDocumentScan1', 'extraDocumentScan2', 'extraDocumentScan3',
                         ]
                         const formValues = getValues()
+                        const s3ApiBase = getS3UploadApiBase()
                         const binaries = (
                           await Promise.all(
                             DOC_FIELDS.map(async (field) => {
+                              // Prefer in-browser File
                               const file = firstFile(formValues[field])
-                              if (!file) return null
-                              const bytes = new Uint8Array(await file.arrayBuffer())
-                              return { field, fileName: file.name, mimeType: file.type || 'application/octet-stream', bytes }
+                              if (file) {
+                                const bytes = new Uint8Array(await file.arrayBuffer())
+                                return { field, fileName: file.name, mimeType: file.type || 'application/octet-stream', bytes }
+                              }
+                              // Fallback: fetch from S3 if we have a key
+                              if (s3ApiBase) {
+                                const s3Doc = s3DocumentsRef.current.find((d) => d.field === field)
+                                if (s3Doc?.key) {
+                                  try {
+                                    const u = new URL(s3ApiBase, window.location.origin)
+                                    u.searchParams.set('key', s3Doc.key)
+                                    const res = await fetch(u.toString())
+                                    if (res.ok) {
+                                      const blob = await res.blob()
+                                      const fileName = s3Doc.key.includes('/') ? s3Doc.key.slice(s3Doc.key.lastIndexOf('/') + 1) : s3Doc.key
+                                      const bytes = new Uint8Array(await blob.arrayBuffer())
+                                      return { field, fileName, mimeType: blob.type || 'application/octet-stream', bytes }
+                                    }
+                                  } catch { /* skip on error */ }
+                                }
+                              }
+                              return null
                             })
                           )
                         ).filter(Boolean)
