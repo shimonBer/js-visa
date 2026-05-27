@@ -4,6 +4,7 @@
  */
 
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import fontkit from '@pdf-lib/fontkit'
 
 const PAGE_W = 612
 const PAGE_H = 792
@@ -166,6 +167,7 @@ async function addImageFullPage(pdfDoc, font, image, caption, captionUnicode) {
  */
 export async function buildTranslationPdf(translated, binaries) {
   const pdfDoc = await PDFDocument.create()
+  pdfDoc.registerFontkit(fontkit)
   const notoBytes = await getNotoSansBytes()
   /** @type {import('pdf-lib').PDFFont} */
   let textFont
