@@ -697,47 +697,6 @@ IMMIGRATION VIOLATIONS
 * Current Physical Location
 
 ━━━━━━━━━━━━━━━━━━━━
-SUPPORTING DOCUMENT TRANSCRIPTIONS
-━━━━━━━━━━━━━━━━━━━━
-
-Whenever attachments exist:
-
-ALWAYS include this exact section:
-
-🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS
-
-For EACH uploaded file:
-
-1. Document: <field name> — <original filename>
-
-2. Transcription:
-
-* Include ALL legible printed or handwritten content.
-* Translate Hebrew into English.
-* Preserve:
-
-  * MRZ lines
-  * passport numbers
-  * visa numbers
-  * document identifiers
-  * dates
-  * issuing authorities
-
-3. Mapped to DS-160:
-
-* Provide 3–10 bullets showing where the extracted information was used in the DS-160 sections.
-
-If a specific element is unreadable:
-❗ MISSING
-
-Never say:
-
-* “see attachment”
-* “refer to uploaded file”
-
-ALL relevant information must appear directly inside the generated document.
-
-━━━━━━━━━━━━━━━━━━━━
 ATTACHMENT-DRIVEN GAP FILLING
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -768,8 +727,7 @@ americanLicenseScan:
 
 extraDocumentScan1–3:
 
-* transcribe
-* map to DS-160 sections
+* extract any relevant identity, employment, education, or travel data and merge into the DS-160 fields above
 
 Always merge extracted data into the main DS-160 structure first.
 
@@ -816,18 +774,6 @@ The output must:
 * use ❗ MISSING only for unavailable required factual information
 * never omit fields or sections
 
-If image or PDF attachments exist (including attachments loaded automatically by the system), the generated document MUST include the mandatory:
-
-🟦 SUPPORTING DOCUMENT TRANSCRIPTIONS
-
-section with:
-
-* per-document transcriptions
-* translated readable content
-* DS-160 mapping bullets
-
-Never tell the reviewer to open external files or attachments separately.
-
 Use uploaded scans and documents to fill missing DS-160 fields whenever reliable information is visible, especially for:
 
 * passport identity fields
@@ -838,22 +784,7 @@ Use uploaded scans and documents to fill missing DS-160 fields whenever reliable
 * addresses
 * employment or education information
 
-Maintain this transcription order whenever applicable:
-
-1. passportScan
-2. existingVisaScan
-3. socialSecurityScan
-4. americanLicenseScan
-5. extraDocumentScan1
-6. extraDocumentScan2
-7. extraDocumentScan3
-
-A combined PDF will be generated automatically using:
-
-* the DS-160 review document text
-* followed by full-page embedded copies of uploaded files
-
-Ensure the transcription blocks match the same document order used in the final PDF.
+Uploaded document images are appended to the final PDF automatically — do NOT describe or list them in the text output.
 `
 
 const UPLOAD_DOC_FIELDS = [
