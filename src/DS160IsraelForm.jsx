@@ -388,6 +388,7 @@ export default function DS160IsraelForm({
   const [usLicenseOcr, setUsLicenseOcr] = useState({ status: 'idle', message: '' })
   const [previousVisaOcr, setPreviousVisaOcr] = useState({ status: 'idle', message: '' })
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
+  const [saveBeforeTranslatePrompt, setSaveBeforeTranslatePrompt] = useState(false)
   const [translateUi, setTranslateUi] = useState({
     open: false,
     text: '',
@@ -937,7 +938,7 @@ export default function DS160IsraelForm({
     return missing
   }
 
-  async function handleTranslateToEnglish() {
+  async function handleTranslateToEnglish({ withSave = false } = {}) {
     const values = getValues()
     const missing = validateForTranslation(values)
     if (missing.size > 0) {
@@ -947,6 +948,9 @@ export default function DS160IsraelForm({
     }
     setTranslationErrors(new Set())
     setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
+    if (withSave) {
+      try { await onSaveDraft() } catch { /* non-blocking */ }
+    }
     try {
       const values = getValues()
       // Always translate with the current form values — never skip based on cache.
@@ -1985,7 +1989,7 @@ export default function DS160IsraelForm({
               <button
                 type="button"
                 disabled={asyncFlow.phase === 'working' || translateUi.loading}
-                onClick={() => void handleTranslateToEnglish()}
+                onClick={() => setSaveBeforeTranslatePrompt(true)}
                 className="px-6 py-2 border border-slate-700 text-slate-800 font-semibold rounded-md hover:bg-slate-50 transition disabled:opacity-40"
               >
                 {translateUi.loading ? 'מתרגם…' : 'תרגם לאנגלית (ChatGPT)'}
@@ -2015,6 +2019,45 @@ export default function DS160IsraelForm({
           </div>
         </form>
       </div>
+
+      {saveBeforeTranslatePrompt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 flex flex-col gap-4" dir="rtl">
+            <h2 className="text-lg font-bold text-gray-800">לפני התרגום</h2>
+            <p className="text-sm text-gray-600">האם ברצונך לשמור טיוטה לפני שמתחילים לתרגם?</p>
+            <div className="flex flex-col gap-2">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                onClick={() => {
+                  setSaveBeforeTranslatePrompt(false)
+                  void handleTranslateToEnglish({ withSave: true })
+                }}
+              >
+                שמור וצא לתרגום
+              </button>
+              <button
+                className="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                onClick={() => {
+                  setSaveBeforeTranslatePrompt(false)
+                  void handleTranslateToEnglish({ withSave: false })
+                }}
+              >
+                תרגם ללא שמירה
+              </button>
+              <button
+                className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 transition"
+                onClick={() => setSaveBeforeTranslatePrompt(false)}
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {translateUi.open && (
         <div
