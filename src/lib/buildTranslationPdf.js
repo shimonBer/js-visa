@@ -116,6 +116,38 @@ function sanitizeForPdfDraw(s) {
 }
 
 /**
+ * Returns true if the string contains Hebrew characters.
+ * @param {string} s
+ */
+function hasHebrew(s) {
+  for (const ch of String(s)) {
+    const cp = ch.codePointAt(0)
+    if (cp >= 0x0590 && cp <= 0x05ff) return true
+  }
+  return false
+}
+
+/**
+ * pdf-lib renders all text LTR. Hebrew (RTL) must be visually reversed so it
+ * reads correctly when drawn left-to-right.
+ *
+ * For DS-160 lines of the form "Label: עברית", only the Hebrew value is
+ * reversed; the Latin label is kept intact.
+ *
+ * @param {string} s
+ */
+function prepareLineForLtr(s) {
+  if (!hasHebrew(s)) return s
+  const colonIdx = s.lastIndexOf(': ')
+  if (colonIdx >= 0) {
+    const label = s.slice(0, colonIdx + 2)
+    const value = s.slice(colonIdx + 2)
+    return label + [...value].reverse().join('')
+  }
+  return [...s].reverse().join('')
+}
+
+/**
  * @param {string} text
  * @param {number} charsPerLine
  */
@@ -252,7 +284,7 @@ export async function buildTranslationPdf(translated, binaries) {
 
     for (let i = 0; i < wrapped.length; i++) {
       const rawLine = wrapped[i]
-      const line = lineForDraw(rawLine)
+      const line = lineForDraw(prepareLineForLtr(rawLine))
       /** Only first line of a 🟦 block gets the full-width bar */
       const drawKind =
         kind === 'section-header' && i > 0 ? 'header-continuation' : kind === 'section-header' ? 'section-header' : kind
