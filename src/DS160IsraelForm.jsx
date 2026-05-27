@@ -389,6 +389,7 @@ export default function DS160IsraelForm({
   const [previousVisaOcr, setPreviousVisaOcr] = useState({ status: 'idle', message: '' })
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
   const [saveBeforeTranslatePrompt, setSaveBeforeTranslatePrompt] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
   const [translateUi, setTranslateUi] = useState({
     open: false,
     text: '',
@@ -2102,31 +2103,32 @@ export default function DS160IsraelForm({
                 English translation
               </h2>
               <div className="flex gap-2">
-                {translateUi.pdfBase64 ? (
-                  <>
-                    <button
-                      type="button"
-                      className="text-sm px-3 py-1.5 rounded-md border border-blue-600 text-blue-700 hover:bg-blue-50"
-                      onClick={() => {
-                        try {
-                          const bin = atob(translateUi.pdfBase64)
-                          const bytes = new Uint8Array(bin.length)
-                          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-                          const blob = new Blob([bytes], { type: 'application/pdf' })
-                          const url = URL.createObjectURL(blob)
-                          const a = document.createElement('a')
-                          a.href = url
-                          a.download = 'ds160-english-summary.pdf'
-                          a.click()
-                          URL.revokeObjectURL(url)
-                        } catch {
-                          /* ignore */
-                        }
-                      }}
-                    >
-                      Download PDF
-                    </button>
-                  </>
+                {translateUi.text ? (
+                  <button
+                    type="button"
+                    disabled={downloadingPdf}
+                    className="text-sm px-3 py-1.5 rounded-md border border-blue-600 text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                    onClick={async () => {
+                      setDownloadingPdf(true)
+                      try {
+                        const { buildTranslationPdf } = await import('./lib/buildTranslationPdf.js')
+                        const pdfBytes = await buildTranslationPdf(translateUi.text, [])
+                        const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = 'ds160-english-summary.pdf'
+                        a.click()
+                        URL.revokeObjectURL(url)
+                      } catch {
+                        /* ignore */
+                      } finally {
+                        setDownloadingPdf(false)
+                      }
+                    }}
+                  >
+                    {downloadingPdf ? 'Generating…' : 'Download PDF'}
+                  </button>
                 ) : null}
                 <button
                   type="button"
