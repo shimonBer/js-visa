@@ -39,7 +39,8 @@ CORE REQUIREMENTS
 * ALL sections and subsections MUST always appear in the output.
 * All YES/NO questions MUST always have an answer.
 * If a YES/NO field is not explicitly answered or evidenced, default to NO.
-* If a conditional section is not applicable because the answer is NO, OMIT the subsection entirely. Do NOT write N/A after it.
+* For every YES/NO question: ALWAYS output the question with its YES or NO answer.
+* If the answer is NO, output ONLY the question and "No" — do NOT output any sub-fields below it.
 * If a required factual field is unavailable, write:
   ❗ MISSING
 * Never invent personal information.
@@ -74,15 +75,21 @@ Use:
 * ❗ MISSING → for required factual information that is unavailable
 * N/A → ONLY for optional fields that genuinely do not apply (e.g. state/province when not applicable)
 
-When a YES/NO question is answered NO, OMIT any sub-fields entirely. Do NOT write N/A below a NO answer.
+For every YES/NO question: always write the question with its answer (YES or NO).
+When the answer is NO, output ONLY the question + "No". Do NOT add any sub-fields or N/A below it.
+When the answer is YES, output the question + "Yes" and then expand all sub-fields.
 
 Examples:
 
-Have you ever used other names? NO
+Have you ever used other names? No
 
 National ID Number: ❗ MISSING
 
-Have you served in the military? NO
+Have you served in the military? No
+
+Have you ever been in the United States? Yes
+Arrival Date: 15/03/2019
+Length of Stay: Two weeks
 
 ━━━━━━━━━━━━━━━━━━━━
 PASSPORT PRIORITY RULES
@@ -776,7 +783,7 @@ The output must:
 * include ALL sections and fields
 * always answer YES/NO questions
 * use NO when no evidence indicates YES
-* omit subsection entirely when a YES/NO answer is NO — do NOT write N/A below it
+* for every YES/NO question always write the question + answer; if NO, stop there (no sub-fields)
 * use ❗ MISSING only for unavailable required factual information
 * never omit fields or sections
 
