@@ -1,6 +1,6 @@
 /**
  * Assembles a single PDF: English summary (text pages) + visually embedded uploads (JPEG/PNG/PDF).
- * Embeds Noto Sans (Google Fonts) for Hebrew + Latin in the text portion; falls back to Helvetica if fetch fails.
+ * Embeds Noto Sans (served locally) for Hebrew + Latin support.
  */
 
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
@@ -17,23 +17,35 @@ const COLOR_MISSING = rgb(0.82, 0.22, 0.12)
 const COLOR_LABEL = rgb(0.18, 0.22, 0.42)
 const COLOR_BODY = rgb(0.08, 0.08, 0.1)
 const COLOR_RULE = rgb(0.78, 0.8, 0.88)
+const COLOR_HIGHLIGHT_BG = rgb(1.0, 0.95, 0.4)
+
+const HIGHLIGHT_PATTERNS = [
+  /hold or have you held another nationality\?.*YES/i,
+  /permanent resident of another country\?.*YES/i,
+  /been in the united states\?.*YES/i,
+  /been issued a u\.s\. visa\?.*YES/i,
+  /refused.*visa.*YES/i,
+  /denied admission.*YES/i,
+]
 
 /**
  * @param {string} raw
- * @returns {'blank' | 'section-header' | 'missing' | 'field-label' | 'body'}
+ * @param {boolean} inSecurity
+ * @returns {'blank' | 'section-header' | 'missing' | 'field-label' | 'body' | 'highlight'}
  */
-function classifyPdfLine(raw) {
+function classifyPdfLine(raw, inSecurity) {
   const trim = String(raw ?? '').trim()
   if (!trim) return 'blank'
   if (/^🟦/.test(trim)) return 'section-header'
   if (trim.includes('❗ MISSING')) return 'missing'
   if (/^\*\*/.test(trim)) return 'field-label'
   if (/^Document:/i.test(trim) || /^Mapped to DS-160/i.test(trim)) return 'field-label'
+  if (HIGHLIGHT_PATTERNS.some((p) => p.test(trim))) return 'highlight'
+  if (inSecurity && /YES\s*$/.test(trim)) return 'highlight'
   return 'body'
 }
 
-const NOTO_SANS_TTF_URL =
-  'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf'
+const NOTO_SANS_TTF_URL = '/fonts/NotoSans-Regular.ttf'
 
 /** @type {Uint8Array | null | undefined} undefined = not tried, null = failed */
 let cachedNotoBytes = undefined
@@ -215,8 +227,13 @@ export async function buildTranslationPdf(translated, binaries) {
     }
   }
 
+  let inSecurity = false
+
   for (const rawPara of paragraphs) {
-    const kind = classifyPdfLine(rawPara)
+    if (rawPara.includes('SECURITY & BACKGROUND')) inSecurity = true
+    else if (/^🟦/.test(rawPara.trim()) && !rawPara.includes('SECURITY & BACKGROUND')) inSecurity = false
+
+    const kind = classifyPdfLine(rawPara, inSecurity)
     if (kind === 'blank') {
       y -= 6
       ensureVerticalSpace(LINE_H)
@@ -238,7 +255,7 @@ export async function buildTranslationPdf(translated, binaries) {
       const drawKind =
         kind === 'section-header' && i > 0 ? 'header-continuation' : kind === 'section-header' ? 'section-header' : kind
 
-      const indent = drawKind === 'body' ? MARGIN + 10 : drawKind === 'header-continuation' ? MARGIN + 8 : MARGIN
+      const indent = drawKind === 'body' || drawKind === 'highlight' ? MARGIN + 10 : drawKind === 'header-continuation' ? MARGIN + 8 : MARGIN
       let size = FONT_SIZE
       let color = COLOR_BODY
       let font = textFont
@@ -292,6 +309,17 @@ export async function buildTranslationPdf(translated, binaries) {
         color = COLOR_LABEL
         font = useUnicode ? textFont : helveticaBold
         extraGap = i === 0 ? 4 : 0
+      } else if (drawKind === 'highlight') {
+        size = FONT_SIZE
+        color = COLOR_BODY
+        ensureVerticalSpace(LINE_H + 6)
+        page.drawRectangle({
+          x: MARGIN,
+          y: y - 3,
+          width: PAGE_W - 2 * MARGIN,
+          height: LINE_H + 2,
+          color: COLOR_HIGHLIGHT_BG,
+        })
       } else {
         size = FONT_SIZE
         color = COLOR_BODY
