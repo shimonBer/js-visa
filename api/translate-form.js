@@ -446,10 +446,11 @@ PERSON/ENTITY PAYING FOR TRIP
 
   * IF YES:
 
-    * Contact Person Full Name
-      Rule: use contactFullName field as-is
+    * Contact Person Surname
+    * Contact Person Given Name
+    * Organization Name
+      Rule: if absent or not provided → N/A (never ❗ MISSING)
     * Relationship to You
-      Rule: use contactRelationship field
 
     U.S. ADDRESS
 
