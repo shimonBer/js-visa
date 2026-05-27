@@ -281,10 +281,9 @@ SOCIAL MEDIA
 * Have you used social media platforms in the last 5 years? YES/NO
 
   * IF YES:
-
-    * Platform Name
-    * Username / Identifier
-      Rule: output the value exactly as given. If empty or absent → N/A. Never use ❗ MISSING for this field.
+    Rule: copy the social media data EXACTLY as provided in the JSON field (socialNetworks or equivalent).
+    Do NOT parse, reformat, split, or interpret the value. Output it verbatim, one entry per line if multiple.
+    Never use ❗ MISSING for any social media field.
 
 (REPEATABLE GROUP)
 
