@@ -211,6 +211,9 @@ PERSONAL INFORMATION 1
 * Given Name
 
 * Full Name in Native Alphabet
+  Rule:
+  1. If passport scan contains a native-language (e.g. Hebrew) given name AND surname → concatenate them (given name + space + surname) exactly as shown.
+  2. Otherwise → concatenate firstName + " " + lastName from JSON (the Hebrew name fields the user typed).
 
 * Have you ever used other names? YES/NO
 
@@ -782,6 +785,9 @@ The output must be:
 * deterministic
 * human-review friendly
 * DS-160 ordered
+
+Do NOT add blank lines between consecutive sub-fields within the same group or section.
+Blank lines should only appear between top-level questions or section headers, not between adjacent field labels like "Spouse Surname" and "Spouse Given Name".
 
 Never:
 

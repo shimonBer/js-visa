@@ -1098,6 +1098,36 @@ export default function DS160IsraelForm({
     return undefined
   }
 
+  function renderTranslatedText(text) {
+    const normalized = text.replace(/\n{3,}/g, '\n\n')
+    const lines = normalized.split('\n')
+    const HIGHLIGHT_PATTERNS = [
+      /hold or have you held another nationality\?.*YES/i,
+      /permanent resident of another country\?.*YES/i,
+      /been in the united states\?.*YES/i,
+      /been issued a u\.s\. visa\?.*YES/i,
+      /refused.*visa.*YES/i,
+      /denied admission.*YES/i,
+    ]
+    let inSecurity = false
+    return lines.map((line, i) => {
+      if (line.includes('SECURITY & BACKGROUND')) inSecurity = true
+      else if (line.startsWith('🟦')) inSecurity = false
+      const isHighlighted =
+        HIGHLIGHT_PATTERNS.some((p) => p.test(line)) ||
+        (inSecurity && /YES\s*$/.test(line))
+      return isHighlighted ? (
+        <mark key={i} className="bg-yellow-200 rounded px-0.5 whitespace-pre-wrap block">
+          {line + '\n'}
+        </mark>
+      ) : (
+        <span key={i} className="whitespace-pre-wrap">
+          {line + '\n'}
+        </span>
+      )
+    })
+  }
+
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 py-10 px-4 font-sans text-right">
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
@@ -2225,8 +2255,8 @@ export default function DS160IsraelForm({
                 Analyzed documents: {translateUi.attachmentLabels.join(', ')}
               </p>
             )}
-            <div className="p-4 overflow-y-auto text-sm whitespace-pre-wrap text-gray-800 font-sans text-left">
-              {translateUi.text}
+            <div className="p-4 overflow-y-auto text-sm text-gray-800 font-sans text-left">
+              {renderTranslatedText(translateUi.text)}
             </div>
           </div>
         </div>
