@@ -2112,7 +2112,22 @@ export default function DS160IsraelForm({
                       setDownloadingPdf(true)
                       try {
                         const { buildTranslationPdf } = await import('./lib/buildTranslationPdf.js')
-                        const pdfBytes = await buildTranslationPdf(translateUi.text, [])
+                        const DOC_FIELDS = [
+                          'passportScan', 'existingVisaScan', 'socialSecurityScan',
+                          'americanLicenseScan', 'extraDocumentScan1', 'extraDocumentScan2', 'extraDocumentScan3',
+                        ]
+                        const formValues = getValues()
+                        const binaries = (
+                          await Promise.all(
+                            DOC_FIELDS.map(async (field) => {
+                              const file = firstFile(formValues[field])
+                              if (!file) return null
+                              const bytes = new Uint8Array(await file.arrayBuffer())
+                              return { field, fileName: file.name, mimeType: file.type || 'application/octet-stream', bytes }
+                            })
+                          )
+                        ).filter(Boolean)
+                        const pdfBytes = await buildTranslationPdf(translateUi.text, binaries)
                         const blob = new Blob([pdfBytes], { type: 'application/pdf' })
                         const url = URL.createObjectURL(blob)
                         const a = document.createElement('a')
