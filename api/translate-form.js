@@ -336,7 +336,7 @@ CONTACT INFORMATION
 
 * Primary Phone Number
 * Secondary Phone Number
-  Rule: if absent or empty → output: NONE
+  Rule: NOT mandatory — if absent or empty → output: N/A (never output ❗ MISSING for this field)
 * Work Phone Number
 * Email Address
 

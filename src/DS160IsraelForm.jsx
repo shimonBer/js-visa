@@ -1179,31 +1179,25 @@ export default function DS160IsraelForm({
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-100 py-10 px-4 font-sans text-right">
+    <div dir="rtl" className="min-h-screen bg-gray-100 font-sans text-right pb-10">
       <MissingFieldsPanel values={allFormValues} />
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
 
-        <div className="bg-blue-600 text-white p-6 flex flex-wrap items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold">DS160 מותאם לישראל</h1>
-            <p className="mt-2 text-blue-100">
-              טופס מותאם לישראל. שדות מותנים יוצגו אוטומטית בהתאם לתשובות. מומלץ לשמור טיוטה לעיתים קרובות.
-            </p>
-            <p className="mt-3 text-sm font-mono bg-blue-700/50 rounded-md px-3 py-2 inline-block" dir="ltr">
-              מזהה טופס: {storageFormId !== 'incomplete' ? storageFormId : 'לא מוגדר — טיוטה תישמר תחת מפתח כללי בדפדפן'}
-              <span className="block text-xs text-blue-100 mt-1 font-sans" dir="rtl">
-                תאריך בסיומת המזהה (אוטומטי): {formStartedDateRef.current}
-              </span>
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 shrink-0 items-center">
+      {/* Sticky action bar */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-gray-600 truncate">
+            {w.firstName || w.lastName
+              ? `${w.firstName || ''} ${w.lastName || ''}`.trim()
+              : 'DS-160'}
+          </span>
+          <div className="flex gap-2 shrink-0">
             <button
               type="button"
               onClick={onLoadLocalDraft}
               disabled={asyncFlow.phase === 'working'}
-              className="px-4 py-2 text-sm font-semibold rounded-md bg-white/10 hover:bg-white/20 border border-white/30 disabled:opacity-40"
+              className="px-3 py-1.5 text-xs font-semibold rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 disabled:opacity-40"
             >
-              טען טיוטה מהדפדפן
+              טען טיוטה
             </button>
             <button
               type="button"
@@ -1218,7 +1212,7 @@ export default function DS160IsraelForm({
                   ? 'יש למלא שם פרטי ושם משפחה כדי לשמור'
                   : undefined
               }
-              className="px-4 py-2 text-sm font-semibold rounded-md bg-white text-blue-700 hover:bg-blue-50 border border-white disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               שמור טיוטה
             </button>
@@ -1226,14 +1220,16 @@ export default function DS160IsraelForm({
               <button
                 type="button"
                 onClick={onExitToHome}
-                className="px-4 py-2 text-sm font-semibold rounded-md bg-white/10 hover:bg-white/20 border border-white/30"
+                className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
               >
-                חזרה לרשימה
+                ← רשימה
               </button>
             )}
           </div>
         </div>
+      </div>
 
+      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden mt-4">
         <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-10">
 
           <section className="space-y-4">
