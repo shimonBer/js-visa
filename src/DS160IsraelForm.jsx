@@ -237,6 +237,22 @@ function MissingFieldsPanel({ values }) {
   )
 }
 
+/** Full-screen loading overlay with spinner and optional message. */
+function LoadingOverlay({ message }) {
+  if (!message) return null
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm" dir="rtl">
+      <div className="bg-white rounded-2xl shadow-2xl px-10 py-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+        <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+        <p className="text-gray-800 font-semibold text-center text-sm leading-relaxed">{message}</p>
+      </div>
+    </div>
+  )
+}
+
 const COUNTRY_CODES = [
   { code: '972', flag: '🇮🇱', name: 'Israel' },
   { code: '1', flag: '🇺🇸', name: 'USA / Canada' },
@@ -1180,6 +1196,15 @@ export default function DS160IsraelForm({
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 font-sans text-right pb-10">
+      <LoadingOverlay
+        message={
+          translateUi.loading ? 'מתרגם את הטופס… עשוי לקחת עד דקה' :
+          mondayUi.uploading ? 'מעלה PDF ל-Monday…' :
+          mondayUi.searching ? 'מחפש פריט ב-Monday…' :
+          asyncFlow.phase === 'working' ? (asyncFlow.message || 'שומר…') :
+          null
+        }
+      />
       <MissingFieldsPanel values={allFormValues} />
 
       {/* Sticky action bar */}
@@ -1191,14 +1216,6 @@ export default function DS160IsraelForm({
               : 'DS-160'}
           </span>
           <div className="flex gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={onLoadLocalDraft}
-              disabled={asyncFlow.phase === 'working'}
-              className="px-3 py-1.5 text-xs font-semibold rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 disabled:opacity-40"
-            >
-              טען טיוטה
-            </button>
             <button
               type="button"
               onClick={() => void onSaveDraft()}
