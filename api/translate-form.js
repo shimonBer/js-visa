@@ -26,10 +26,25 @@ Then generate a COMPLETE DS-160-ready English document that mirrors the structur
 The output must behave like a fully prepared DS-160 review sheet ready for human verification before submission.
 
 ━━━━━━━━━━━━━━━━━━━━
+INTAKE FORM LANGUAGE RULES
+━━━━━━━━━━━━━━━━━━━━
+
+The intake form fields are filled in as follows:
+
+* ALL fields are in ENGLISH — use them as-is without re-translating.
+* The ONLY fields that contain Hebrew characters are:
+  - firstName (שם פרטי) — the applicant's given name in Hebrew
+  - lastName (שם משפחה) — the applicant's family name in Hebrew
+  These two Hebrew fields are used ONLY for the "Full Name in Native Alphabet" DS-160 entry.
+  All other fields (addresses, employers, schools, travel info, etc.) are already in English.
+* Do NOT treat English field values as needing translation — copy them directly.
+
+━━━━━━━━━━━━━━━━━━━━
 CORE REQUIREMENTS
 ━━━━━━━━━━━━━━━━━━━━
 
-* Translate ALL Hebrew content into professional English.
+* Translate firstName and lastName (Hebrew) for the native alphabet entry only.
+* All other field values are already in English — use them directly.
 * Preserve ALL information.
 * Do NOT omit any detail.
 * Extract missing information from uploaded files whenever possible.

@@ -8,12 +8,11 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  /** Non-blocking message after delete (e.g. some S3 keys failed). */
   const [notice, setNotice] = useState('')
-  /** pathname currently being deleted (disables actions for that row). */
   const [deletingPathname, setDeletingPathname] = useState('')
-  /** Map of pathname → { guestLink, loading, error } for the copy-link panel. */
   const [guestPanels, setGuestPanels] = useState({})
+  /** 'incomplete' | 'completed' */
+  const [activeTab, setActiveTab] = useState('incomplete')
 
   const filteredForms = useMemo(() => {
     const q = searchQuery.trim()
@@ -25,6 +24,19 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
     })
     return fuse.search(q).map((r) => r.item)
   }, [forms, searchQuery])
+
+  const completedForms = useMemo(() => filteredForms.filter((f) => f.isComplete === true), [filteredForms])
+  const incompleteForms = useMemo(() => filteredForms.filter((f) => f.isComplete !== true), [filteredForms])
+
+  // Auto-switch tab when search has results only in the other tab
+  useEffect(() => {
+    if (!searchQuery.trim()) return
+    const hasInCurrent = activeTab === 'completed' ? completedForms.length > 0 : incompleteForms.length > 0
+    const hasInOther = activeTab === 'completed' ? incompleteForms.length > 0 : completedForms.length > 0
+    if (!hasInCurrent && hasInOther) {
+      setActiveTab((t) => (t === 'completed' ? 'incomplete' : 'completed'))
+    }
+  }, [searchQuery, completedForms.length, incompleteForms.length, activeTab])
 
   useEffect(() => {
     let cancelled = false
@@ -99,7 +111,6 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
         ...prev,
         [f.pathname]: { loading: false, guestLink: json.guestLink, error: '' },
       }))
-      // Update the form entry with the new guestToken so the button shows the existing link
       setForms((prev) =>
         prev.map((x) =>
           x.pathname === f.pathname ? { ...x, guestToken: json.guestToken } : x,
@@ -120,6 +131,10 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
       window.prompt('העתק את הקישור:', link)
     }
   }
+
+  const activeList = activeTab === 'completed' ? completedForms : incompleteForms
+  const totalCompleted = forms.filter((f) => f.isComplete === true).length
+  const totalIncomplete = forms.filter((f) => f.isComplete !== true).length
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 py-12 px-4 font-sans text-right">
@@ -151,7 +166,6 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
         </button>
 
         <div className="border-t border-gray-200 pt-6">
-          <h2 className="font-semibold text-gray-800 mb-3">המשך טופס קיים</h2>
           <div className="mb-4">
             <label htmlFor="form-search" className="block text-sm font-medium text-gray-700 mb-1">
               חיפוש לפי שם (שם פרטי + משפחה)
@@ -166,6 +180,43 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
               disabled={loading}
             />
           </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 mb-4">
+            <button
+              type="button"
+              onClick={() => setActiveTab('incomplete')}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'incomplete'
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              🔴 לא הושלמו
+              {!loading && (
+                <span className="mr-1.5 text-xs bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">
+                  {searchQuery.trim() ? incompleteForms.length : totalIncomplete}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('completed')}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'completed'
+                  ? 'border-b-2 border-green-600 text-green-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              🟢 הושלמו
+              {!loading && (
+                <span className="mr-1.5 text-xs bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">
+                  {searchQuery.trim() ? completedForms.length : totalCompleted}
+                </span>
+              )}
+            </button>
+          </div>
+
           {loading && <p className="text-sm text-gray-500">טוען רשימה…</p>}
           {error && (
             <p className="text-sm text-red-600 mb-3" role="alert">
@@ -180,18 +231,20 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
           {!loading && forms.length === 0 && !error && (
             <p className="text-sm text-gray-500">אין טפסים שמורים בענן עדיין.</p>
           )}
-          {!loading && forms.length > 0 && filteredForms.length === 0 && searchQuery.trim() && (
-            <p className="text-sm text-gray-500 mb-2">לא נמצאו תוצאות לחיפוש.</p>
+          {!loading && forms.length > 0 && activeList.length === 0 && (
+            <p className="text-sm text-gray-500">
+              {searchQuery.trim()
+                ? 'לא נמצאו תוצאות לחיפוש בלשונית זו.'
+                : activeTab === 'completed'
+                  ? 'אין טפסים שהושלמו עדיין.'
+                  : 'אין טפסים שלא הושלמו.'}
+            </p>
           )}
+
           <ul className="space-y-3">
-            {filteredForms.map((f) => {
+            {activeList.map((f) => {
               const panel = guestPanels[f.pathname]
-              const statusDot =
-                f.isComplete === true
-                  ? { symbol: '🟢', title: 'טופס מלא' }
-                  : f.isComplete === false
-                    ? { symbol: '🔴', title: `חסרים ${f.missingCount ?? ''} שדות` }
-                    : { symbol: '🟡', title: 'סטטוס לא ידוע — פתח ושמור טיוטה כדי לרענן' }
+              const isCompleted = f.isComplete === true
 
               return (
                 <li key={f.pathname} className="space-y-1">
@@ -203,18 +256,32 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                       className="min-w-0 flex-1 text-right py-2 px-3 rounded-md border border-gray-200 hover:bg-gray-50 flex flex-col gap-0.5 disabled:opacity-40"
                     >
                       <span className="font-medium text-gray-900 flex items-center gap-1.5">
-                        {statusDot && (
-                          <span title={statusDot.title}>{statusDot.symbol}</span>
+                        {isCompleted ? (
+                          <span title="טופס מלא">🟢</span>
+                        ) : f.isComplete === false ? (
+                          <span title={`חסרים ${f.missingCount ?? ''} שדות`}>🔴</span>
+                        ) : (
+                          <span title="סטטוס לא ידוע">🟡</span>
                         )}
                         {f.displayName}
                       </span>
                       <span className="text-xs text-gray-500 font-mono" dir="ltr">
                         {f.formId || '—'} · {f.uploadedAt ? new Date(f.uploadedAt).toLocaleString('he-IL') : ''}
                       </span>
+                      {isCompleted && f.completedAt && (
+                        <span className="text-xs text-green-700 font-medium mt-0.5">
+                          ✓ הועבר ל-Monday:{' '}
+                          <span dir="ltr">{new Date(f.completedAt).toLocaleString('he-IL')}</span>
+                        </span>
+                      )}
+                      {!isCompleted && f.isComplete === false && (
+                        <span className="text-xs text-red-600 mt-0.5">
+                          חסרים {f.missingCount ?? '?'} שדות
+                        </span>
+                      )}
                     </button>
 
-                    {/* Send-to-client button — for incomplete or unknown-status forms */}
-                    {f.isComplete !== true && (
+                    {!isCompleted && (
                       <button
                         type="button"
                         disabled={!!deletingPathname || panel?.loading}
@@ -237,7 +304,6 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                     </button>
                   </div>
 
-                  {/* Copy-link panel */}
                   {panel && (
                     <div className="rounded-md border px-3 py-2 text-sm">
                       {panel.error && (

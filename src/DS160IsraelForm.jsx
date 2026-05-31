@@ -125,7 +125,7 @@ function DocumentFileSlot({
 function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError }) {
   const fieldError = getFieldError(name)
   return (
-    <div className="flex flex-col mb-4">
+    <div id={`field-${name}`} className="flex flex-col mb-4">
       <label className="font-semibold mb-1 text-gray-700">{label}</label>
       {note && <span className="text-sm text-gray-500 mb-1">{note}</span>}
       {type === 'textarea' ? (
@@ -155,7 +155,7 @@ function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, r
 function FormRadioGroup({ label, name, options, note, register, getFieldError }) {
   const fieldError = getFieldError(name)
   return (
-    <div className={`flex flex-col mb-4 ${fieldError ? 'rounded-md bg-red-50 p-2 -mx-2' : ''}`}>
+    <div id={`field-${name}`} className={`flex flex-col mb-4 ${fieldError ? 'rounded-md bg-red-50 p-2 -mx-2' : ''}`}>
       <label className="font-semibold mb-1 text-gray-700">{label}</label>
       {note && <span className="text-sm text-gray-500 mb-2">{note}</span>}
       <div className="flex gap-4">
@@ -174,7 +174,7 @@ function FormRadioGroup({ label, name, options, note, register, getFieldError })
 function FormSelect({ label, name, options, register, getFieldError }) {
   const fieldError = getFieldError(name)
   return (
-    <div className="flex flex-col mb-4">
+    <div id={`field-${name}`} className="flex flex-col mb-4">
       <label className="font-semibold mb-1 text-gray-700">{label}</label>
       <select
         {...register(name)}
@@ -186,6 +186,53 @@ function FormSelect({ label, name, options, register, getFieldError }) {
         ))}
       </select>
       {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שדה חובה'}</span>}
+    </div>
+  )
+}
+
+/** Sticky panel listing unfilled required fields. Clicking an item scrolls to the field. */
+function MissingFieldsPanel({ values }) {
+  const [open, setOpen] = useState(false)
+  const result = useMemo(() => calculateCompleteness(values), [values])
+  const { isComplete, missingFields } = result
+
+  if (isComplete || missingFields.length === 0) return null
+
+  function scrollToField(field) {
+    const el = document.getElementById(`field-${field}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setOpen(false)
+  }
+
+  return (
+    <div className="fixed bottom-6 left-4 z-50 max-w-xs w-full" dir="rtl">
+      <div className="bg-white rounded-xl shadow-2xl border border-orange-200 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-orange-50 hover:bg-orange-100 transition-colors text-right"
+        >
+          <span className="font-semibold text-orange-800 text-sm">
+            ⚠️ {missingFields.length} שדות חסרים
+          </span>
+          <span className="text-orange-500 text-xs">{open ? '▲' : '▼'}</span>
+        </button>
+        {open && (
+          <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+            {missingFields.map((f) => (
+              <li key={f.field}>
+                <button
+                  type="button"
+                  onClick={() => scrollToField(f.field)}
+                  className="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-800 transition-colors"
+                >
+                  {f.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }
@@ -1089,6 +1136,8 @@ export default function DS160IsraelForm({
     mondayItemId: watch('mondayItemId'),
   }
 
+  const allFormValues = watch()
+
   function getFieldError(path) {
     if (!path) return undefined
     const rhfErr = errors
@@ -1131,6 +1180,7 @@ export default function DS160IsraelForm({
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 py-10 px-4 font-sans text-right">
+      <MissingFieldsPanel values={allFormValues} />
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
 
         <div className="bg-blue-600 text-white p-6 flex flex-wrap items-start justify-between gap-4">
@@ -1190,7 +1240,7 @@ export default function DS160IsraelForm({
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שם הלקוח ומידע אישי</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:col-span-2 items-start">
-                <div className="flex flex-col mb-0">
+                <div id="field-passportId" className="flex flex-col mb-0">
                   <label className="font-semibold mb-1 text-gray-700">מספר דרכון</label>
                   <input
                     type="text"
@@ -1242,8 +1292,8 @@ export default function DS160IsraelForm({
                   />
                 </div>
               </div>
-              <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="firstName" />
-              <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name="lastName" />
+              <FormInput register={register} getFieldError={getFieldError} label="שם פרטי (עברית)" name="firstName" dir="auto" />
+              <FormInput register={register} getFieldError={getFieldError} label="שם משפחה (עברית)" name="lastName" dir="auto" />
               <FormInput register={register} getFieldError={getFieldError}
                 label="שם פרטי באנגלית (מדרכון)"
                 name="firstNameEnglish"
@@ -1323,7 +1373,7 @@ export default function DS160IsraelForm({
                 </div>
               )}
 
-              <div className="flex flex-col mb-4">
+              <div id="field-birthDateDay" className="flex flex-col mb-4">
                 <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
                 <div className="flex gap-2">
                   <input type="text" {...register('birthDateDay')} placeholder="יום" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateDay') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
@@ -1893,7 +1943,7 @@ export default function DS160IsraelForm({
               </div>
             )}
 
-            <div className={`flex flex-col mb-4 ${translationErrors.has('languages') ? 'rounded-md bg-red-50 p-2' : ''}`}>
+            <div id="field-languages" className={`flex flex-col mb-4 ${translationErrors.has('languages') ? 'rounded-md bg-red-50 p-2' : ''}`}>
               <label className="font-semibold mb-2 text-gray-700">שפות</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {['עברית', 'אנגלית', 'ערבית', 'רוסית', 'ספרדית', 'צרפתית', 'אחר'].map((lang) => (

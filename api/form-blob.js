@@ -246,6 +246,7 @@ export default async function handler(req, res) {
                 isComplete,
                 missingCount: missingFields.length,
                 guestToken: prev.guestToken ?? null,
+                completedAt: isComplete ? (prev.completedAt || null) : null,
               }
               return f.pathname
             } catch {
@@ -266,6 +267,7 @@ export default async function handler(req, res) {
           isComplete: status?.isComplete ?? null,
           missingCount: status?.missingCount ?? null,
           guestToken: status?.guestToken ?? null,
+          completedAt: status?.completedAt ?? null,
         }
       })
 
@@ -302,10 +304,14 @@ export default async function handler(req, res) {
       // Update status index (non-blocking on failure)
       const statusIndex = await readStatusIndex(token)
       const prev = statusIndex[pathname] || {}
+      const nowIso = new Date().toISOString()
       statusIndex[pathname] = {
         isComplete: completeness.isComplete,
         missingCount: completeness.missingFields.length,
         guestToken: prev.guestToken ?? null,
+        completedAt: completeness.isComplete
+          ? (prev.completedAt || nowIso)
+          : null,
       }
       await writeStatusIndex(token, statusIndex)
 
