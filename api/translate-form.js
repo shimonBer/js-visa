@@ -592,12 +592,39 @@ RELATIVES IN THE U.S.
 🟦 PRESENT WORK / EDUCATION / TRAINING
 
 * Primary Occupation
+  Rule: translate currentOccupation from Hebrew to the closest DS-160 occupation category in English.
+  Examples: עובד → Employed, סטודנט → Student, חייל → Military, פנסיה → Retired, מובטל → Unemployed, עקר/ת בית → Homemaker
+
 * Present Employer or School Name
+  Rule:
+  - If currentOccupation is 'סטודנט' → use studentInstitutionName; if absent → ❗ MISSING
+  - Otherwise → use employerName; if absent → ❗ MISSING
+
 * Job Title / Position
+  Rule:
+  - If currentOccupation is 'סטודנט' → use studentDegree (course/degree being studied); if absent → ❗ MISSING
+  - Otherwise → use jobTitle; if absent → ❗ MISSING
+
 * Employer Address
+  Rule:
+  - If currentOccupation is 'סטודנט' → combine studentInstitutionStreet + studentInstitutionCity; if absent → ❗ MISSING
+  - Otherwise → combine employerStreet + employerCity; if absent → ❗ MISSING
+
 * Employer Phone Number
+  Rule:
+  - If currentOccupation is 'סטודנט' → use studentInstitutionPhone; if absent → ❗ MISSING
+  - Otherwise → use employerPhone; if absent → ❗ MISSING
+
 * Employment Start Date
+  Rule:
+  - If currentOccupation is 'סטודנט' → use studentStartDate; if absent → ❗ MISSING
+  - Otherwise → use employmentStartDate; if absent → ❗ MISSING
+
 * Monthly Salary
+  Rule:
+  - If currentOccupation is 'סטודנט' → use studentMonthlyIncome; if absent → N/A
+  - Otherwise → use monthlySalaryGross; if absent → N/A
+
 * Describe Your Duties
   Rule: use jobDuties field from JSON; if empty or absent → N/A
 

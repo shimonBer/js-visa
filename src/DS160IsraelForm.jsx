@@ -980,6 +980,14 @@ export default function DS160IsraelForm({
       req('employerPhone')
       req('employmentStartDate')
     }
+    if (values.currentOccupation === 'סטודנט') {
+      req('studentInstitutionName')
+      req('studentDegree')
+      req('studentStartDate')
+      req('studentInstitutionPhone')
+      req('studentInstitutionStreet')
+      req('studentInstitutionCity')
+    }
     if (values.currentOccupation === 'חייל') {
       req('militaryCountry')
       req('militaryBranch')
@@ -1875,6 +1883,19 @@ export default function DS160IsraelForm({
                 <div className="col-span-full">
                   <FormInput register={register} getFieldError={getFieldError} label="תאר את תפקידך ותחומי האחריות שלך" name="jobDuties" type="textarea" />
                 </div>
+              </div>
+            )}
+
+            {w.currentOccupation === 'סטודנט' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 className="col-span-full font-bold text-lg">פרטים על היותך תלמיד או סטודנט</h3>
+                <FormInput register={register} getFieldError={getFieldError} label="שם מוסד הלימודים" name="studentInstitutionName" />
+                <FormInput register={register} getFieldError={getFieldError} label="מה התואר שנלמד" name="studentDegree" />
+                <FormInput register={register} getFieldError={getFieldError} label="תאריך תחילת הלימודים" name="studentStartDate" />
+                <FormInput register={register} getFieldError={getFieldError} label="טלפון מוסד הלימודים" name="studentInstitutionPhone" />
+                <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב מוסד הלימודים" name="studentInstitutionStreet" />
+                <FormInput register={register} getFieldError={getFieldError} label="עיר" name="studentInstitutionCity" />
+                <FormInput register={register} getFieldError={getFieldError} label="הכנסה חודשית" name="studentMonthlyIncome" />
               </div>
             )}
 
