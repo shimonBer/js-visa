@@ -533,11 +533,12 @@ RELATIVES IN THE U.S.
 
   * IF YES:
 
+    For each entry in the usRelatives array output:
     * Relative Name
     * Relationship
     * Immigration Status
 
-(REPEATABLE GROUP)
+(REPEATABLE GROUP — iterate over usRelatives array)
 
 * Do you have any other relatives in the United States? YES/NO
   Rule:

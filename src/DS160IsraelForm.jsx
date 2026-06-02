@@ -398,6 +398,7 @@ export default function DS160IsraelForm({
       spouseAddressSame: true,
       hasUSContact: 'no',
       hasCloseRelativesInUS: 'no',
+      usRelatives: [{ fullName: '', relationship: '', status: '' }],
       unemploymentReason: '',
       workedAnotherJobLast5Years: 'no',
       attendedHighSchool: 'no',
@@ -426,6 +427,12 @@ export default function DS160IsraelForm({
     useFieldArray({
       control,
       name: 'previousUSVisits',
+    })
+
+  const { fields: usRelativeFields, append: appendUSRelative, remove: removeUSRelative } =
+    useFieldArray({
+      control,
+      name: 'usRelatives',
     })
 
   const passportIdWatch = watch('passportId')
@@ -971,7 +978,12 @@ export default function DS160IsraelForm({
       req('contactPhone')
       req('contactAddress')
     }
-    if (values.hasCloseRelativesInUS === 'yes') req('relativeFullName')
+    if (values.hasCloseRelativesInUS === 'yes') {
+      const relatives = values.usRelatives || []
+      if (!relatives.length || !String(relatives[0]?.fullName || '').trim()) {
+        errors['usRelatives.0.fullName'] = 'שדה חובה'
+      }
+    }
     if (values.hasCloseRelativesInUS === 'no') req('hasOtherRelativesInUS')
     if (values.currentOccupation === 'עובד') {
       req('employerName')
@@ -1828,9 +1840,28 @@ export default function DS160IsraelForm({
 
             {w.hasCloseRelativesInUS === 'yes' && (
               <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
-                <FormInput register={register} getFieldError={getFieldError} label="שם מלא (קרוב משפחה בארה״ב)" name="relativeFullName" />
-                <FormSelect register={register} getFieldError={getFieldError} label="קרבה אלייך" name="relativeRelationship" options={['הורה', 'אח/ות', 'ילד/ה', 'בעל/אישה']} />
-                <FormSelect register={register} getFieldError={getFieldError} label="סטטוס בארה״ב" name="relativeUSStatus" options={['גרין קארד (LPR)', 'אזרח', 'אשרת סטודנט', 'אשרת עבודה', 'מטייל', 'אחר']} />
+                <p className="font-semibold text-gray-800">קרובי משפחה מדרגה ראשונה בארה״ב</p>
+                {usRelativeFields.map((field, index) => (
+                  <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+                    <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name={`usRelatives.${index}.fullName`} />
+                    <FormSelect register={register} getFieldError={getFieldError} label="קרבה אלייך" name={`usRelatives.${index}.relationship`} options={['הורה', 'אח/ות', 'ילד/ה', 'בעל/אישה']} />
+                    <FormSelect register={register} getFieldError={getFieldError} label="סטטוס בארה״ב" name={`usRelatives.${index}.status`} options={['גרין קארד (LPR)', 'אזרח', 'אשרת סטודנט', 'אשרת עבודה', 'מטייל', 'אחר']} />
+                    <div className="flex justify-end md:justify-start pb-1">
+                      {index > 0 && (
+                        <button type="button" onClick={() => removeUSRelative(index)}
+                          className="text-sm text-red-600 hover:text-red-800 underline">
+                          הסר
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <button type="button"
+                  onClick={() => appendUSRelative({ fullName: '', relationship: '', status: '' })}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
+                  <span aria-hidden className="text-lg leading-none">+</span>
+                  הוסף קרוב משפחה
+                </button>
               </div>
             )}
 
