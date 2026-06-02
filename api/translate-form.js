@@ -352,10 +352,10 @@ CONTACT INFORMATION
 * Country of Issuance
 
 * City of Issuance
-  Rule: if the passport shows the city name in Hebrew → append it in parentheses, e.g. Jerusalem (ירושלים)
+  Rule: output the English city name only (e.g. Jerusalem). Never include Hebrew characters in this field — if the passport shows only Hebrew, transliterate to English.
 
 * Issuing Authority
-  Rule: extract the issuing authority name as printed on the passport; if shown in Hebrew → append it in parentheses, e.g. Ministry of Interior (משרד הפנים)
+  Rule: output the English authority name only (e.g. Ministry of Interior). Never include Hebrew characters in this field — if the passport shows only Hebrew, translate/transliterate to English.
 
 * State/Province of Issuance
   Rule: if absent or empty → N/A

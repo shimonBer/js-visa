@@ -1055,24 +1055,6 @@ export default function DS160IsraelForm({
     }
   }
 
-  /** Search Monday board for an existing item by phone / email. */
-  async function handleMondaySearch() {
-    const values = getValues()
-    const phone = (String(values.phoneCountryCode || '').trim() + String(values.phoneNumber || '').trim())
-    const email = String(values.email || '').trim()
-    setMondayUi((s) => ({ ...s, searching: true, searchError: '', searchResult: null }))
-    try {
-      const result = await searchMondayItem({ phone, email })
-      setMondayUi((s) => ({
-        ...s,
-        searching: false,
-        searchResult: result.found ? { itemId: result.itemId, itemName: result.itemName } : 'not_found',
-      }))
-    } catch (e) {
-      setMondayUi((s) => ({ ...s, searching: false, searchError: e?.message || 'חיפוש נכשל' }))
-    }
-  }
-
   /**
    * Upload the PDF to an existing Monday item (no column changes — file only).
    * @param {string} itemId
@@ -1100,33 +1082,23 @@ export default function DS160IsraelForm({
     }
   }
 
-  /** Create a new Monday item and upload the PDF to it. */
-  async function handleMondayCreate() {
+  /** Search for person on Monday and auto-upload PDF if found; stop with error if not found. */
+  async function handleSendToMonday() {
     if (!translateUi.pdfBase64?.trim()) return
-    setMondayUi((s) => ({ ...s, uploading: true, uploadError: '' }))
+    const values = getValues()
+    const phone = (String(values.phoneCountryCode || '').trim() + String(values.phoneNumber || '').trim())
+    const email = String(values.email || '').trim()
+    setMondayUi((s) => ({ ...s, searching: true, searchError: '', searchResult: null }))
     try {
-      const values = getValues()
-      const he = `${values.firstName || ''} ${values.lastName || ''}`.trim()
-      const en = `${values.firstNameEnglish || ''} ${values.lastNameEnglish || ''}`.trim()
-      const applicantName = he || en || 'Applicant'
-      const result = await sendPdfToMonday({
-        applicantName,
-        pdfBase64: translateUi.pdfBase64,
-        phone: (String(values.phoneCountryCode || '').trim() + String(values.phoneNumber || '').trim()),
-        email: String(values.email || '').trim(),
-        status: 'DS-160 English summary',
-      })
-      setValue('mondayItemId', result.itemId, { shouldDirty: true })
-      setMondayUi((s) => ({
-        ...s,
-        uploading: false,
-        uploadSuccess: true,
-        uploadItemId: result.itemId,
-        uploadItemUrl: result.itemUrl || '',
-        uploadIsNew: true,
-      }))
+      const result = await searchMondayItem({ phone, email })
+      if (!result.found) {
+        setMondayUi((s) => ({ ...s, searching: false, searchResult: 'not_found' }))
+        return
+      }
+      setMondayUi((s) => ({ ...s, searching: false }))
+      await handleMondayUpload(result.itemId)
     } catch (e) {
-      setMondayUi((s) => ({ ...s, uploading: false, uploadError: e?.message || 'יצירה נכשלה' }))
+      setMondayUi((s) => ({ ...s, searching: false, searchError: e?.message || 'חיפוש נכשל' }))
     }
   }
 
@@ -2299,72 +2271,30 @@ export default function DS160IsraelForm({
                   </div>
                 ) : mondayUi.uploading ? (
                   <p className="text-gray-500">⏳ מעלה PDF…</p>
+                ) : mondayUi.searching ? (
+                  <p className="text-gray-500">🔍 מחפש…</p>
                 ) : (
                   <>
-                    {/* Saved item ID already in form */}
-                    {w.mondayItemId && !mondayUi.searchResult ? (
+                    {mondayUi.searchResult === 'not_found' ? (
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-gray-700">
-                          פריט שמור: <span className="font-mono text-violet-700">#{w.mondayItemId}</span>
-                        </span>
-                        <button type="button"
-                          className="px-3 py-1 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50"
-                          onClick={() => void handleMondayUpload(w.mondayItemId)}>
-                          הוסף PDF לפריט
-                        </button>
-                        <button type="button"
-                          className="px-2 py-1 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 text-xs"
-                          onClick={() => setMondayUi((s) => ({ ...s, searchResult: null })) || void handleMondaySearch()}>
-                          חפש אחר
-                        </button>
-                      </div>
-                    ) : mondayUi.searching ? (
-                      <p className="text-gray-500">🔍 מחפש…</p>
-                    ) : mondayUi.searchResult === 'not_found' ? (
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-gray-600">לא נמצא פריט תואם בלוח.</span>
-                        <button type="button"
-                          className="px-3 py-1 rounded-md border border-green-600 text-green-700 hover:bg-green-50"
-                          onClick={() => void handleMondayCreate()}>
-                          צור פריט חדש
-                        </button>
+                        <span className="text-red-600">❌ לא נמצא הלקוח במערכת — לא ניתן לשלוח</span>
                         <button type="button"
                           className="px-2 py-1 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 text-xs"
                           onClick={() => setMondayUi((s) => ({ ...s, searchResult: null, searchError: '' }))}>
-                          חפש שוב
-                        </button>
-                      </div>
-                    ) : mondayUi.searchResult && mondayUi.searchResult !== 'not_found' ? (
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-gray-700">
-                          נמצא: <span className="font-medium">{mondayUi.searchResult.itemName}</span>
-                          {' '}<span className="font-mono text-xs text-gray-500">(#{mondayUi.searchResult.itemId})</span>
-                        </span>
-                        <button type="button"
-                          className="px-3 py-1 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50"
-                          onClick={() => void handleMondayUpload(mondayUi.searchResult.itemId)}>
-                          הוסף PDF לפריט
-                        </button>
-                        <button type="button"
-                          className="px-2 py-1 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 text-xs"
-                          onClick={() => setMondayUi((s) => ({ ...s, searchResult: null, searchError: '' }))}>
-                          חפש שוב
+                          נסה שוב
                         </button>
                       </div>
                     ) : (
-                      /* Initial state — no saved ID, not searched yet */
                       <button type="button"
-                        className="px-3 py-1.5 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50"
-                        onClick={() => void handleMondaySearch()}>
-                        🔍 חפש פריט קיים לפי טלפון / אימייל
+                        className="px-3 py-1.5 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50 font-medium"
+                        onClick={() => void handleSendToMonday()}>
+                        📤 שלח ל-Monday
                       </button>
                     )}
 
-                    {/* Search error */}
                     {mondayUi.searchError && (
                       <p className="text-red-600 mt-1">{mondayUi.searchError}</p>
                     )}
-                    {/* Upload error */}
                     {mondayUi.uploadError && (
                       <p className="text-red-600 mt-1">{mondayUi.uploadError}</p>
                     )}
