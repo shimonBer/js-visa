@@ -595,6 +595,11 @@ RELATIVES IN THE U.S.
   Rule: translate currentOccupation from Hebrew to the closest DS-160 occupation category in English.
   Examples: עובד → Employed, סטודנט → Student, חייל → Military, פנסיה → Retired, מובטל → Unemployed, עקר/ת בית → Homemaker
 
+* Reason for Unemployment
+  Rule: include ONLY if currentOccupation is 'מובטל' (Unemployed) AND unemploymentReason is present and non-empty.
+  Translate unemploymentReason from Hebrew to English and output it here.
+  If currentOccupation is not 'מובטל' or unemploymentReason is absent/empty → omit this field entirely.
+
 * Present Employer or School Name
   Rule:
   - If currentOccupation is 'סטודנט' → use studentInstitutionName; if absent → ❗ MISSING

@@ -398,6 +398,7 @@ export default function DS160IsraelForm({
       spouseAddressSame: true,
       hasUSContact: 'no',
       hasCloseRelativesInUS: 'no',
+      unemploymentReason: '',
       workedAnotherJobLast5Years: 'no',
       attendedHighSchool: 'no',
       hasAcademicDegree: 'no',
@@ -1883,6 +1884,12 @@ export default function DS160IsraelForm({
                 <FormInput register={register} getFieldError={getFieldError} label="דרגה" name="militaryRank" />
                 <FormInput register={register} getFieldError={getFieldError} label="תאריך גיוס" name="militaryDraftDate" />
                 <FormInput register={register} getFieldError={getFieldError} label="תאריך שחרור" name="militaryDischargeDate" />
+              </div>
+            )}
+
+            {w.currentOccupation === 'מובטל' && (
+              <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                <FormInput register={register} getFieldError={getFieldError} label="סיבת אי-העסקה (ייכתב בתרגום)" name="unemploymentReason" type="textarea" />
               </div>
             )}
 
