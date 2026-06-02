@@ -373,7 +373,7 @@ export default function DS160IsraelForm({
       lastNameEnglish: '',
       sex: '',
       hadPreviousName: 'no',
-      isUnder14: 'no',
+
       hasForeignCitizenship: 'no',
       foreignCitizenshipCountry: '',
       foreignCitizenshipId: '',
@@ -1379,7 +1379,7 @@ export default function DS160IsraelForm({
                 )}
               </div>
 
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="מתחת ל 14?" name="isUnder14" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+
               <FormInput register={register} getFieldError={getFieldError} label="עיר לידה (אם בחו״ל, לציין מדינה)" name="birthCity" />
               <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת הזהות" name="idNumber" />
               <FormInput register={register} getFieldError={getFieldError}
