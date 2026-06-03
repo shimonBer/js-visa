@@ -38,6 +38,9 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
     }
   }, [searchQuery, completedForms.length, incompleteForms.length, activeTab])
 
+  // Reset to page 1 when tab or search changes
+  useEffect(() => { setCurrentPage(1) }, [activeTab, searchQuery])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -132,9 +135,16 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
     }
   }
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 10
+
   const activeList = activeTab === 'completed' ? completedForms : incompleteForms
   const totalCompleted = forms.filter((f) => f.isComplete === true).length
   const totalIncomplete = forms.filter((f) => f.isComplete !== true).length
+
+  const totalPages = Math.max(1, Math.ceil(activeList.length / PAGE_SIZE))
+  const safePage = Math.min(currentPage, totalPages)
+  const pagedList = activeList.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 py-12 px-4 font-sans text-right">
@@ -242,7 +252,7 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
           )}
 
           <ul className="space-y-3">
-            {activeList.map((f) => {
+            {pagedList.map((f) => {
               const panel = guestPanels[f.pathname]
               const isCompleted = f.isComplete === true
 
@@ -329,6 +339,30 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
               )
             })}
           </ul>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="px-3 py-1.5 text-sm rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ← הקודם
+              </button>
+              <span className="text-sm text-gray-500">
+                עמוד {safePage} מתוך {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="px-3 py-1.5 text-sm rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                הבא →
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
