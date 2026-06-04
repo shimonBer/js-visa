@@ -76,7 +76,7 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
 
   async function handleDeleteForm(f) {
     const label = f.displayName || f.pathname
-    if (!window.confirm(`למחוק לצמיתות את "${label}" מהענן (Vercel Blob) וקבצים ב-S3?`)) {
+    if (!window.confirm(`למחוק לצמיתות את "${label}"?`)) {
       return
     }
     setError('')
@@ -87,7 +87,7 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
       setForms((prev) => prev.filter((x) => x.pathname !== f.pathname))
       if (Array.isArray(result.s3Errors) && result.s3Errors.length > 0) {
         setNotice(
-          `הטופס נמחק מ-Vercel Blob. לא נמחקו ${result.s3Errors.length} קבצים מ-S3 (בדוק הרשאות או מפתחות).`,
+          `הטופס נמחק. לא נמחקו ${result.s3Errors.length} קבצי סריקה (בדוק הרשאות).`,
         )
       }
     } catch (e) {
@@ -153,7 +153,7 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">טפסי DS-160</h1>
             <p className="mt-2 text-gray-600 text-sm">
-              התחל טופס חדש או המשך טופס שמור בענן (Vercel Blob).
+              התחל טופס חדש או המשך טופס שמור.
             </p>
           </div>
           {onLogout && (
@@ -239,7 +239,7 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
             </p>
           )}
           {!loading && forms.length === 0 && !error && (
-            <p className="text-sm text-gray-500">אין טפסים שמורים בענן עדיין.</p>
+            <p className="text-sm text-gray-500">אין טפסים שמורים עדיין.</p>
           )}
           {!loading && forms.length > 0 && activeList.length === 0 && (
             <p className="text-sm text-gray-500">

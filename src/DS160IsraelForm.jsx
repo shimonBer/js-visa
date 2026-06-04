@@ -587,7 +587,7 @@ export default function DS160IsraelForm({
       if (cancelled) return
       if (restored > 0) {
         const extra = failed > 0 ? ` (${failed} לא הורדו)` : ''
-        setAsyncFlow({ phase: 'idle', message: `שוחזרו ${restored} מסמכים מ-S3${extra}.` })
+        setAsyncFlow({ phase: 'idle', message: `שוחזרו ${restored} מסמכים${extra}.` })
       }
     })()
     return () => {
@@ -652,7 +652,7 @@ export default function DS160IsraelForm({
     } catch (e) {
       setAsyncFlow({
         phase: 'error',
-        message: e?.message || 'שגיאה (כולל אם העלאת קבצים ל-S3 נכשלה)',
+        message: e?.message || 'שגיאה בשליחת הטופס',
       })
     }
   }
@@ -694,7 +694,7 @@ export default function DS160IsraelForm({
           values.americanLicenseScan, values.extraDocumentScan1, values.extraDocumentScan2, values.extraDocumentScan3,
         ].some((v) => firstFile(v) instanceof File)
         if (s3Disabled && hasFiles) {
-          setAsyncFlow({ phase: 'error', message: 'שמירה הצליחה, אבל קבצי הסריקה לא הועלו ל-S3 (נא לוודא שמפתחות AWS מוגדרים בסביבה).' })
+          setAsyncFlow({ phase: 'error', message: 'שמירה הצליחה, אבל קבצי הסריקה לא הועלו (נסה לשמור שוב).' })
         }
         s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
         // Re-save blob with merged s3Documents (new uploads + previously known refs).
@@ -703,7 +703,7 @@ export default function DS160IsraelForm({
           await saveFormBlobPayload(fullBody, loadedBlobKeyRef.current ?? undefined)
         }
       } catch (s3Err) {
-        setAsyncFlow({ phase: 'error', message: `שמירה הצליחה, אבל העלאת הקבצים ל-S3 נכשלה: ${s3Err?.message || 'שגיאה'}` })
+        setAsyncFlow({ phase: 'error', message: `שמירה הצליחה, אבל העלאת הקבצים נכשלה: ${s3Err?.message || 'שגיאה'}` })
       }
       return true
     } catch (e) {
@@ -756,13 +756,13 @@ export default function DS160IsraelForm({
     const hadMeta = Array.isArray(snap.s3Documents) && snap.s3Documents.length > 0
     let msg = 'טיוטה נטענה מהדפדפן.'
     if (restored > 0) {
-      msg += ` שוחזרו ${restored} מסמכים מ-S3.`
+      msg += ` שוחזרו ${restored} מסמכים.`
       if (failed > 0) msg += ` ${failed} קבצים לא הורדו.`
     } else if (hadMeta && !apiBase) {
       msg +=
         ' במצב פיתוח ללא API להעלאה — מסמכים לא שוחזרו; הגדר VITE_S3_UPLOAD_API_URL או פתח בפרודקשן.'
     } else if (hadMeta && restored === 0) {
-      msg += ' מסמכים שמורים בענן לא שוחזרו (בדוק הרשאות S3 או נסה לבחור מחדש).'
+      msg += ' מסמכים שמורים לא שוחזרו (נסה לבחור מחדש).'
     }
     setAsyncFlow({ phase: 'idle', message: msg })
   }
@@ -1297,7 +1297,7 @@ export default function DS160IsraelForm({
                     <span className="font-mono" dir="ltr">
                       מספר_YYYY-MM-DD
                     </span>
-                    : התאריך הוא <strong>אוטומטית</strong> תאריך תחילת מילוי הטופס ({formStartedDateRef.current}), לדפדפן ול-S3.
+                    : התאריך הוא <strong>אוטומטית</strong> תאריך תחילת מילוי הטופס ({formStartedDateRef.current}).
                   </span>
                 </div>
                 <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -2065,7 +2065,7 @@ export default function DS160IsraelForm({
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מסמכים נוספים (לא מתוכננים בטופס)</h2>
             <p className="text-sm text-gray-600">
-              להעלאת מסמכים שלא מופיעים בשאלות למעלה (למשל אישורים, מכתבים, צילומים נוספים). הקבצים יישלחו ל-S3 וייכללו בתרגום וב-PDF יחד עם שאר המסמכים.
+              להעלאת מסמכים שלא מופיעים בשאלות למעלה (למשל אישורים, מכתבים, צילומים נוספים). הקבצים ייכללו בתרגום וב-PDF יחד עם שאר המסמכים.
             </p>
             <FormInput
               register={register}
@@ -2121,7 +2121,7 @@ export default function DS160IsraelForm({
               </div>
             )}
             {asyncFlow.phase === 'working' && (
-              <p className="text-sm text-blue-600">שומר במכשיר, מעלה ל-S3 אם הוגדר, שומר בענן…</p>
+              <p className="text-sm text-blue-600">שומר…</p>
             )}
             {asyncFlow.phase === 'idle' && asyncFlow.message && (
               <p className="text-sm text-green-700 max-w-xl text-right">{asyncFlow.message}</p>
