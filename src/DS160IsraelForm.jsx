@@ -502,6 +502,8 @@ export default function DS160IsraelForm({
   const lastSavedSnapshotRef = useRef(/** @type {string | null} */ (null))
 
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [exitSaving, setExitSaving] = useState(false)
+  const [exitSaveError, setExitSaveError] = useState('')
 
   function getSerializableSnapshot() {
     const { data } = serializeFormValuesForJson(getValues())
@@ -662,7 +664,7 @@ export default function DS160IsraelForm({
         phase: 'error',
         message: 'יש למלא שם פרטי ושם משפחה בעברית כדי לשמור טיוטה.',
       })
-      return
+      return false
     }
     setAsyncFlow({ phase: 'working', message: '' })
     try {
@@ -703,11 +705,13 @@ export default function DS160IsraelForm({
       } catch (s3Err) {
         setAsyncFlow({ phase: 'error', message: `שמירה הצליחה, אבל העלאת הקבצים ל-S3 נכשלה: ${s3Err?.message || 'שגיאה'}` })
       }
+      return true
     } catch (e) {
       setAsyncFlow({
         phase: 'error',
         message: e?.message || 'Save failed',
       })
+      return false
     }
   }
 
@@ -2194,29 +2198,48 @@ export default function DS160IsraelForm({
           <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 flex flex-col gap-4" dir="rtl">
             <h2 className="text-lg font-bold text-gray-800">שינויים שלא נשמרו</h2>
             <p className="text-sm text-gray-600">יש שינויים שלא נשמרו בטופס. האם ברצונך לשמור לפני היציאה?</p>
+            {exitSaveError && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{exitSaveError}</p>
+            )}
             <div className="flex flex-col gap-2">
               <button
-                className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                disabled={exitSaving}
+                className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                 onClick={async () => {
-                  setShowExitConfirm(false)
-                  await onSaveDraft()
-                  onExitToHome()
+                  setExitSaveError('')
+                  setExitSaving(true)
+                  const ok = await onSaveDraft()
+                  setExitSaving(false)
+                  if (ok) {
+                    setShowExitConfirm(false)
+                    onExitToHome()
+                  } else {
+                    const values = getValues()
+                    if (!String(values.firstName || '').trim() || !String(values.lastName || '').trim()) {
+                      setExitSaveError('יש למלא שם פרטי ושם משפחה בעברית כדי לשמור.')
+                    } else {
+                      setExitSaveError('השמירה נכשלה. נסה שוב או צא ללא שמירה.')
+                    }
+                  }
                 }}
               >
-                שמור וצא לרשימה
+                {exitSaving ? 'שומר…' : 'שמור וצא לרשימה'}
               </button>
               <button
-                className="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                disabled={exitSaving}
+                className="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
                 onClick={() => {
                   setShowExitConfirm(false)
+                  setExitSaveError('')
                   onExitToHome()
                 }}
               >
                 צא ללא שמירה
               </button>
               <button
-                className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 transition"
-                onClick={() => setShowExitConfirm(false)}
+                disabled={exitSaving}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+                onClick={() => { setShowExitConfirm(false); setExitSaveError('') }}
               >
                 ביטול — המשך עריכה
               </button>
