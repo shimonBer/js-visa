@@ -1427,7 +1427,7 @@ export default function DS160IsraelForm({
               </div>
 
 
-              <FormInput register={register} getFieldError={getFieldError} label="עיר לידה (אם בחו״ל, לציין מדינה)" name="birthCity" />
+              <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" hint="שם עיר באנגלית בלבד — לא שם מדינה (למשל: Jerusalem, Tel Aviv, Haifa)" />
               <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת הזהות" name="idNumber" />
               <FormInput register={register} getFieldError={getFieldError}
                 label="מדינת הנפקת דרכון (באנגלית)"
