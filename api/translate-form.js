@@ -40,11 +40,14 @@ Examples of what is FORBIDDEN in the output (except Native Alphabet):
   ✗  Father's Surname: חסון
   ✗  Father's Given Name: אליעזר
   ✗  Mother's Surname: חסון
+  ✗  City of Birth: נהריה
+  ✗  City of Birth: Nahariya (נהריה)
 
 Examples of what is REQUIRED:
   ✓  Father's Surname: Hason
   ✓  Father's Given Name: Eliezer
   ✓  Mother's Surname: Hason
+  ✓  City of Birth: Nahariya   ← English only, no Hebrew in parentheses
   ✓  Full Name in Native Alphabet: אליעזר חסון   ← ONLY Hebrew allowed here
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -265,10 +268,14 @@ PERSONAL INFORMATION 1
 * Date of Birth
 
 * City of Birth
-  Rule: if the passport or document shows the city name in Hebrew → append it in parentheses, e.g. Jerusalem (ירושלים)
+  Rule: ALWAYS output in English only — use the Latin/English spelling from the passport or official document.
+  NEVER output Hebrew characters here.
+  If the intake data contains a Hebrew city name, transliterate or translate it to English (e.g. "נהריה" → "Nahariya", "ירושלים" → "Jerusalem").
+  If no English form is available, use the standard English transliteration.
 
 * State/Province of Birth
-  Rule: if absent or empty → N/A
+  Rule: ALWAYS output in English only — never in Hebrew.
+  If absent, not applicable, or Israel (which has no states) → N/A
 
 * Country of Birth
 
