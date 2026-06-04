@@ -203,7 +203,11 @@ export default async function handler(req, res) {
       }
       await writeStatusIndex(token, statusIndex)
 
-      const baseUrl = process.env.VERCEL_URL
+      // VERCEL_PROJECT_PRODUCTION_URL is the stable custom/prod domain (e.g. js-visa.vercel.app).
+      // VERCEL_URL is deployment-specific (preview URLs) — only use as fallback.
+      const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : url.origin
       const guestLink = `${baseUrl}/fill/${newToken}`

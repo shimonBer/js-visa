@@ -498,6 +498,21 @@ export default function DS160IsraelForm({
   /** Fields that failed the "translate" pre-flight validation (Set of field names). */
   const [translationErrors, setTranslationErrors] = useState(/** @type {Set<string>} */ (new Set()))
 
+  /** JSON snapshot of non-file form values at the time of last successful save (or initial load). */
+  const lastSavedSnapshotRef = useRef(/** @type {string | null} */ (null))
+
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
+
+  function getSerializableSnapshot() {
+    const { data } = serializeFormValuesForJson(getValues())
+    return JSON.stringify(data)
+  }
+
+  function hasUnsavedChanges() {
+    if (lastSavedSnapshotRef.current === null) return false
+    return lastSavedSnapshotRef.current !== getSerializableSnapshot()
+  }
+
   /** Latest uploaded S3 keys per field — sent with translate so server can fetch bytes for GPT + PDF appendix. */
   const s3DocumentsRef = useRef(/** @type {{ field: string, key: string, bucket?: string }[]} */ ([]))
 
@@ -533,7 +548,7 @@ export default function DS160IsraelForm({
     if (!Array.isArray(restoredVisits) || restoredVisits.length === 0) {
       restoredVisits = [{ visit: '' }]
     }
-    reset({
+    const resetValues = {
       ...data,
       travelCompanions: companions,
       previousUSVisits: restoredVisits,
@@ -545,7 +560,11 @@ export default function DS160IsraelForm({
       extraDocumentScan1: undefined,
       extraDocumentScan2: undefined,
       extraDocumentScan3: undefined,
-    })
+    }
+    reset(resetValues)
+    // Snapshot the loaded state so we can detect unsaved changes on exit
+    const { data: cleanData } = serializeFormValuesForJson(resetValues)
+    lastSavedSnapshotRef.current = JSON.stringify(cleanData)
   }, [initialBlobKey, initialBlob, reset])
 
   useEffect(() => {
@@ -646,6 +665,7 @@ export default function DS160IsraelForm({
       if (blobResult?.pathname && typeof blobResult.pathname === 'string') {
         loadedBlobKeyRef.current = blobResult.pathname
       }
+      lastSavedSnapshotRef.current = getSerializableSnapshot()
       setAsyncFlow({ phase: 'idle', message: 'Saved successfully' })
       // S3 upload runs after the success message — failures are non-blocking.
       try {
@@ -1229,7 +1249,7 @@ export default function DS160IsraelForm({
             {onExitToHome && (
               <button
                 type="button"
-                onClick={onExitToHome}
+                onClick={() => hasUnsavedChanges() ? setShowExitConfirm(true) : onExitToHome()}
                 className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
               >
                 ← רשימה
@@ -2105,7 +2125,7 @@ export default function DS160IsraelForm({
               {onExitToHome && (
                 <button
                   type="button"
-                  onClick={onExitToHome}
+                  onClick={() => hasUnsavedChanges() ? setShowExitConfirm(true) : onExitToHome()}
                   className="px-6 py-2 border border-gray-400 text-gray-700 font-semibold rounded-md hover:bg-gray-50 transition"
                 >
                   חזרה לרשימה
@@ -2114,7 +2134,18 @@ export default function DS160IsraelForm({
               <button
                 type="button"
                 disabled={asyncFlow.phase === 'working' || translateUi.loading}
-                onClick={() => setSaveBeforeTranslatePrompt(true)}
+                onClick={() => {
+                  const missing = validateForTranslation(getValues())
+                  if (missing.size > 0) {
+                    setTranslationErrors(missing)
+                    const firstField = [...missing][0]
+                    setTimeout(() => {
+                      document.getElementById(`field-${firstField}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }, 50)
+                    return
+                  }
+                  setSaveBeforeTranslatePrompt(true)
+                }}
                 className="px-6 py-2 border border-slate-700 text-slate-800 font-semibold rounded-md hover:bg-slate-50 transition disabled:opacity-40"
               >
                 {translateUi.loading ? 'מתרגם…' : 'תרגם לאנגלית (ChatGPT)'}
@@ -2144,6 +2175,46 @@ export default function DS160IsraelForm({
           </div>
         </form>
       </div>
+
+      {showExitConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 flex flex-col gap-4" dir="rtl">
+            <h2 className="text-lg font-bold text-gray-800">שינויים שלא נשמרו</h2>
+            <p className="text-sm text-gray-600">יש שינויים שלא נשמרו בטופס. האם ברצונך לשמור לפני היציאה?</p>
+            <div className="flex flex-col gap-2">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                onClick={async () => {
+                  setShowExitConfirm(false)
+                  await onSaveDraft()
+                  onExitToHome()
+                }}
+              >
+                שמור וצא לרשימה
+              </button>
+              <button
+                className="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                onClick={() => {
+                  setShowExitConfirm(false)
+                  onExitToHome()
+                }}
+              >
+                צא ללא שמירה
+              </button>
+              <button
+                className="px-4 py-2 text-sm text-gray-400 hover:text-gray-600 transition"
+                onClick={() => setShowExitConfirm(false)}
+              >
+                ביטול — המשך עריכה
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {saveBeforeTranslatePrompt && (
         <div

@@ -296,10 +296,11 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                         type="button"
                         disabled={!!deletingPathname || panel?.loading}
                         onClick={() => void handleGenerateGuestLink(f)}
-                        title={f.isComplete === false ? `שלח ללקוח לימלא שדות חסרים (${f.missingCount ?? '?'} שדות)` : 'שלח ללקוח לימלא שדות חסרים'}
-                        className="shrink-0 px-3 py-2 rounded-md border border-blue-200 text-blue-700 text-sm font-medium hover:bg-blue-50 disabled:opacity-40"
+                        title={f.isComplete === false ? `צור קישור אישי ללקוח למילוי ${f.missingCount ?? '?'} שדות חסרים` : 'צור קישור אישי ללקוח למילוי שדות חסרים'}
+                        className="shrink-0 px-3 py-2 rounded-md border border-blue-200 text-blue-700 text-sm font-medium hover:bg-blue-50 disabled:opacity-40 flex flex-col items-center leading-tight"
                       >
-                        {panel?.loading ? '…' : '📤'}
+                        <span>{panel?.loading ? '…' : '📤'}</span>
+                        <span className="text-[10px] font-normal">קישור ללקוח</span>
                       </button>
                     )}
 
@@ -315,23 +316,31 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                   </div>
 
                   {panel && (
-                    <div className="rounded-md border px-3 py-2 text-sm">
+                    <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm space-y-1.5">
                       {panel.error && (
                         <p className="text-red-600">{panel.error}</p>
                       )}
                       {panel.guestLink && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600 text-xs truncate flex-1" dir="ltr">
-                            {panel.guestLink}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => void handleCopyLink(panel.guestLink)}
-                            className="shrink-0 px-2 py-1 rounded bg-blue-600 text-white text-xs hover:bg-blue-700"
-                          >
-                            העתק קישור
-                          </button>
-                        </div>
+                        <>
+                          <p className="text-xs text-blue-800 font-medium">
+                            קישור אישי ללקוח למילוי שדות חסרים — שלח ב-WhatsApp או במייל:
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-600 text-xs truncate flex-1 font-mono bg-white border border-blue-200 rounded px-2 py-1" dir="ltr">
+                              {panel.guestLink}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => void handleCopyLink(panel.guestLink)}
+                              className="shrink-0 px-2 py-1 rounded bg-blue-600 text-white text-xs hover:bg-blue-700 font-medium"
+                            >
+                              העתק
+                            </button>
+                          </div>
+                          <p className="text-[11px] text-blue-700">
+                            הלקוח ימלא רק את השדות החסרים. לאחר שישלח, הטופס יתעדכן אוטומטית.
+                          </p>
+                        </>
                       )}
                     </div>
                   )}
