@@ -513,6 +513,15 @@ export default function DS160IsraelForm({
     return lastSavedSnapshotRef.current !== getSerializableSnapshot()
   }
 
+  // For brand-new forms (no saved blob), capture the default empty-state snapshot on mount
+  // so any user edits will trigger the unsaved-changes warning on exit.
+  useEffect(() => {
+    if (initialBlob == null) {
+      lastSavedSnapshotRef.current = getSerializableSnapshot()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   /** Latest uploaded S3 keys per field — sent with translate so server can fetch bytes for GPT + PDF appendix. */
   const s3DocumentsRef = useRef(/** @type {{ field: string, key: string, bucket?: string }[]} */ ([]))
 
