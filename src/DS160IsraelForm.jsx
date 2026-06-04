@@ -573,6 +573,8 @@ export default function DS160IsraelForm({
       extraDocumentScan3: undefined,
     }
     reset(resetValues)
+    // Highlight missing fields immediately so the user sees what needs filling on open
+    setTranslationErrors(validateForTranslation(resetValues))
     // Snapshot the loaded state so we can detect unsaved changes on exit
     const { data: cleanData } = serializeFormValuesForJson(resetValues)
     lastSavedSnapshotRef.current = JSON.stringify(cleanData)
