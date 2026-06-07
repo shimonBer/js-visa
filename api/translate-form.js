@@ -268,12 +268,8 @@ PERSONAL INFORMATION 1
 * Date of Birth
 
 * City of Birth
-  Rule: ALWAYS output an actual city name in English — NEVER a country name.
-  If the intake birthCity value is a country name (e.g. "Israel", "ישראל", "United States", "USA", etc.) it is NOT a valid city and must be treated as ❗ MISSING.
-  Use the Latin/English spelling from the passport or official document.
+  Rule: ALWAYS take the birthCity value and take the transalation from the intake data and output it in English.
   NEVER output Hebrew characters here.
-  If the intake data contains a Hebrew city name, transliterate or translate it to English (e.g. "נהריה" → "Nahariya", "ירושלים" → "Jerusalem").
-  If no English form is available, use the standard English transliteration.
   If the city cannot be determined, output: ❗ MISSING
 
 * State/Province of Birth
