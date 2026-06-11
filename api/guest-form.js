@@ -19,7 +19,7 @@
 import crypto from 'crypto'
 import { put, list, get } from '@vercel/blob'
 import { createClient } from '@supabase/supabase-js'
-import { verifyRequest } from './lib/verifyToken.js'
+import { verifyRequest } from '../lib/verifyToken.js'
 import { calculateCompleteness } from '../src/lib/formCompleteness.js'
 
 // ── Auth helpers (formerly api/auth.js) ──────────────────────────────────────

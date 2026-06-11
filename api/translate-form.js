@@ -6,8 +6,8 @@
  * Response: { translated, analyzedAttachments, pdfBase64 }
  */
 
-import { buildTranslationPdf } from './lib/buildTranslationPdf.js'
-import { fetchS3FormDocumentBytes } from './lib/s3FormDocuments.js'
+import { buildTranslationPdf } from '../lib/buildTranslationPdf.js'
+import { fetchS3FormDocumentBytes } from '../lib/s3FormDocuments.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_TIMEOUT_MS = 180_000
@@ -60,8 +60,8 @@ CORE REQUIREMENTS
 * Extract missing information from uploaded files whenever possible.
 * Use passport/government-issued documents as the primary source of truth.
 * The form MUST always be complete.
-* NEVER omit any DS-160 section or field.
-* ALL sections and subsections MUST always appear in the output.
+* NEVER omit any DS-160 section or field — EXCEPTION: conditional fields that are explicitly gated by an IF/ELSE rule in this prompt (e.g. employer fields when occupation is RETIRED or HOMEMAKER) must be omitted when the condition is not met.
+* ALL sections and subsections MUST always appear in the output, subject to the conditional exceptions defined per field.
 * All YES/NO questions MUST always have an answer.
 * If a YES/NO field is not explicitly answered or evidenced, default to NO.
 * For every YES/NO question: ALWAYS output the question with its YES or NO answer.
@@ -702,7 +702,7 @@ RELATIVES IN THE U.S.
 
 
   IF the answer is RETIRED OR HOMEMAKER:
-  * Nothing else needed
+  ⛔ STOP — do NOT output any of the fields below (Employer Name, Job Title, Employer Address, Employer City, Country of Employment, Employer Phone, Employment Start Date). They are intentionally omitted for Retired/Homemaker applicants. This overrides the general "never omit" rule.
 
   ELSE:
 

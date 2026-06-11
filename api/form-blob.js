@@ -1,5 +1,5 @@
 import { put, list, get } from '@vercel/blob'
-import { verifyRequest } from './lib/verifyToken.js'
+import { verifyRequest } from '../lib/verifyToken.js'
 import { calculateCompleteness } from '../src/lib/formCompleteness.js'
 
 const PREFIX = 'forms/'
