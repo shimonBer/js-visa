@@ -98,7 +98,11 @@ Use:
 
 * NO → for negative yes/no questions
 * ❗ MISSING → for required factual information that is unavailable
-* N/A → ONLY for optional fields that genuinely do not apply (e.g. state/province when not applicable)
+* N/A → for optional fields that genuinely do not apply (e.g. state/province when not applicable)
+
+CRITICAL OPTIONAL FIELD RULE:
+Any field labeled "(Optional)" in this prompt MUST NEVER receive ❗ MISSING.
+If the value is unavailable, leave it blank or write N/A — never ❗ MISSING.
 
 For every YES/NO question: always write the question with its answer (YES or NO).
 When the answer is NO, output ONLY the question + "No". Do NOT add any sub-fields or N/A below it.
@@ -328,6 +332,7 @@ PERSONAL INFORMATION 2
   Rule: use plannedArrivalDate; if empty or absent → ❗ MISSING
 
 * Arrival flight (Optional)
+  Rule: if unknown → leave blank (never ❗ MISSING)
 
 * Arrival City
   Rule: infer from accommodationInUS if possible; otherwise N/A
@@ -335,8 +340,9 @@ PERSONAL INFORMATION 2
 * Date of Departure from U.S.
 
 * Departure Flight (Optional)
+  Rule: if unknown → leave blank (never ❗ MISSING)
 
-* Departure City 
+* Departure City
 
 * Provide the locations you plan to visit in the U.S.
   (Repeatable Group)
