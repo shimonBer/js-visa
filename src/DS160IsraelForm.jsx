@@ -1554,13 +1554,23 @@ export default function DS160IsraelForm({
                   </button>
                 </div>
               )}
-              <FormInput register={register} getFieldError={getFieldError} label="תאריך הגעה משוערת לארה״ב" name="plannedArrivalDate" hint="YYYY-MM-DD, משוער" />
-              <FormInput register={register} getFieldError={getFieldError} label="טיסת הגעה (אופציונלי)" name="arrivalFlight" hint="מספר טיסה, לדוגמה: LY007" />
-              <FormInput register={register} getFieldError={getFieldError} label="עיר הגעה בארה״ב" name="arrivalCity" hint="לדוגמה: New York" />
-              <FormInput register={register} getFieldError={getFieldError} label="תאריך עזיבה מארה״ב" name="departureDateUS" hint="YYYY-MM-DD, משוער" />
-              <FormInput register={register} getFieldError={getFieldError} label="טיסת יציאה (אופציונלי)" name="departureFlight" hint="מספר טיסה, לדוגמה: LY008" />
-              <FormInput register={register} getFieldError={getFieldError} label="עיר יציאה מארה״ב" name="departureCity" hint="לדוגמה: New York" />
-              <FormInput register={register} getFieldError={getFieldError} label="לכמה זמן?" name="plannedStayDuration" />
+              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך תוכניות נסיעה ספציפיות?" name="specificTravelPlans" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
+              {w.specificTravelPlans === 'yes' && (
+                <>
+                  <FormInput register={register} getFieldError={getFieldError} label="תאריך הגעה משוערת לארה״ב" name="plannedArrivalDate" hint="YYYY-MM-DD, משוער" />
+                  <FormInput register={register} getFieldError={getFieldError} label="טיסת הגעה (אופציונלי)" name="arrivalFlight" hint="מספר טיסה, לדוגמה: LY007" />
+                  <FormInput register={register} getFieldError={getFieldError} label="עיר הגעה בארה״ב" name="arrivalCity" hint="לדוגמה: New York" />
+                  <FormInput register={register} getFieldError={getFieldError} label="תאריך עזיבה מארה״ב" name="departureDateUS" hint="YYYY-MM-DD, משוער" />
+                  <FormInput register={register} getFieldError={getFieldError} label="טיסת יציאה (אופציונלי)" name="departureFlight" hint="מספר טיסה, לדוגמה: LY008" />
+                  <FormInput register={register} getFieldError={getFieldError} label="עיר יציאה מארה״ב" name="departureCity" hint="לדוגמה: New York" />
+                </>
+              )}
+              {w.specificTravelPlans === 'no' && (
+                <>
+                  <FormInput register={register} getFieldError={getFieldError} label="תאריך הגעה משוערת לארה״ב" name="plannedArrivalDate" hint="YYYY-MM-DD, משוער" />
+                  <FormInput register={register} getFieldError={getFieldError} label="לכמה זמן?" name="plannedStayDuration" />
+                </>
+              )}
               <FormInput register={register} getFieldError={getFieldError} label="איפה תלון בארה״ב?" name="accommodationInUS" type="textarea" />
               <FormInput register={register} getFieldError={getFieldError} label="מי משלם בעבור מגיש הבקשה על הנסיעה?" name="tripFundingSource" />
             </div>

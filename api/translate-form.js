@@ -326,6 +326,8 @@ PERSONAL INFORMATION 2
   If visaClass starts with "F1/M1" → output: F1/M1 — Student Visa
 
 * Have you made specific travel plans?
+  Rule: read specificTravelPlans field; "yes" → YES, "no" or absent → NO
+
 * if YES:
 
 * Intended Date of Arrival
