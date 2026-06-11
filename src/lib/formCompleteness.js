@@ -155,7 +155,14 @@ export function calculateCompleteness(data) {
     req('contactPhone')
     req('contactAddress')
   }
-  if (data?.hasCloseRelativesInUS === 'yes') req('relativeFullName')
+  if (data?.hasCloseRelativesInUS === 'yes') {
+    const relatives = data.usRelatives || []
+    const hasEntry = relatives.some((r) => String(r?.fullName ?? '').trim())
+    if (!hasEntry) {
+      const meta = FIELD_META.relativeFullName
+      ctx._list.push({ field: 'relativeFullName', label: meta.label, type: meta.type })
+    }
+  }
   if (data?.currentOccupation === 'עובד') {
     req('employerName')
     req('employerStreet')
