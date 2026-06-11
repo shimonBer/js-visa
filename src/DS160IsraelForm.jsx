@@ -437,6 +437,7 @@ export default function DS160IsraelForm({
 
   const passportIdWatch = watch('passportId')
   const passportScanWatch = watch('passportScan')
+  const photoScanWatch = watch('photoScan')
   const existingVisaScanWatch = watch('existingVisaScan')
   const socialSecurityScanWatch = watch('socialSecurityScan')
   const americanLicenseScanWatch = watch('americanLicenseScan')
@@ -565,6 +566,7 @@ export default function DS160IsraelForm({
       previousUSVisits: restoredVisits,
       mondayItemId: String(data.mondayItemId || ''),
       passportScan: undefined,
+      photoScan: undefined,
       existingVisaScan: undefined,
       socialSecurityScan: undefined,
       americanLicenseScan: undefined,
@@ -619,6 +621,7 @@ export default function DS160IsraelForm({
     try {
       const { results: uploads, s3Disabled } = await uploadFormDocumentsToS3(storageFormId, [
         { name: 'passportScan', file: firstFile(data.passportScan) },
+        { name: 'photoScan', file: firstFile(data.photoScan) },
         { name: 'existingVisaScan', file: firstFile(data.existingVisaScan) },
         { name: 'socialSecurityScan', file: firstFile(data.socialSecurityScan) },
         { name: 'americanLicenseScan', file: firstFile(data.americanLicenseScan) },
@@ -684,6 +687,7 @@ export default function DS160IsraelForm({
       try {
         const { results: uploads, s3Disabled } = await uploadFormDocumentsToS3(storageFormId, [
           { name: 'passportScan', file: firstFile(values.passportScan) },
+          { name: 'photoScan', file: firstFile(values.photoScan) },
           { name: 'existingVisaScan', file: firstFile(values.existingVisaScan) },
           { name: 'socialSecurityScan', file: firstFile(values.socialSecurityScan) },
           { name: 'americanLicenseScan', file: firstFile(values.americanLicenseScan) },
@@ -692,7 +696,7 @@ export default function DS160IsraelForm({
           { name: 'extraDocumentScan3', file: firstFile(values.extraDocumentScan3) },
         ])
         const hasFiles = [
-          values.passportScan, values.existingVisaScan, values.socialSecurityScan,
+          values.passportScan, values.photoScan, values.existingVisaScan, values.socialSecurityScan,
           values.americanLicenseScan, values.extraDocumentScan1, values.extraDocumentScan2, values.extraDocumentScan3,
         ].some((v) => firstFile(v) instanceof File)
         if (s3Disabled && hasFiles) {
@@ -741,6 +745,7 @@ export default function DS160IsraelForm({
       travelCompanions: companions,
       previousUSVisits: restoredVisits,
       passportScan: undefined,
+      photoScan: undefined,
       existingVisaScan: undefined,
       socialSecurityScan: undefined,
       americanLicenseScan: undefined,
@@ -1332,6 +1337,24 @@ export default function DS160IsraelForm({
                     }}
                   />
                 </div>
+                <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="font-semibold text-gray-800">תמונת המבקש</p>
+                  <p className="text-xs text-gray-600">
+                    תמונת פנים ברורה של מבקש הוויזה (פורמט JPEG/PNG מומלץ).
+                  </p>
+                  <DocumentFileSlot
+                    label="העלאת תמונה"
+                    name="photoScan"
+                    register={register}
+                    setValue={setValue}
+                    getFieldError={getFieldError}
+                    watchedValue={photoScanWatch}
+                    accept="image/*"
+                    onFilePicked={(f) => {
+                      void uploadDocumentImmediately('photoScan', f)
+                    }}
+                  />
+                </div>
               </div>
               <FormInput register={register} getFieldError={getFieldError} label="שם פרטי (עברית)" name="firstName" dir="auto" />
               <FormInput register={register} getFieldError={getFieldError} label="שם משפחה (עברית)" name="lastName" dir="auto" />
@@ -1427,7 +1450,7 @@ export default function DS160IsraelForm({
               </div>
 
 
-              <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" hint="שם עיר באנגלית בלבד — לא שם מדינה (למשל: Jerusalem, Tel Aviv, Haifa)" />
+              <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" />
               <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת הזהות" name="idNumber" />
               <FormInput register={register} getFieldError={getFieldError}
                 label="מדינת הנפקת דרכון (באנגלית)"
@@ -2063,6 +2086,45 @@ export default function DS160IsraelForm({
             ]} />
           </section>
 
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שאלת אבטחה <span className="text-base font-normal text-gray-400">(אופציונלי)</span></h2>
+            <FormSelect
+              register={register}
+              getFieldError={getFieldError}
+              label="בחר שאלת אבטחה"
+              name="securityQuestion"
+              options={[
+                'מה שם הפרטי של אמא של אמא שלך?',
+                'מה שם הפרטי של אבא של אבא שלך?',
+                'מה שם הנעורים של סבתא שלך מצד אמא?',
+                'באיזה כינוי קראה לך המשפחה כשהיית ילד/ה?',
+                'באיזו עיר פגשת את בן/בת הזוג שלך?',
+                'מה שמו של חבר/ה הכי טוב שלך מהילדות?',
+                'באיזו רחוב גרת כשהיית בן/בת 8?',
+                'מה חודש ושנת הלידה של האח/ות הבכור/ה שלך? (למשל, ינואר 1900)',
+                'מה השם האמצעי של הילד/ה הצעיר/ה שלך?',
+                'מה השם האמצעי של האח/ות הבכור/ה שלך?',
+                'באיזה בית ספר למדת כשהיית בן/בת 11?',
+                'מה היה מספר הטלפון הביתי שלך כשהיית ילד/ה?',
+                'מה השם הפרטי ושם המשפחה של הדוד/ה הבכור/ה שלך?',
+                'מה שמו של הצעצוע או בעל החיים הממולא האהוב עליך?',
+                'באיזו עיר או עיירה פגשו אמא ואבא שלך?',
+                'מה שם המשפחה של המורה האהוב/ה עליך?',
+                'באיזו עיר גר/ה האח/ות הקרוב/ה אליך?',
+                'מה חודש ושנת הלידה של האח/ות הצעיר/ה שלך? (למשל, ינואר 1900)',
+                'באיזו עיר או עיירה הייתה העבודה הראשונה שלך?',
+                'מה שמו/ה של חבר/ה הראשון/ה שלך?',
+              ]}
+            />
+            <FormInput
+              register={register}
+              getFieldError={getFieldError}
+              label="תשובה לשאלת האבטחה"
+              name="securityAnswer"
+              placeholder="הכנס תשובה..."
+            />
+          </section>
+
           {import.meta.env.VITE_EXTRA_DOCS === 'true' && (
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מסמכים נוספים (לא מתוכננים בטופס)</h2>
@@ -2312,7 +2374,7 @@ export default function DS160IsraelForm({
                       try {
                         const { buildTranslationPdf } = await import('./lib/buildTranslationPdf.js')
                         const DOC_FIELDS = [
-                          'passportScan', 'existingVisaScan', 'socialSecurityScan',
+                          'passportScan', 'photoScan', 'existingVisaScan', 'socialSecurityScan',
                           'americanLicenseScan', 'extraDocumentScan1', 'extraDocumentScan2', 'extraDocumentScan3',
                         ]
                         const formValues = getValues()

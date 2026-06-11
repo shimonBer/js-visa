@@ -241,6 +241,7 @@ PERSONAL INFORMATION 1
 * Surname
 
 * Given Name
+  If the passport does not include a given name, please insert 'FNU' in Given Names.
 
 * Full Name in Native Alphabet
   Rule:
@@ -255,6 +256,7 @@ PERSONAL INFORMATION 1
     * Other Given Names
 
 * Do you have a telecode that represents your name? YES/NO
+  Telecodes are 4 digit code numbers that represent characters in some non-Roman alphabet names.
 
   * IF YES:
 
@@ -276,11 +278,14 @@ PERSONAL INFORMATION 1
   Rule: ALWAYS output in English only — never in Hebrew.
   If absent, not applicable, or Israel (which has no states) → N/A
 
-* Country of Birth
+* Country / region of Birth
 
-* Nationality
 
 PERSONAL INFORMATION 2
+
+
+* Country/Region of Origin (Nationality) 
+
 
 * Do you hold or have you held another nationality? YES/NO
 
@@ -294,6 +299,7 @@ PERSONAL INFORMATION 2
   * IF YES:
 
     * Country
+(REPEATABLE GROUP)
 
 * National Identification Number
 
@@ -305,78 +311,6 @@ PERSONAL INFORMATION 2
   Rule: if hasTaxpayerID is "no" or absent → output: NO
   If hasTaxpayerID is "yes" → output the taxpayerIDNumber value
 
-SOCIAL MEDIA
-
-* Have you used social media platforms in the last 5 years? YES/NO
-
-  * IF YES:
-    Rule: copy the social media data EXACTLY as provided in the JSON field (socialNetworks or equivalent).
-    Do NOT parse, reformat, split, or interpret the value. Output it verbatim, one entry per line if multiple.
-    Never use ❗ MISSING for any social media field.
-
-(REPEATABLE GROUP)
-
-━━━━━━━━━━━━━━━━━━━━
-
-🟦 ADDRESS AND PHONE INFORMATION
-
-HOME ADDRESS
-
-* Street Address
-
-* City
-
-* Country
-
-* Is your mailing address the same as your home address? YES/NO
-
-  * IF NO:
-
-    * Mailing Street Address
-    * Mailing City
-    * Mailing Country
-  * IF YES:
-    Mailing Address: SAME AS HOME ADDRESS
-
-CONTACT INFORMATION
-
-* Primary Phone Number
-* Secondary Phone Number
-  Rule: NOT mandatory — if absent or empty → output: N/A (never output ❗ MISSING for this field)
-* Work Phone Number
-* Email Address
-
-━━━━━━━━━━━━━━━━━━━━
-
-🟦 PASSPORT INFORMATION
-
-* Passport Number
-
-* Passport Book Number
-  Rule: only relevant for Israeli passports. If passportIssuingCountry is not Israel or the value is absent → output: No
-
-* Country of Issuance
-
-* City of Issuance
-  Rule: output the English city name only (e.g. Jerusalem). Never include Hebrew characters in this field — if the passport shows only Hebrew, transliterate to English.
-
-* Issuing Authority
-  Rule: output the English authority name only (e.g. Ministry of Interior). Never include Hebrew characters in this field — if the passport shows only Hebrew, translate/transliterate to English.
-
-* State/Province of Issuance
-  Rule: if absent or empty → N/A
-
-* Passport Issue Date
-
-* Passport Expiration Date
-
-* Have you ever lost a passport or had one stolen? YES/NO
-
-  * IF YES:
-
-    * Lost Passport Number
-    * Country of Issuance
-    * Explanation
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -387,17 +321,38 @@ CONTACT INFORMATION
   If visaClass starts with "B1/B2" or is absent/empty → output: B1/B2 — Tourism & Business
   If visaClass starts with "F1/M1" → output: F1/M1 — Student Visa
 
-* Have you made specific travel plans? YES
+* Have you made specific travel plans?
+* if YES:
 
 * Intended Date of Arrival
   Rule: use plannedArrivalDate; if empty or absent → ❗ MISSING
 
+* Arrival flight (Optional)
+
 * Arrival City
   Rule: infer from accommodationInUS if possible; otherwise N/A
 
+* Date of Departure from U.S.
+
+* Departure Flight (Optional)
+
+* Departure City 
+
+* Provide the locations you plan to visit in the U.S.
+  (Repeatable Group)
+
+
+* if NO:
+* Intended Date of Arrival
 * Intended Length of Stay
 
-* Address Where You Will Stay in the U.S.
+* Address Where You Will Stay in the U.S. The address should include:
+
+* Street Address (Line 1) 
+* Street Address (Line 2) *Optional 
+* State 
+* ZIP Code (if known) 
+
 
 PERSON/ENTITY PAYING FOR TRIP
 
@@ -410,7 +365,7 @@ PERSON/ENTITY PAYING FOR TRIP
 * Relationship
 * Phone Number
 * Email Address
-* Address
+* Address (Can be a checkbox to select if that's the same as the home address)
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -420,10 +375,17 @@ PERSON/ENTITY PAYING FOR TRIP
 
   * IF YES:
 
-    * Full Name
+    * Surnames of Person Traveling With You  
+    * Given Names of Person Traveling With You  
     * Relationship
 
 (REPEATABLE GROUP)
+
+* Are you traveling as part of a group or organization?
+  * IF YES:
+
+    * Group name
+
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -435,8 +397,10 @@ PERSON/ENTITY PAYING FOR TRIP
 
     * Arrival Date
     * Length of Stay
+    (REPEATABLE GROUP)
 
-(REPEATABLE GROUP)
+    * Do you or did you ever hold a U.S. Driver’s License? YES/NO
+
 
 * Have you ever been issued a U.S. visa? YES/NO
 
@@ -469,6 +433,111 @@ PERSON/ENTITY PAYING FOR TRIP
 
     * Petition Type
     * Petition Number
+
+
+━━━━━━━━━━━━━━━━━━━━
+
+🟦 ADDRESS AND PHONE INFORMATION
+
+HOME ADDRESS
+
+* Street Address
+
+* City
+* State/Province (can check Does not apply)
+* Postal Zone/ZIP Code (can check Does not apply)
+* Country
+
+* Is your mailing address the same as your home address? YES/NO
+
+  * IF NO:
+
+    * Mailing Street Address
+    * City
+    * State/Province (can check Does not apply)
+    * Postal Zone/ZIP Code (can check Does not apply)
+    * Country
+  * IF YES:
+    Mailing Address: SAME AS HOME ADDRESS
+
+CONTACT INFORMATION
+
+* Primary Phone Number 
+* Secondary Phone Number (can check Does not apply)
+  Rule: NOT mandatory — if absent or empty → output: N/A (never output ❗ MISSING for this field)
+* Work Phone Number (can check Does not apply)
+  Rule: NOT mandatory — if absent or empty → output: N/A (never output ❗ MISSING for this field)
+* Have you used any other phone numbers in the last five years? 
+  * IF YES:
+    (REPEATABLE GROUP)
+    * Additional Phone Number 
+* Email Address
+* Have you used any other email addresses in the last five years? 
+  * IF YES:
+    (REPEATABLE GROUP)
+    * Additional Email Address 
+
+SOCIAL MEDIA
+
+* Have you used social media platforms in the last 5 years? YES/NO
+
+  * IF YES:
+    Rule: copy the social media data EXACTLY as provided in the JSON field (socialNetworks or equivalent).
+    Do NOT parse, reformat, split, or interpret the value. Output it verbatim, one entry per line if multiple.
+    Never use ❗ MISSING for any social media field.
+
+    Rule: when filling the real DS-160 form, you will need to parse the name of the social media, and then the identifier (link mostly)
+  
+  * if NO:
+    None
+
+(REPEATABLE GROUP)
+
+* Do you wish to provide information about your presence on any other websites or applications you have used within the last five years to create or share content (photos, videos, status updates, etc.)? 
+  * IF YES:
+    (REPEATABLE GROUP)
+    * Additional Social Media Platform 
+    * URL
+
+  * Additional Social Media Handle 
+
+━━━━━━━━━━━━━━━━━━━━
+
+🟦 PASSPORT INFORMATION
+
+* Passport/Travel Document Type
+  Choose from REGULAR, DIPLOMATIC, OFFICIAL, OTHER (if not specified, choose REGULAR)
+
+* Passport Number
+
+* Passport Book Number
+  Rule: only relevant for Israeli passports. If passportIssuingCountry is not Israel or the value is absent → output: No
+
+* Country of Issuance
+
+* City of Issuance
+  Rule: output the English city name only (e.g. Jerusalem). Never include Hebrew characters in this field — if the passport shows only Hebrew, transliterate to English.
+
+* Issuing Authority
+  Rule: output the English authority name only (e.g. Ministry of Interior). Never include Hebrew characters in this field — if the passport shows only Hebrew, translate/transliterate to English.
+
+* State/Province of Issuance
+  Rule: if absent or empty → N/A
+
+* Passport Issue Date
+
+* Passport Expiration Date
+
+* Have you ever lost a passport or had one stolen? YES/NO
+
+  * IF YES:
+
+    * Lost Passport Number
+    * Country of Issuance
+    * Explanation
+
+
+
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -540,9 +609,10 @@ RELATIVES IN THE U.S.
   * IF YES:
 
     For each entry in the usRelatives array output:
-    * Relative Name
+    * Relative Surname
+    * Relative Given Name
     * Relationship
-    * Immigration Status
+    * Relative Status
 
 (REPEATABLE GROUP — iterate over usRelatives array)
 
@@ -596,16 +666,45 @@ RELATIVES IN THE U.S.
 
 ━━━━━━━━━━━━━━━━━━━━
 
-🟦 PRESENT WORK / EDUCATION / TRAINING
+🟦 WORK / EDUCATION / TRAINING
 
 * Primary Occupation
   Rule: translate currentOccupation from Hebrew to the closest DS-160 occupation category in English.
   Examples: עובד → Employed, סטודנט → Student, חייל → Military, פנסיה → Retired, מובטל → Unemployed, עקר/ת בית → Homemaker
+  All the possibilities are:
+  AGRICULTURE
+  ARTIST/PERFORMER
+  BUSINESS
+  COMMUNICATIONS
+  COMPUTER SCIENCE
+  CULINARY/FOOD SERVICES
+  EDUCATION
+  ENGINEERING
+  GOVERNMENT
+  HOMEMAKER
+  LEGAL PROFESSION
+  MEDICAL/HEALTH
+  MILITARY
+  NATURAL SCIENCE
+  NOT EMPLOYED
+  PHYSICAL SCIENCES
+  RELIGIOUS VOCATION
+  RESEARCH
+  RETIRED
+  SOCIAL SCIENCE
+  STUDENT
+  OTHER
 
-* Reason for Unemployment
-  Rule: include ONLY if currentOccupation is 'מובטל' (Unemployed) AND unemploymentReason is present and non-empty.
-  Translate unemploymentReason from Hebrew to English and output it here.
-  If currentOccupation is not 'מובטל' or unemploymentReason is absent/empty → omit this field entirely.
+  IF the answer is NOT EMPLOYED:
+  * Reason for Unemployment
+    Rule: include ONLY if currentOccupation is 'מובטל' (Unemployed) AND unemploymentReason is present and non-empty.
+    Translate unemploymentReason from Hebrew to English and output it here.
+
+
+  IF the answer is RETIRED OR HOMEMAKER:
+  * Nothing else needed
+
+  ELSE:
 
 * Present Employer or School Name
   Rule:
@@ -619,8 +718,17 @@ RELATIVES IN THE U.S.
 
 * Employer Address
   Rule:
-  - If currentOccupation is 'סטודנט' → combine studentInstitutionStreet + studentInstitutionCity; if absent → ❗ MISSING
+  - If currentOccupation is 'סטודנט' →  studentInstitutionAddress ; if absent → ❗ MISSING
+  - Otherwise → combine employerAddress; if absent → ❗ MISSING
+
+* Employer City
+  Rule:
+  - If currentOccupation is 'סטודנט' → studentInstitutionCity
   - Otherwise → combine employerStreet + employerCity; if absent → ❗ MISSING
+
+* Country / Regions of Employment
+  Rule:
+  - If not explicitly stated, output the country of the person's primary residence.
 
 * Employer Phone Number
   Rule:
@@ -651,11 +759,17 @@ RELATIVES IN THE U.S.
     * Employer Name
     * Job Title
     * Employer Address
+    * Employer City
+    * State / Province (can check Does not apply)
+    * ZIP Code (if known) 
+    * Country / Region
     * Employer Phone Number
-    * Supervisor Name
-    * Job Duties
+    * Supervisor surname
+    * Supervisor given name
     * Start Date
     * End Date
+    * Job Duties
+
 
 (REPEATABLE GROUP)
 
@@ -663,8 +777,15 @@ RELATIVES IN THE U.S.
 
 🟦 EDUCATION
 
+* Have you attended any educational institutions at a secondary level or above? 
+  * IF YES:
+
 * School / Institution Name
 * Address
+* City
+* State / Province (can check Does not apply)
+* ZIP Code (if known) 
+* Country / Region
 * Course of Study
   Rule: for high school entries use highSchoolFieldOfStudy; for academic degree entries use fieldOfStudy.
   If the relevant field is empty or absent → ❗ MISSING
@@ -677,13 +798,23 @@ RELATIVES IN THE U.S.
 
 🟦 ADDITIONAL BACKGROUND
 
-TRAVEL HISTORY
+* Do you belong to a clan or tribe? YES/NO
+  * IF YES:
+    * Clan / Tribe Name
+  * IF NO:
+    None
 
-* Countries visited in the last 5 years
 
 LANGUAGES
 
 * Languages spoken
+(REPEATABLE GROUP)
+
+
+TRAVEL HISTORY
+
+* Countries visited in the last 5 years
+(REPEATABLE GROUP)
 
 ORGANIZATIONS
 
@@ -704,9 +835,8 @@ SPECIALIZED SKILLS
 
     * Full Description
 
-━━━━━━━━━━━━━━━━━━━━
 
-🟦 MILITARY SERVICE
+MILITARY SERVICE
 
 * Have you served in the military? YES/NO
 
@@ -718,6 +848,13 @@ SPECIALIZED SKILLS
     * Military Specialty
     * Service From
     * Service To
+    
+* Have you ever served in, been a member of, or been involved with a paramilitary unit, vigilante unit, rebel group, guerrilla group, or insurgent organization? 
+  * IF YES:
+    * Full Description
+  * IF NO:
+    None
+
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -728,6 +865,7 @@ For ALL questions below:
 * ALWAYS output YES or NO
 * IF YES → explanation required
 * IF NO → omit explanation line entirely
+* As default, output NO
 
 MEDICAL & HEALTH
 
@@ -741,6 +879,8 @@ CRIMINAL
 * Drug law violations
 * Prostitution-related activities
 * Money laundering
+* Human trafficking 
+
 
 SECURITY
 
@@ -768,6 +908,32 @@ IMMIGRATION VIOLATIONS
 * Renouncing U.S. citizenship to avoid taxes
 
 ━━━━━━━━━━━━━━━━━━━━
+
+
+🟦 UPLOAD A PHOTO
+
+JPEG format image (i.e., .jpg file type) that is 240 Kb or less in file size
+If no photo is uploaded, skip this section.
+
+
+🟦  SIGN AND SUBMIT
+* Did anyone assist you in filling out this application? Yes/No
+  * IF YES:
+    * Name
+    * Relationship
+    * Address
+    * City
+    * State / Province (can check Does not apply)
+    * ZIP Code (if known) 
+    * Country / Region
+    * Relationship
+  * IF NO:
+    None
+
+  * E Signature
+    * Passport/Travel Document Number
+
+
 
 🟦 APPLICATION PROCESSING
 
