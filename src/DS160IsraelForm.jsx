@@ -1183,6 +1183,7 @@ export default function DS160IsraelForm({
     maritalStatus: watch('maritalStatus'),
     spouseAddressSame: watch('spouseAddressSame'),
     mondayItemId: watch('mondayItemId'),
+    specificTravelPlans: watch('specificTravelPlans'),
   }
 
   const allFormValues = watch()
