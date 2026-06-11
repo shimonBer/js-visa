@@ -32,9 +32,13 @@ OUTPUT LANGUAGE RULE — CRITICAL
 THE ENTIRE OUTPUT MUST BE IN ENGLISH — NO EXCEPTIONS.
 
 * Every field value in the DS-160 output MUST be written in English.
-* If any intake field value is in Hebrew, translate it to English before outputting it.
+* If any intake field value is in Hebrew, translate or transliterate it to English before outputting it.
 * The ONE AND ONLY exception is the "Full Name in Native Alphabet" entry, which must contain the applicant's name in Hebrew script (taken from the firstName + lastName Hebrew fields).
 * No other field in the output may contain Hebrew characters.
+* NEVER append Hebrew in parentheses after an English value. The value must be pure English — no mixed text.
+* NEVER output any Hebrew character (א–ת) outside of the "Full Name in Native Alphabet" field.
+
+Before finalizing your output, scan every field value. If any Hebrew character appears outside "Full Name in Native Alphabet", replace it with the correct English transliteration or translation.
 
 Examples of what is FORBIDDEN in the output (except Native Alphabet):
   ✗  Father's Surname: חסון
@@ -42,12 +46,19 @@ Examples of what is FORBIDDEN in the output (except Native Alphabet):
   ✗  Mother's Surname: חסון
   ✗  City of Birth: נהריה
   ✗  City of Birth: Nahariya (נהריה)
+  ✗  City of Birth: רחובות
+  ✗  City of Birth: Rehovot (רחובות)
+  ✗  Employer Name: חברת הייטק בע"מ
+  ✗  Street Address: רחוב הרצל
 
 Examples of what is REQUIRED:
   ✓  Father's Surname: Hason
   ✓  Father's Given Name: Eliezer
   ✓  Mother's Surname: Hason
-  ✓  City of Birth: Nahariya   ← English only, no Hebrew in parentheses
+  ✓  City of Birth: Nahariya
+  ✓  City of Birth: Rehovot
+  ✓  Employer Name: Hightech Company Ltd
+  ✓  Street Address: Herzl Street
   ✓  Full Name in Native Alphabet: אליעזר חסון   ← ONLY Hebrew allowed here
 
 ━━━━━━━━━━━━━━━━━━━━
