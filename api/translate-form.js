@@ -332,17 +332,19 @@ PERSONAL INFORMATION 2
   Rule: use plannedArrivalDate; if empty or absent → ❗ MISSING
 
 * Arrival flight (Optional)
-  Rule: if unknown → leave blank (never ❗ MISSING)
+  Rule: read arrivalFlight field; if unknown → leave blank (never ❗ MISSING)
 
 * Arrival City
-  Rule: infer from accommodationInUS if possible; otherwise N/A
+  Rule: read arrivalCity field; if absent infer from accommodationInUS; otherwise N/A
 
 * Date of Departure from U.S.
+  Rule: read departureDateUS field; if empty → ❗ MISSING
 
 * Departure Flight (Optional)
-  Rule: if unknown → leave blank (never ❗ MISSING)
+  Rule: read departureFlight field; if unknown → leave blank (never ❗ MISSING)
 
 * Departure City
+  Rule: read departureCity field; if empty → ❗ MISSING
 
 * Provide the locations you plan to visit in the U.S.
   (Repeatable Group)
