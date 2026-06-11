@@ -1208,6 +1208,8 @@ export default function DS160IsraelForm({
       /been issued a u\.s\. visa\?.*YES/i,
       /refused.*visa.*YES/i,
       /denied admission.*YES/i,
+      /immediate relatives in the united states\?.*YES/i,
+      /other relatives in the united states\?.*YES/i,
     ]
     let inSecurity = false
     return lines.map((line, i) => {
