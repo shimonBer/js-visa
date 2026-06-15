@@ -38,28 +38,6 @@ THE ENTIRE OUTPUT MUST BE IN ENGLISH — NO EXCEPTIONS.
 * NEVER append Hebrew in parentheses after an English value. The value must be pure English — no mixed text.
 * NEVER output any Hebrew character (א–ת) outside of the "Full Name in Native Alphabet" field.
 
-Before finalizing your output, scan every field value. If any Hebrew character appears outside "Full Name in Native Alphabet", replace it with the correct English transliteration or translation.
-
-Examples of what is FORBIDDEN in the output (except Native Alphabet):
-  ✗  Father's Surname: חסון
-  ✗  Father's Given Name: אליעזר
-  ✗  Mother's Surname: חסון
-  ✗  City of Birth: נהריה
-  ✗  City of Birth: Nahariya (נהריה)
-  ✗  City of Birth: רחובות
-  ✗  City of Birth: Rehovot (רחובות)
-  ✗  Employer Name: חברת הייטק בע"מ
-  ✗  Street Address: רחוב הרצל
-
-Examples of what is REQUIRED:
-  ✓  Father's Surname: Hason
-  ✓  Father's Given Name: Eliezer
-  ✓  Mother's Surname: Hason
-  ✓  City of Birth: Nahariya
-  ✓  City of Birth: Rehovot
-  ✓  Employer Name: Hightech Company Ltd
-  ✓  Street Address: Herzl Street
-  ✓  Full Name in Native Alphabet: אליעזר חסון   ← ONLY Hebrew allowed here
 
 ━━━━━━━━━━━━━━━━━━━━
 CORE REQUIREMENTS
@@ -139,14 +117,19 @@ Passport data overrides intake JSON whenever readable.
 
 Use passport data as the primary source of truth for:
 
-* legal name
-* native-language name
-* passport number
-* nationality
-* date of birth
-* sex
-* issuance details
-* MRZ transliteration
+Country / Issuing state
+Passport number
+Surname (Last name)
+Given name(s) (First and middle names)
+Nationality
+Date of birth
+Sex / Gender
+Place of birth
+Date of issue
+Date of expiry (Expiration date)
+Issuing authority
+Place of issuance
+National ID number 
 
 If intake data conflicts with passport data:
 
@@ -287,6 +270,7 @@ PERSONAL INFORMATION 1
 * City of Birth
   Rule: ALWAYS take the birthCity value and take the transalation from the intake data and output it in English.
   NEVER output Hebrew characters here.
+  Make sure that this is an exositing city, never output a country name here.
   If the city cannot be determined, output: ❗ MISSING
 
 * State/Province of Birth
@@ -897,6 +881,7 @@ MEDICAL & HEALTH
 CRIMINAL
 
 * Arrests or convictions
+  Rule: use criminalRecord field (yes/no). If YES, use criminalRecordExplanation as the explanation text.
 * Drug law violations
 * Prostitution-related activities
 * Money laundering

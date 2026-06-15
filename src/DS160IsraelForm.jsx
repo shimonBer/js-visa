@@ -1005,6 +1005,7 @@ export default function DS160IsraelForm({
     if (values.deniedEntryToUS === 'yes') req('deniedEntryDetails')
     if (values.illegalStayInUS === 'yes') req('illegalStayDetails')
     if (values.appliedForGreenCard === 'yes') req('greenCardDetails')
+    if (values.criminalRecord === 'yes') req('criminalRecordExplanation')
     if (values.hasSocialSecurityNumber === 'yes') req('socialSecurityNumber')
     if (values.hasTaxpayerID === 'yes') req('taxpayerIDNumber')
     if (values.hasUSDriversLicense === 'yes') req('driversLicenseDetails')
@@ -1184,6 +1185,7 @@ export default function DS160IsraelForm({
     spouseAddressSame: watch('spouseAddressSame'),
     mondayItemId: watch('mondayItemId'),
     specificTravelPlans: watch('specificTravelPlans'),
+    criminalRecord: watch('criminalRecord'),
   }
 
   const allFormValues = watch()
@@ -2080,13 +2082,25 @@ export default function DS160IsraelForm({
 
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">רקע ביטחוני</h2>
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded space-y-4">
               <FormRadioGroup register={register} getFieldError={getFieldError}
                 label="Have you ever been arrested and / or do you have a criminal record / a police case?"
                 name="criminalRecord"
                 options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]}
                 note="סופר חשוב: יש לוודא שהלקוח מבין את חשיבות השאלה הזו."
               />
+              {w.criminalRecord === 'yes' && (
+                <div className="rounded-lg border-r-4 border-red-600 bg-white p-4 space-y-2">
+                  <p className="text-sm font-medium text-red-700">יש לפרט את האירוע/ים (תאריך, עבירה, תוצאה)</p>
+                  <FormInput
+                    register={register}
+                    getFieldError={getFieldError}
+                    label="פירוט רקע פלילי"
+                    name="criminalRecordExplanation"
+                    type="textarea"
+                  />
+                </div>
+              )}
             </div>
           </section>
 
@@ -2342,7 +2356,26 @@ export default function DS160IsraelForm({
               <h2 id="translate-title" className="text-lg font-bold text-gray-900">
                 English translation
               </h2>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {translateUi.text ? (
+                  <button
+                    type="button"
+                    title="Download the translated text file, then run: npm run autofill -- --input ~/Downloads/translated.txt"
+                    className="text-sm px-3 py-1.5 rounded-md border border-amber-500 text-amber-700 hover:bg-amber-50 flex items-center gap-1.5"
+                    onClick={() => {
+                      const blob = new Blob([translateUi.text], { type: 'text/plain' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = 'translated.txt'
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-wide bg-amber-100 text-amber-600 border border-amber-400 rounded px-1 py-0.5 leading-none">Experimental</span>
+                    Auto-fill DS-160
+                  </button>
+                ) : null}
                 {translateUi.text ? (
                   <button
                     type="button"

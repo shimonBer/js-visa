@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "autofill": "node autofill/fill-ds160.js --input"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
@@ -33,6 +34,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "playwright": "^1.60.0",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.19",
     "vite": "^6.3.5"
