@@ -657,6 +657,8 @@ RELATIVES IN THE U.S.
 
   * IF YES:
 
+    First ex-spouse — use fields: exSpouseName, exSpouseBirthCityCountry, exSpouseBirthDateDay/Month/Year, exSpouseMarriageDate, exSpouseDivorceDate, exSpouseDivorcedInIsrael.
+
     * Former Spouse Surname
     * Former Spouse Given Name
     * Date of Birth
@@ -666,6 +668,14 @@ RELATIVES IN THE U.S.
     * Date Marriage Ended
     * How Marriage Ended
     * Country Where Marriage Was Terminated
+
+    Additional ex-spouses — if additionalExSpouses array is present and non-empty, output one entry per item using:
+      name → additionalExSpouses[i].name
+      birthCityCountry → additionalExSpouses[i].birthCityCountry
+      birthDate → additionalExSpouses[i].birthDateDay/Month/Year
+      marriageDate → additionalExSpouses[i].marriageDate
+      divorceDate → additionalExSpouses[i].divorceDate
+      divorcedInIsrael → additionalExSpouses[i].divorcedInIsrael
 
 (REPEATABLE GROUP)
 
@@ -798,6 +808,15 @@ RELATIVES IN THE U.S.
 * Attendance To
 
 (REPEATABLE GROUP)
+
+Rule for additional academic degrees:
+  If additionalDegrees array is present and non-empty, output one education entry per item using:
+    institutionName → additionalDegrees[i].institutionName
+    address → additionalDegrees[i].institutionStreet
+    city → additionalDegrees[i].institutionCity
+    fieldOfStudy → additionalDegrees[i].fieldOfStudy
+    attendanceFrom → additionalDegrees[i].studyStartYearMonth
+    attendanceTo → additionalDegrees[i].studyEndYearMonth
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -944,6 +963,7 @@ If no photo is uploaded, skip this section.
 🟦 APPLICATION PROCESSING
 
 * Preferred Interview Language
+  Rule: always output Hebrew unless specified otherwise. Never mark as ❗ MISSING.
 * U.S. Embassy / Consulate Location
 * Current Physical Location
 

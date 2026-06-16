@@ -188,6 +188,9 @@ export function calculateCompleteness(data) {
     req('institutionName')
     req('fieldOfStudy')
   }
+  if (Array.isArray(data?.additionalDegrees)) {
+    data.additionalDegrees.forEach((_, i) => req(`additionalDegrees.${i}.institutionName`))
+  }
   if (data?.visitedAbroadLast5Years === 'yes') req('countriesVisitedLast5Years')
   if (data?.servedInMilitary === 'yes') {
     req('milHistoryBranch')

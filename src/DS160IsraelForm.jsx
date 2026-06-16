@@ -403,7 +403,8 @@ export default function DS160IsraelForm({
       workedAnotherJobLast5Years: 'no',
       attendedHighSchool: 'no',
       hasAcademicDegree: 'no',
-      hasAdditionalAcademicDegree: 'no',
+      additionalDegrees: [],
+      additionalExSpouses: [],
       visitedAbroadLast5Years: 'no',
       servedInMilitary: 'no',
       criminalRecord: 'no',
@@ -433,6 +434,18 @@ export default function DS160IsraelForm({
     useFieldArray({
       control,
       name: 'usRelatives',
+    })
+
+  const { fields: additionalDegreeFields, append: appendAdditionalDegree, remove: removeAdditionalDegree } =
+    useFieldArray({
+      control,
+      name: 'additionalDegrees',
+    })
+
+  const { fields: additionalExSpouseFields, append: appendAdditionalExSpouse, remove: removeAdditionalExSpouse } =
+    useFieldArray({
+      control,
+      name: 'additionalExSpouses',
     })
 
   const passportIdWatch = watch('passportId')
@@ -1055,6 +1068,9 @@ export default function DS160IsraelForm({
     if (values.hasAcademicDegree === 'yes') {
       req('institutionName')
     }
+    if (Array.isArray(values.additionalDegrees)) {
+      values.additionalDegrees.forEach((_, i) => req(`additionalDegrees.${i}.institutionName`))
+    }
     if (values.visitedAbroadLast5Years === 'yes') req('countriesVisitedLast5Years')
     if (values.servedInMilitary === 'yes') {
       req('milHistoryBranch')
@@ -1178,7 +1194,6 @@ export default function DS160IsraelForm({
     workedAnotherJobLast5Years: watch('workedAnotherJobLast5Years'),
     attendedHighSchool: watch('attendedHighSchool'),
     hasAcademicDegree: watch('hasAcademicDegree'),
-    hasAdditionalAcademicDegree: watch('hasAdditionalAcademicDegree'),
     visitedAbroadLast5Years: watch('visitedAbroadLast5Years'),
     servedInMilitary: watch('servedInMilitary'),
     maritalStatus: watch('maritalStatus'),
@@ -1399,8 +1414,35 @@ export default function DS160IsraelForm({
                     <FormInput register={register} getFieldError={getFieldError} label="במידה והתגרשו- תאריך גירושים" name="exSpouseDivorceDate" />
                     <FormInput register={register} getFieldError={getFieldError} label="במידה והתגרשו- התגרשם בישראל?" name="exSpouseDivorcedInIsrael" />
                   </div>
-                  <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
-                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם התגרשת יותר מפעם אחת?" name="divorcedMoreThanOnce" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  <div className="space-y-3">
+                    {additionalExSpouseFields.map((field, i) => (
+                      <div key={field.id} className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-gray-800 text-base">בן/בת זוג לשעבר {i + 2}</h3>
+                          <button type="button" onClick={() => removeAdditionalExSpouse(i)} className="text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
+                        </div>
+                        <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name={`additionalExSpouses.${i}.name`} />
+                        <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name={`additionalExSpouses.${i}.birthCityCountry`} />
+                        <div className="flex flex-col">
+                          <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
+                          <div className="flex gap-2">
+                            <input type="text" {...register(`additionalExSpouses.${i}.birthDateDay`)} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
+                            <input type="text" {...register(`additionalExSpouses.${i}.birthDateMonth`)} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
+                            <input type="text" {...register(`additionalExSpouses.${i}.birthDateYear`)} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
+                          </div>
+                        </div>
+                        <FormInput register={register} getFieldError={getFieldError} label="תאריך חתונה" name={`additionalExSpouses.${i}.marriageDate`} />
+                        <FormInput register={register} getFieldError={getFieldError} label="תאריך גירושים" name={`additionalExSpouses.${i}.divorceDate`} />
+                        <FormInput register={register} getFieldError={getFieldError} label="התגרשו בישראל?" name={`additionalExSpouses.${i}.divorcedInIsrael`} />
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => appendAdditionalExSpouse({ name: '', birthCityCountry: '', birthDateDay: '', birthDateMonth: '', birthDateYear: '', marriageDate: '', divorceDate: '', divorcedInIsrael: '' })}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium border border-blue-300 rounded px-3 py-1.5 hover:bg-blue-50 transition-colors"
+                    >
+                      + הוסף בן/בת זוג לשעבר נוסף
+                    </button>
                   </div>
                 </div>
               )}
@@ -2037,13 +2079,35 @@ export default function DS160IsraelForm({
                 <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב" name="institutionStreet" />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר" name="institutionCity" />
                 <div className="col-span-full">
-                  <FormSelect register={register} getFieldError={getFieldError} label="תחום לימודים" name="fieldOfStudy" options={['קורסים אקדמיים', 'תואר ראשון — B.A./B.S.', 'תואר שני — M.A./M.S.', 'תואר שלישי — Ph.D./Doctorate', 'תואר מקצועי — J.D./M.D./D.D.S.', 'הכשרה מקצועית', 'אחר']} />
+                  <FormInput register={register} getFieldError={getFieldError} label="תחום לימודים" name="fieldOfStudy" />
                 </div>
                 <FormInput register={register} getFieldError={getFieldError} label="שנת וחודש התחלה" name="studyStartYearMonth" />
                 <FormInput register={register} getFieldError={getFieldError} label="שנת וחודש סיום" name="studyEndYearMonth" />
 
+                {additionalDegreeFields.map((field, i) => (
+                  <div key={field.id} className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded border border-blue-200">
+                    <div className="col-span-full flex items-center justify-between">
+                      <h3 className="font-bold text-base text-blue-700">תואר נוסף {i + 2}</h3>
+                      <button type="button" onClick={() => removeAdditionalDegree(i)} className="text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
+                    </div>
+                    <FormInput register={register} getFieldError={getFieldError} label="שם מוסד הלימודים" name={`additionalDegrees.${i}.institutionName`} />
+                    <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב" name={`additionalDegrees.${i}.institutionStreet`} />
+                    <FormInput register={register} getFieldError={getFieldError} label="עיר" name={`additionalDegrees.${i}.institutionCity`} />
+                    <div className="col-span-full">
+                      <FormInput register={register} getFieldError={getFieldError} label="תחום לימודים" name={`additionalDegrees.${i}.fieldOfStudy`} />
+                    </div>
+                    <FormInput register={register} getFieldError={getFieldError} label="שנת וחודש התחלה" name={`additionalDegrees.${i}.studyStartYearMonth`} />
+                    <FormInput register={register} getFieldError={getFieldError} label="שנת וחודש סיום" name={`additionalDegrees.${i}.studyEndYearMonth`} />
+                  </div>
+                ))}
                 <div className="col-span-full">
-                  <FormRadioGroup register={register} getFieldError={getFieldError} label="האם למדת תואר אקדמי נוסף?" name="hasAdditionalAcademicDegree" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  <button
+                    type="button"
+                    onClick={() => appendAdditionalDegree({ institutionName: '', institutionStreet: '', institutionCity: '', fieldOfStudy: '', studyStartYearMonth: '', studyEndYearMonth: '' })}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium border border-blue-300 rounded px-3 py-1.5 hover:bg-blue-50 transition-colors"
+                  >
+                    + הוסף תואר נוסף
+                  </button>
                 </div>
               </div>
             )}
