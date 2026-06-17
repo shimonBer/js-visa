@@ -987,7 +987,7 @@ export default function DS160IsraelForm({
     req('phoneNumber')
     req('email')
     req('plannedArrivalDate')
-    req('plannedStayDuration')
+    if (values.specificTravelPlans !== 'yes') req('plannedStayDuration')
     req('accommodationInUS')
     req('tripFundingSource')
     req('fatherFullName')

@@ -116,7 +116,7 @@ export function calculateCompleteness(data) {
   req('addressCity')
   req('phoneNumber')
   req('email')
-  req('plannedStayDuration')
+  if (data?.specificTravelPlans !== 'yes') req('plannedStayDuration')
   req('accommodationInUS')
   req('tripFundingSource')
   req('fatherFullName')
