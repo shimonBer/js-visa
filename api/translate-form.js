@@ -328,6 +328,10 @@ PERSONAL INFORMATION 2
 * Intended Date of Arrival
   Rule: use plannedArrivalDate; if empty or absent → ❗ MISSING
 
+* Intended Length of Stay
+  Rule: if both plannedArrivalDate and departureDateUS are present → calculate the difference in days between them and output it as a human-readable duration (e.g. "14 days", "3 weeks", "1 month"). Do NOT mark as ❗ MISSING when both dates are available.
+  If plannedArrivalDate is missing → ❗ MISSING
+
 * Arrival flight (Optional)
   Rule: read arrivalFlight field; if unknown → leave blank (never ❗ MISSING)
 
