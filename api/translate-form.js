@@ -366,15 +366,14 @@ PERSONAL INFORMATION 2
 PERSON/ENTITY PAYING FOR TRIP
 
 * Who is paying for the trip?
-  Rule: if tripFundingSource indicates self-payment (e.g. "עצמי", "myself", "I", "applicant", "עצמאי") →
+  Rule: if selfPaying is "yes" (or absent) →
     output: Who is paying for the trip? Self
     (omit Name / Relationship / Phone Number / Email Address / Address lines entirely)
-  Otherwise → output all fields below:
-* Name
-* Relationship
-* Phone Number
-* Email Address
-* Address (Can be a checkbox to select if that's the same as the home address)
+  If selfPaying is "no" → output all fields below using tripPayerFullName, tripPayerEmail, tripPayerPhone, tripPayerAddress:
+* Name → tripPayerFullName
+* Phone Number → tripPayerPhone
+* Email Address → tripPayerEmail
+* Address → tripPayerAddress
 
 ━━━━━━━━━━━━━━━━━━━━
 

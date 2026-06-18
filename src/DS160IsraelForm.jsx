@@ -415,6 +415,11 @@ export default function DS160IsraelForm({
       phoneNumber: '',
       email: '',
       mondayItemId: '',
+      selfPaying: 'yes',
+      tripPayerFullName: '',
+      tripPayerEmail: '',
+      tripPayerPhone: '',
+      tripPayerAddress: '',
     },
   })
 
@@ -989,7 +994,12 @@ export default function DS160IsraelForm({
     req('plannedArrivalDate')
     if (values.specificTravelPlans !== 'yes') req('plannedStayDuration')
     req('accommodationInUS')
-    req('tripFundingSource')
+    if (values.selfPaying === 'no') {
+      req('tripPayerFullName')
+      req('tripPayerEmail')
+      req('tripPayerPhone')
+      req('tripPayerAddress')
+    }
     req('fatherFullName')
     req('motherFullName')
     // fatherBirthDate + motherBirthDate are NOT required
@@ -1201,6 +1211,7 @@ export default function DS160IsraelForm({
     mondayItemId: watch('mondayItemId'),
     specificTravelPlans: watch('specificTravelPlans'),
     criminalRecord: watch('criminalRecord'),
+    selfPaying: watch('selfPaying'),
   }
 
   const allFormValues = watch()
@@ -1618,7 +1629,16 @@ export default function DS160IsraelForm({
                 </>
               )}
               <FormInput register={register} getFieldError={getFieldError} label="איפה תלון בארה״ב?" name="accommodationInUS" type="textarea" />
-              <FormInput register={register} getFieldError={getFieldError} label="מי משלם בעבור מגיש הבקשה על הנסיעה?" name="tripFundingSource" />
+              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם מגיש הבקשה משלם בעצמו את הנסיעה?" name="selfPaying" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
+              {w.selfPaying === 'no' && (
+                <div className="border border-blue-200 rounded-lg p-4 bg-blue-50 space-y-3">
+                  <p className="text-sm font-semibold text-blue-700">פרטי הגורם המממן את הנסיעה</p>
+                  <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name="tripPayerFullName" />
+                  <FormInput register={register} getFieldError={getFieldError} label="דואר אלקטרוני" name="tripPayerEmail" type="email" />
+                  <FormInput register={register} getFieldError={getFieldError} label="מספר טלפון" name="tripPayerPhone" />
+                  <FormInput register={register} getFieldError={getFieldError} label="כתובת" name="tripPayerAddress" />
+                </div>
+              )}
             </div>
           </section>
 

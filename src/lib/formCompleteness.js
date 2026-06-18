@@ -26,7 +26,11 @@ export const FIELD_META = {
   departureCity:            { label: 'עיר יציאה מארה״ב',              type: 'text' },
   plannedStayDuration:      { label: 'משך שהייה מתוכנן',             type: 'text' },
   accommodationInUS:        { label: 'מקום לינה בארה״ב',              type: 'text' },
-  tripFundingSource:        { label: 'מקור מימון הנסיעה',             type: 'text' },
+  selfPaying:               { label: 'משלם בעצמו',                    type: 'radio', options: ['כן', 'לא'] },
+  tripPayerFullName:        { label: 'שם מלא של הממן',                type: 'text' },
+  tripPayerEmail:           { label: 'דואר אלקטרוני של הממן',         type: 'email' },
+  tripPayerPhone:           { label: 'טלפון של הממן',                  type: 'text' },
+  tripPayerAddress:         { label: 'כתובת של הממן',                  type: 'text' },
   fatherFullName:           { label: 'שם מלא של האב',                 type: 'text' },
   motherFullName:           { label: 'שם מלא של האם',                 type: 'text' },
   languages:                { label: 'שפות',                          type: 'text' },
@@ -118,7 +122,12 @@ export function calculateCompleteness(data) {
   req('email')
   if (data?.specificTravelPlans !== 'yes') req('plannedStayDuration')
   req('accommodationInUS')
-  req('tripFundingSource')
+  if (data?.selfPaying === 'no') {
+    req('tripPayerFullName')
+    req('tripPayerEmail')
+    req('tripPayerPhone')
+    req('tripPayerAddress')
+  }
   req('fatherFullName')
   req('motherFullName')
   req('languages')
