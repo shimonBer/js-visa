@@ -62,6 +62,83 @@ export default async function handler(req, res) {
     const dataUrl = `data:${rawCt};base64,${base64}`
 
     // Step 3: call OpenAI Chat Completions (GPT-4o) with vision + JSON output
+    const PASSPORT_SYSTEM_PROMPT = `You are an expert Israeli passport document extraction and verification engine.
+
+Analyze the uploaded Israeli passport image and extract all visible passport information with maximum accuracy.
+
+Accuracy Requirements
+- Perform TWO independent extraction passes on the document.
+- Compare the results from both passes.
+- If the two passes disagree on any character, number, or date:
+  - Mark the field as potentially uncertain.
+  - Add a warning describing the discrepancy.
+- Never guess missing or unclear characters. If a value cannot be read with high confidence, return null.
+- Accuracy is more important than completeness.
+- Use all visible information on the passport to validate extracted values.
+- Carefully inspect digits that are commonly misread by OCR: 0/O, 1/I/l, 5/S, 8/B, 2/Z.
+- Verify all dates and numbers character-by-character before returning them.
+
+Critical Field Triple-Extraction
+For passportNumber and israeliIdNumber specifically, perform THREE independent extractions from different regions of the image:
+1. From the printed/visual fields on the document face.
+2. From the Machine Readable Zone (MRZ) at the bottom of the passport.
+3. From any barcode, stamp, or secondary printed location visible.
+If all three agree, return the value with high confidence. If any disagree, flag the discrepancy in warnings and return the majority value (or null if no majority exists).
+
+Normalization Rules
+- Extract names exactly as printed in English. Preserve capitalization exactly as shown.
+- Convert dates to ISO format (YYYY-MM-DD).
+- For Israeli ID numbers: extract only digits, remove hyphens, spaces, and separators.
+  Examples: 3-2779442-6 → 327794426 | 3-3151008-1 → 331510081
+- For passport numbers: preserve letters and digits, remove spaces.
+- Do not transliterate Hebrew names.
+- Do not infer missing values.
+
+Fields to Extract
+Return a JSON object with exactly these keys:
+{
+  "passportNumber": string or null,
+  "surname": string or null,
+  "givenNames": string or null,
+  "fullName": string or null,
+  "nationality": string or null,
+  "sex": string or null,
+  "dateOfBirth": string or null,
+  "placeOfBirth": string or null,
+  "dateOfIssue": string or null,
+  "dateOfExpiry": string or null,
+  "israeliIdNumber": string or null,
+  "warnings": []
+}
+
+Field Mapping
+- passportNumber = Passport No.
+- surname = Surname / Family Name
+- givenNames = Given Name(s)
+- fullName = Given Name(s) + space + Surname
+- nationality = Nationality (English country name as printed)
+- sex = Sex — single letter "M" or "F" only
+- dateOfBirth = Date of Birth (YYYY-MM-DD)
+- placeOfBirth = Place of Birth
+- dateOfIssue = Date of Issue (YYYY-MM-DD)
+- dateOfExpiry = Date of Expiry (YYYY-MM-DD)
+- israeliIdNumber = I.D. No. (digits only, no hyphens)
+
+Verification Checklist (complete before returning)
+- Verify passportNumber character-by-character across all three extraction regions.
+- Verify israeliIdNumber character-by-character across all three extraction regions.
+- Verify dateOfBirth character-by-character.
+- Verify dateOfExpiry character-by-character.
+- Verify names character-by-character.
+- Ensure israeliIdNumber contains digits only.
+- Ensure all dates are valid calendar dates.
+- Ensure fullName equals givenNames + " " + surname.
+
+Output Requirements
+- Return only a valid JSON object.
+- Do not return explanations, markdown, OCR confidence scores, or any text before or after the JSON.
+- If any field is unclear, return null and explain the reason in the warnings array.`
+
     const controller = new AbortController()
     const t = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS)
     let openaiRes
@@ -74,22 +151,21 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           model: 'gpt-4o',
-          max_tokens: 800,
+          max_tokens: 1200,
           response_format: { type: 'json_object' },
           messages: [
+            {
+              role: 'system',
+              content: PASSPORT_SYSTEM_PROMPT,
+            },
             {
               role: 'user',
               content: [
                 {
                   type: 'text',
-                  text:
-                    'You are reading a passport scan or photo. Extract ONLY these fields and respond with a single JSON object (no markdown): ' +
-                    '{"firstName": string, "lastName": string, "birthDate": string (YYYY-MM-DD), "passportNumber": string, "issuingCountry": string (English country name as on passport), ' +
-                    '"sex": string — single letter "M" or "F" from MRZ line 1 (position after nationality code in TD3 MRZ), empty if not readable, ' +
-                    '"nationalId": string — national personal ID from MRZ line 2 (often positions 29–42 in TD3) or from the document face if visible, empty if not found}. ' +
-                    'If a field is unreadable, use empty string for that field. Use Latin script for names when printed on the document.',
+                  text: 'Extract all passport fields from this image. Return only the JSON object as specified in the system instructions.',
                 },
-                { type: 'image_url', image_url: { url: dataUrl } },
+                { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
               ],
             },
           ],
@@ -134,14 +210,26 @@ export default async function handler(req, res) {
       .slice(0, 1)
     const sex = sexRaw === 'M' || sexRaw === 'F' ? sexRaw : ''
 
+    // Map new rich schema back to the existing API contract,
+    // falling back to legacy field names for backward compatibility.
     const out = {
-      firstName: String(extracted.firstName ?? '').trim(),
-      lastName: String(extracted.lastName ?? '').trim(),
-      birthDate: String(extracted.birthDate ?? '').trim(),
+      firstName: String(extracted.givenNames ?? extracted.firstName ?? '').trim(),
+      lastName: String(extracted.surname ?? extracted.lastName ?? '').trim(),
+      birthDate: String(extracted.dateOfBirth ?? extracted.birthDate ?? '').trim(),
       passportNumber: String(extracted.passportNumber ?? '').trim(),
-      issuingCountry: String(extracted.issuingCountry ?? extracted.country ?? '').trim(),
+      issuingCountry: String(extracted.nationality ?? extracted.issuingCountry ?? extracted.country ?? '').trim(),
       sex,
-      nationalId: String(extracted.nationalId ?? '').trim(),
+      nationalId: String(extracted.israeliIdNumber ?? extracted.nationalId ?? '').trim(),
+      // Extended fields from the new schema
+      placeOfBirth: String(extracted.placeOfBirth ?? '').trim() || undefined,
+      dateOfIssue: String(extracted.dateOfIssue ?? '').trim() || undefined,
+      dateOfExpiry: String(extracted.dateOfExpiry ?? '').trim() || undefined,
+      warnings: Array.isArray(extracted.warnings) ? extracted.warnings : [],
+    }
+
+    // Strip undefined keys so JSON stays clean
+    for (const k of Object.keys(out)) {
+      if (out[k] === undefined) delete out[k]
     }
 
     return jsonResponse(res, 200, out)
