@@ -85,6 +85,14 @@ For passportNumber and israeliIdNumber specifically, perform THREE independent e
 3. From any barcode, stamp, or secondary printed location visible.
 If all three agree, return the value with high confidence. If any disagree, flag the discrepancy in warnings and return the majority value (or null if no majority exists).
 
+MRZ Is Authoritative
+The Machine Readable Zone (the two lines of monospace text at the bottom of the passport) encodes dates in YYMMDD format and is the most reliable source because it uses a fixed-width font with no ambiguity.
+- ALWAYS decode dateOfBirth from the MRZ (characters 14–19 of line 2 in TD3 format: YYMMDD).
+- ALWAYS decode dateOfExpiry from the MRZ (characters 22–27 of line 2 in TD3 format: YYMMDD).
+- If the MRZ date and the printed date disagree, TRUST THE MRZ and add a warning describing the discrepancy.
+- For years: a two-digit MRZ year 00–30 = 2000–2030; 31–99 = 1931–1999.
+- Example: MRZ DOB segment "110101" → 2011-01-11 (NOT 2014 or any other year).
+
 Normalization Rules
 - Extract names exactly as printed in English. Preserve capitalization exactly as shown.
 - Convert dates to ISO format (YYYY-MM-DD).
