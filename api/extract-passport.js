@@ -85,13 +85,56 @@ For passportNumber and israeliIdNumber specifically, perform THREE independent e
 3. From any barcode, stamp, or secondary printed location visible.
 If all three agree, return the value with high confidence. If any disagree, flag the discrepancy in warnings and return the majority value (or null if no majority exists).
 
-MRZ Is Authoritative
-The Machine Readable Zone (the two lines of monospace text at the bottom of the passport) encodes dates in YYMMDD format and is the most reliable source because it uses a fixed-width font with no ambiguity.
-- ALWAYS decode dateOfBirth from the MRZ (characters 14–19 of line 2 in TD3 format: YYMMDD).
-- ALWAYS decode dateOfExpiry from the MRZ (characters 22–27 of line 2 in TD3 format: YYMMDD).
-- If the MRZ date and the printed date disagree, TRUST THE MRZ and add a warning describing the discrepancy.
-- For years: a two-digit MRZ year 00–30 = 2000–2030; 31–99 = 1931–1999.
-- Example: MRZ DOB segment "110101" → 2011-01-11 (NOT 2014 or any other year).
+MRZ Is the Ground Truth for All Fields It Encodes
+Israeli passports use the ICAO TD3 MRZ: two lines of 44 monospace characters at the bottom of the photo page. Because it uses a fixed-pitch OCR-B font with no ambiguity, the MRZ is MORE reliable than the printed human-readable fields. For every field below, decode it from the MRZ first, then use the printed field only as a secondary cross-check.
+
+TD3 MRZ layout (count characters left-to-right, starting at 1):
+
+Line 1 (44 chars):
+  1–2   : Document type (e.g. "PP")
+  3–5   : Issuing country code (e.g. "ISR")
+  6–44  : Names — format: SURNAME<<GIVEN1<GIVEN2<...
+          Split on "<<": left part = surname, right part = given names (replace remaining "<" with space)
+
+Line 2 (44 chars):
+  1–9   : Passport number (9 chars, may include trailing "<" filler)
+  10    : Check digit for passport number
+  11–13 : Nationality code (3-letter, e.g. "ISR")
+  14–19 : Date of birth (YYMMDD)
+  20    : Check digit for date of birth
+  21    : Sex ("M", "F", or "<" for unspecified)
+  22–27 : Expiry date (YYMMDD)
+  28    : Check digit for expiry date
+  29–42 : Optional data — for Israeli passports this is the national ID number
+          Strip all "<" filler characters and hyphens; keep digits only
+  43    : Check digit for optional data
+  44    : Overall composite check digit
+
+Decoding rules:
+- Dates (YYMMDD): year 00–30 = 2000–2030; year 31–99 = 1931–1999. Convert to YYYY-MM-DD.
+  Example: "110101" → 2011-01-11
+- Passport number: strip trailing "<" filler. Preserve any letters.
+- Names: replace "<" within a name segment with a space, then trim.
+- National ID (pos 29–42): strip all "<" and "-"; keep digits only.
+
+MRZ overrides printed field on conflict:
+- If the MRZ value and the printed value disagree for ANY field, TRUST THE MRZ value.
+- Add a warning entry describing the discrepancy (e.g. "Printed DOB 2014-01-11 overridden by MRZ value 2011-01-11").
+- Never silently use the printed value when the MRZ says something different.
+
+Fields where MRZ is authoritative:
+- passportNumber → MRZ line 2, pos 1–9 (strip trailing "<")
+- surname        → MRZ line 1, pos 6–44, left of "<<"
+- givenNames     → MRZ line 1, pos 6–44, right of "<<", "<" → space
+- nationality    → MRZ line 2, pos 11–13 (map ISR → "Israel", etc.)
+- sex            → MRZ line 2, pos 21
+- dateOfBirth    → MRZ line 2, pos 14–19 (YYMMDD → YYYY-MM-DD)
+- dateOfExpiry   → MRZ line 2, pos 22–27 (YYMMDD → YYYY-MM-DD)
+- israeliIdNumber→ MRZ line 2, pos 29–42 (digits only)
+
+Fields NOT in MRZ (use printed face only):
+- placeOfBirth
+- dateOfIssue
 
 Normalization Rules
 - Extract names exactly as printed in English. Preserve capitalization exactly as shown.
@@ -133,13 +176,16 @@ Field Mapping
 - israeliIdNumber = I.D. No. (digits only, no hyphens)
 
 Verification Checklist (complete before returning)
-- Verify passportNumber character-by-character across all three extraction regions.
-- Verify israeliIdNumber character-by-character across all three extraction regions.
-- Verify dateOfBirth character-by-character.
-- Verify dateOfExpiry character-by-character.
-- Verify names character-by-character.
-- Ensure israeliIdNumber contains digits only.
-- Ensure all dates are valid calendar dates.
+- Decode ALL MRZ fields first, then cross-check against the printed face.
+- Validate MRZ check digits for passport number (pos 10), DOB (pos 20), and expiry (pos 28).
+  If a check digit fails, flag it in warnings — do not silently return a bad value.
+- Verify passportNumber matches between MRZ pos 1–9 and the printed "Passport No." field.
+- Verify israeliIdNumber matches between MRZ pos 29–42 and the printed "I.D. No." field.
+- Verify dateOfBirth: MRZ pos 14–19 is ground truth; flag any mismatch with printed date.
+- Verify dateOfExpiry: MRZ pos 22–27 is ground truth; flag any mismatch with printed date.
+- Verify names from MRZ line 1 match the printed surname and given name fields.
+- Ensure israeliIdNumber contains digits only (no hyphens, no letters).
+- Ensure all dates are valid calendar dates (e.g. no Feb 30).
 - Ensure fullName equals givenNames + " " + surname.
 
 Output Requirements
