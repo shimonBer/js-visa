@@ -121,6 +121,7 @@ MRZ overrides printed field on conflict:
 - If the MRZ value and the printed value disagree for ANY field, TRUST THE MRZ value.
 - Add a warning entry describing the discrepancy (e.g. "Printed DOB 2014-01-11 overridden by MRZ value 2011-01-11").
 - Never silently use the printed value when the MRZ says something different.
+- If the MRZ check digit for a field FAILS: return null for that field (do not fall back to the printed value either) and add a warning such as "passportNumber MRZ check digit failed — field omitted".
 
 Fields where MRZ is authoritative:
 - passportNumber → MRZ line 2, pos 1–9 (strip trailing "<")
@@ -178,7 +179,8 @@ Field Mapping
 Verification Checklist (complete before returning)
 - Decode ALL MRZ fields first, then cross-check against the printed face.
 - Validate MRZ check digits for passport number (pos 10), DOB (pos 20), and expiry (pos 28).
-  If a check digit fails, flag it in warnings — do not silently return a bad value.
+  If a check digit fails: return null for that field and add a warning explaining the failure.
+  Do NOT return the value even if it looks plausible — a failed check digit means the read is unreliable.
 - Verify passportNumber matches between MRZ pos 1–9 and the printed "Passport No." field.
 - Verify israeliIdNumber matches between MRZ pos 29–42 and the printed "I.D. No." field.
 - Verify dateOfBirth: MRZ pos 14–19 is ground truth; flag any mismatch with printed date.
