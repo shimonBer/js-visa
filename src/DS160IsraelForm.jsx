@@ -966,7 +966,9 @@ export default function DS160IsraelForm({
   function validateForTranslation(values) {
     const missing = new Set()
     const req = (field) => {
-      const v = values[field]
+      const v = field.includes('.')
+        ? field.split('.').reduce((acc, key) => (acc == null ? undefined : /** @type {Record<string, unknown>} */ (acc)[key]), /** @type {unknown} */ (values))
+        : values[field]
       if (v == null || String(v).trim() === '' || (Array.isArray(v) && v.length === 0)) {
         missing.add(field)
       }

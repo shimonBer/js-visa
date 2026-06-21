@@ -80,7 +80,10 @@ function isEmpty(v) {
 }
 
 function miss(missing, field) {
-  if (isEmpty(missing._data[field])) {
+  const v = field.includes('.')
+    ? field.split('.').reduce((acc, key) => (acc == null ? undefined : /** @type {Record<string, unknown>} */ (acc)[key]), /** @type {unknown} */ (missing._data))
+    : missing._data[field]
+  if (isEmpty(v)) {
     const meta = FIELD_META[field] || { label: field, type: 'text' }
     missing._list.push({
       field,
@@ -198,7 +201,13 @@ export function calculateCompleteness(data) {
     req('fieldOfStudy')
   }
   if (Array.isArray(data?.additionalDegrees)) {
-    data.additionalDegrees.forEach((_, i) => req(`additionalDegrees.${i}.institutionName`))
+    data.additionalDegrees.forEach((_, i) => {
+      const key = `additionalDegrees.${i}.institutionName`
+      if (!FIELD_META[key]) {
+        FIELD_META[key] = { label: `שם מוסד לימודים (תואר ${i + 2})`, type: 'text' }
+      }
+      req(key)
+    })
   }
   if (data?.visitedAbroadLast5Years === 'yes') req('countriesVisitedLast5Years')
   if (data?.servedInMilitary === 'yes') {
