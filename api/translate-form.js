@@ -353,7 +353,9 @@ PERSONAL INFORMATION 2
 
 * if NO:
 * Intended Date of Arrival
+  Rule: use plannedArrivalDate; if empty or absent → ❗ MISSING
 * Intended Length of Stay
+  Rule: use plannedStayDuration field directly (free-text, e.g. "three months"); if empty or absent → ❗ MISSING
 
 * Address Where You Will Stay in the U.S. The address should include:
 
