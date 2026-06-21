@@ -1222,7 +1222,14 @@ export default function DS160IsraelForm({
       ? path.split('.').reduce((acc, key) => (acc == null ? undefined : /** @type {Record<string, unknown>} */ (acc)[key]), /** @type {unknown} */ (errors))
       : undefined
     if (rhfErr) return rhfErr
-    if (translationErrors.has(path)) return { message: 'שדה חובה' }
+    if (translationErrors.has(path)) {
+      const currentValue = path.split('.').reduce(
+        (acc, key) => (acc == null ? undefined : /** @type {Record<string, unknown>} */ (acc)[key]),
+        /** @type {unknown} */ (allFormValues)
+      )
+      if (currentValue) return undefined
+      return { message: 'שדה חובה' }
+    }
     return undefined
   }
 
