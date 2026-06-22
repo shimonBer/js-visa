@@ -408,6 +408,7 @@ export default function DS160IsraelForm({
       visitedAbroadLast5Years: 'no',
       servedInMilitary: 'no',
       criminalRecord: 'no',
+      hasSocialMedia: 'no',
       interviewLocation: 'tel_aviv',
       languages: [],
       extraDocumentsNote: '',
@@ -1208,6 +1209,7 @@ export default function DS160IsraelForm({
     hasAcademicDegree: watch('hasAcademicDegree'),
     visitedAbroadLast5Years: watch('visitedAbroadLast5Years'),
     servedInMilitary: watch('servedInMilitary'),
+    hasSocialMedia: watch('hasSocialMedia'),
     maritalStatus: watch('maritalStatus'),
     spouseAddressSame: watch('spouseAddressSame'),
     mondayItemId: watch('mondayItemId'),
@@ -2199,7 +2201,10 @@ export default function DS160IsraelForm({
 
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">רשתות חברתיות</h2>
-            <FormInput register={register} getFieldError={getFieldError} label="קישורים לרשתות החברתיות" name="socialMediaLinks" type="textarea" />
+            <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך נוכחות ברשתות חברתיות?" name="hasSocialMedia" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+            {w.hasSocialMedia === 'yes' && (
+              <FormInput register={register} getFieldError={getFieldError} label="קישורים לרשתות החברתיות" name="socialMediaLinks" type="textarea" />
+            )}
           </section>
 
           <section className="space-y-4">

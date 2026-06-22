@@ -490,11 +490,12 @@ CONTACT INFORMATION
 SOCIAL MEDIA
 
 * Have you used social media platforms in the last 5 years? YES/NO
+  Rule: answer YES if hasSocialMedia is "yes", otherwise NO.
 
   * IF YES:
-    Rule: copy the social media data EXACTLY as provided in the JSON field (socialNetworks or equivalent).
+    Rule: copy the social media data EXACTLY as provided in the JSON field (socialMediaLinks or socialNetworks or equivalent).
     Do NOT parse, reformat, split, or interpret the value. Output it verbatim, one entry per line if multiple.
-    Never use ❗ MISSING for any social media field.
+    Rule: use ❗ MISSING only if hasSocialMedia is "yes" AND the socialMediaLinks field is empty or absent.
 
     Rule: when filling the real DS-160 form, you will need to parse the name of the social media, and then the identifier (link mostly)
   

@@ -71,6 +71,7 @@ export const FIELD_META = {
   institutionName:          { label: 'שם מוסד אקדמי',                 type: 'text' },
   fieldOfStudy:             { label: 'תחום לימוד',                    type: 'text' },
   countriesVisitedLast5Years:{ label: 'מדינות שביקרת ב-5 שנים האחרונות', type: 'text' },
+  socialMediaLinks:         { label: 'קישורים לרשתות החברתיות',          type: 'textarea' },
   milHistoryBranch:         { label: 'זרוע צבאית (היסטוריה)',          type: 'text' },
   milHistoryRole:           { label: 'תפקיד צבאי (היסטוריה)',          type: 'text' },
 }
@@ -157,6 +158,7 @@ export function calculateCompleteness(data) {
   if (data?.deniedEntryToUS === 'yes') req('deniedEntryDetails')
   if (data?.illegalStayInUS === 'yes') req('illegalStayDetails')
   if (data?.appliedForGreenCard === 'yes') req('greenCardDetails')
+  if (data?.hasSocialMedia === 'yes') req('socialMediaLinks')
   if (data?.hasSocialSecurityNumber === 'yes') req('socialSecurityNumber')
   if (data?.hasTaxpayerID === 'yes') req('taxpayerIDNumber')
   if (data?.hasUSDriversLicense === 'yes') req('driversLicenseDetails')
