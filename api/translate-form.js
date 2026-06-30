@@ -301,6 +301,7 @@ PERSONAL INFORMATION 2
 (REPEATABLE GROUP)
 
 * National Identification Number
+  Rule: digits only — strip hyphens and spaces (e.g. 3-0515466-8 → 305154668)
 
 * U.S. Social Security Number
   Rule: if hasSocialSecurityNumber is "no" or absent → output: NO

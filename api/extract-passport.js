@@ -393,7 +393,7 @@ fullName = givenNames + " " + surname (null if either is null).`
       passportNumber:String(f.passportNumber ?? '').trim(),
       issuingCountry:String(f.nationality ?? '').trim(),
       sex,
-      nationalId:    String(f.israeliIdNumber ?? '').trim(),
+      nationalId:    String(f.israeliIdNumber ?? '').replace(/[-\s]/g, '').trim(),
       placeOfBirth:  String(f.placeOfBirth ?? '').trim() || undefined,
       dateOfIssue:   String(f.dateOfIssue ?? '').trim() || undefined,
       dateOfExpiry:  String(f.dateOfExpiry ?? '').trim() || undefined,
