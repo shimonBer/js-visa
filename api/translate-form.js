@@ -301,7 +301,10 @@ PERSONAL INFORMATION 2
 (REPEATABLE GROUP)
 
 * National Identification Number
-  Rule: digits only — strip hyphens and spaces (e.g. 3-0515466-8 → 305154668)
+  Rule: digits only — strip hyphens and spaces (e.g. 3-0515466-8 → 305154668).
+  For Israeli passports: this is the same number as the Passport Book Number (I.D. No. on the passport face).
+  Always prefer the value read from the passport scan over the form field value.
+  The two must always match (after stripping hyphens). If they differ, use the passport scan value.
 
 * U.S. Social Security Number
   Rule: if hasSocialSecurityNumber is "no" or absent → output: NO
