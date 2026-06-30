@@ -61,95 +61,261 @@ export default async function handler(req, res) {
     const base64 = buf.toString('base64')
     const dataUrl = `data:${rawCt};base64,${base64}`
 
-    // Step 3: call OpenAI Chat Completions (GPT-4o) with vision + JSON output
-    const PASSPORT_SYSTEM_PROMPT = `You are an expert Israeli passport document extraction and verification engine.
+    // Step 3: call OpenAI Chat Completions (GPT-4o) with vision + structured output schema
+    const PASSPORT_SYSTEM_PROMPT = `You are an expert OCR and document extraction engine specialized in Israeli biometric passports.
 
-Follow these four steps in order. Do not skip any step.
+Your primary goal is accuracy, not completeness.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 1 — OCR the printed face fields
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Read the human-readable printed fields on the passport face:
-  Passport No. / Surname / Given Name(s) / Nationality / Sex /
-  Date of Birth / Place of Birth / Date of Issue / Date of Expiry / I.D. No.
+Never guess unreadable characters.
+If a value cannot be read with high confidence, return null instead.
 
-OCR accuracy rules:
-- Watch for commonly confused characters: 0/O, 1/I/l, 5/S, 8/B, 2/Z.
-- Extract names exactly as printed in English (preserve capitalisation).
-- Dates: convert to YYYY-MM-DD.
-- Israeli ID numbers: digits only — strip hyphens/spaces (e.g. 3-3151008-1 → 331510081).
-- Never guess an unclear character. If unreadable, record null.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 2 — Decode the MRZ independently
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Read the two lines of monospace text at the bottom of the passport (ICAO TD3 format).
-Decode each field strictly by character position:
+1. Read the passport multiple times before producing the final answer.
+
+Perform these passes independently:
+
+PASS 1
+Read every printed field normally.
+
+PASS 2
+Read every field again by its physical location on the passport.
+
+PASS 3
+Read the MRZ independently.
+
+Only after all three passes should you reconcile the results.
+
+Do not let information from one pass influence another.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OCR QUALITY RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the passport at multiple zoom levels.
+
+Read the entire passport once.
+
+Then zoom into each individual field.
+
+Pay special attention to small digits.
+
+Watch carefully for commonly confused characters:
+
+0 ↔ O
+1 ↔ I ↔ l
+2 ↔ Z
+5 ↔ S
+6 ↔ G
+8 ↔ B
+
+Never replace one character with another unless clearly visible.
+
+Preserve names exactly as printed.
+
+Do not normalize capitalization.
+
+Do not correct spelling.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRINTED PASSPORT FIELDS (PASS 1)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Extract the following printed fields:
+
+• Passport Number
+• Surname
+• Given Names
+• Nationality
+• Sex
+• Date of Birth
+• Place of Birth
+• Date of Issue
+• Date of Expiry
+• Israeli ID Number
+
+Dates must use: YYYY-MM-DD
+
+Israeli ID numbers: remove spaces and hyphens, return digits only. If unreadable return null.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SPATIAL VERIFICATION PASS (PASS 2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use the known layout of an Israeli passport.
+
+Read each field again directly from its expected position:
+
+Passport Number:   Top-right corner.
+Surname:           Upper-right, row 1 below header.
+Given Names:       Upper-right, row 2.
+Nationality:       Upper-right, row 3.
+Israeli ID Number: Middle-right — labeled "I.D. No. / מס' זהות".
+                   Format: D-DDDDDDD-D (9 digits with hyphens). Strip hyphens.
+                   Do NOT confuse with Passport No. (top-right) or MRZ digit runs.
+Date of Birth:     Center-left, below the photo.
+Sex:               Same row as Date of Birth.
+Place of Birth:    Same row as Date of Birth.
+Date of Issue:     Lower-center.
+Date of Expiry:    Lower-right, paired with Date of Issue.
+
+If this second reading differs from PASS 1, prefer the spatial reading and record a warning.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MRZ PASS (PASS 3)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Read the complete MRZ exactly as printed (two lines of monospace text at the bottom).
+
+Return both raw lines exactly as seen (mrzLine1, mrzLine2).
+
+Do not attempt to correct characters.
+
+Then decode according to ICAO 9303 TD3 specifications:
 
 Line 1 (44 chars):
-  pos  1–2  : document type
-  pos  3–5  : issuing country code
-  pos  6–44 : names — SURNAME<<GIVEN1<GIVEN2<...
-              → split on "<<": left = surname, right = given names ("<" → space, then trim)
+  pos 1–2:   document type
+  pos 3–5:   issuing country code
+  pos 6–44:  names — split on "<<": left = surname, right = given names
+             Replace remaining "<" with spaces, then trim.
 
 Line 2 (44 chars):
-  pos  1–9  : passport number (strip trailing "<")
-  pos 10    : CHECK DIGIT for passport number
-  pos 11–13 : nationality code (e.g. ISR → "Israel")
-  pos 14–19 : date of birth YYMMDD
-  pos 20    : CHECK DIGIT for date of birth
-  pos 21    : sex ("M" or "F"; "<" = unspecified)
-  pos 22–27 : expiry date YYMMDD
-  pos 28    : CHECK DIGIT for expiry date
-  pos 29–42 : optional data = Israeli national ID (strip all "<" and "-"; digits only)
-  pos 43    : check digit for optional data
-  pos 44    : overall composite check digit
+  pos 1–9:   passport number (strip trailing "<")
+  pos 10:    check digit (record but do not compute — just read)
+  pos 11–13: nationality code (map ISR → "Israel")
+  pos 14–19: date of birth YYMMDD → YYYY-MM-DD
+             (year 00–30 = 2000–2030, year 31–99 = 1931–1999)
+  pos 20:    check digit
+  pos 21:    sex (M/F; "<" = null)
+  pos 22–27: expiry date YYMMDD → YYYY-MM-DD
+  pos 28:    check digit
+  pos 29–42: optional data = Israeli national ID (strip all "<"; digits only)
+  pos 43–44: check digits
 
-Date decoding: YYMMDD where year 00–30 = 2000–2030, year 31–99 = 1931–1999. Convert to YYYY-MM-DD.
-Example: "110101" → 2011-01-11
+Do NOT perform check digit calculations. Simply decode the text exactly as read.
 
-MRZ check digit validation (ICAO algorithm — weights 7, 3, 1 repeating):
-- Compute the expected check digit for passport number, DOB, and expiry.
-- If the computed digit matches pos 10 / 20 / 28 respectively: the field passed.
-- If it does NOT match: the MRZ read for that field is corrupted.
-  → Set that field to null. Add a warning: "<fieldName> MRZ check digit failed — field omitted".
-  → Do NOT fall back to the printed face value for that field.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RECONCILIATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 3 — Compare OCR (Step 1) vs MRZ (Step 2)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-For every field that exists in both sources, compare the two values:
-- If they AGREE: use the value (high confidence).
-- If they DISAGREE: prefer the MRZ value (it is standardised and integrity-checked).
-  Add a warning describing the discrepancy, e.g.:
-  "Printed DOB 2014-01-11 overridden by MRZ value 2011-01-11"
-- Fields only in the printed face (placeOfBirth, dateOfIssue): use OCR value directly.
+Compare printed OCR, spatial OCR, and MRZ decoding.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 4 — Build the output JSON
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Return exactly this JSON object — no markdown, no extra text:
-{
-  "passportNumber":   <string | null>,   // MRZ line 2 pos 1–9 (check digit must pass)
-  "surname":          <string | null>,   // MRZ line 1
-  "givenNames":       <string | null>,   // MRZ line 1
-  "fullName":         <string | null>,   // givenNames + " " + surname
-  "nationality":      <string | null>,   // MRZ line 2 pos 11–13, mapped to English name
-  "sex":              <"M"|"F"|null>,    // MRZ line 2 pos 21
-  "dateOfBirth":      <string | null>,   // MRZ line 2 pos 14–19 (check digit must pass)
-  "placeOfBirth":     <string | null>,   // printed face only
-  "dateOfIssue":      <string | null>,   // printed face only
-  "dateOfExpiry":     <string | null>,   // MRZ line 2 pos 22–27 (check digit must pass)
-  "israeliIdNumber":  <string | null>,   // MRZ line 2 pos 29–42 (digits only)
-  "warnings":         <string[]>         // one entry per discrepancy or failed check
-}
+If values disagree, prefer in this order:
 
-Rules:
-- Accuracy over completeness: return null rather than a guess.
-- fullName must equal givenNames + " " + surname (or null if either is null).
-- All dates must be valid calendar dates.
-- israeliIdNumber must contain digits only.
-- warnings must be an array (empty array if no issues).`
+For passportNumber, surname, givenNames, nationality, sex, dateOfBirth, dateOfExpiry:
+  → Prefer MRZ. If MRZ is null, use spatial. Record every disagreement in warnings.
+
+For placeOfBirth, dateOfIssue:
+  → Use spatial printed value (not in MRZ).
+
+For israeliIdNumber:
+  → Prefer the MRZ optional data (pos 29–42) if readable.
+  → Otherwise use the printed spatial value (I.D. No. field).
+  → If both exist and disagree, prefer spatial and add a warning.
+
+Record every disagreement in the warnings array.
+fullName = givenNames + " " + surname (null if either is null).`
+
+    // JSON schema enforced by the API (structured outputs) — keeps the prompt focused on OCR behaviour.
+    const RESPONSE_SCHEMA = {
+      type: 'json_schema',
+      json_schema: {
+        name: 'passport_extraction',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: {
+            printed: {
+              type: 'object',
+              properties: {
+                passportNumber: { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                surname:        { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                givenNames:     { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                nationality:    { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                sex:            { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                dateOfBirth:    { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                placeOfBirth:   { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                dateOfIssue:    { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                dateOfExpiry:   { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                israeliIdNumber:{ type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+              },
+              required: ['passportNumber','surname','givenNames','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber'],
+              additionalProperties: false,
+            },
+            spatial: {
+              type: 'object',
+              properties: {
+                passportNumber:  { type: ['string', 'null'] },
+                surname:         { type: ['string', 'null'] },
+                givenNames:      { type: ['string', 'null'] },
+                nationality:     { type: ['string', 'null'] },
+                sex:             { type: ['string', 'null'] },
+                dateOfBirth:     { type: ['string', 'null'] },
+                placeOfBirth:    { type: ['string', 'null'] },
+                dateOfIssue:     { type: ['string', 'null'] },
+                dateOfExpiry:    { type: ['string', 'null'] },
+                israeliIdNumber: { type: ['string', 'null'] },
+              },
+              required: ['passportNumber','surname','givenNames','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber'],
+              additionalProperties: false,
+            },
+            mrz: {
+              type: 'object',
+              properties: {
+                mrzLine1:        { type: ['string', 'null'] },
+                mrzLine2:        { type: ['string', 'null'] },
+                passportNumber:  { type: ['string', 'null'] },
+                surname:         { type: ['string', 'null'] },
+                givenNames:      { type: ['string', 'null'] },
+                nationality:     { type: ['string', 'null'] },
+                sex:             { type: ['string', 'null'] },
+                dateOfBirth:     { type: ['string', 'null'] },
+                dateOfExpiry:    { type: ['string', 'null'] },
+                israeliIdNumber: { type: ['string', 'null'] },
+              },
+              required: ['mrzLine1','mrzLine2','passportNumber','surname','givenNames','nationality','sex','dateOfBirth','dateOfExpiry','israeliIdNumber'],
+              additionalProperties: false,
+            },
+            final: {
+              type: 'object',
+              properties: {
+                passportNumber:  { type: ['string', 'null'] },
+                surname:         { type: ['string', 'null'] },
+                givenNames:      { type: ['string', 'null'] },
+                fullName:        { type: ['string', 'null'] },
+                nationality:     { type: ['string', 'null'] },
+                sex:             { type: ['string', 'null'] },
+                dateOfBirth:     { type: ['string', 'null'] },
+                placeOfBirth:    { type: ['string', 'null'] },
+                dateOfIssue:     { type: ['string', 'null'] },
+                dateOfExpiry:    { type: ['string', 'null'] },
+                israeliIdNumber: { type: ['string', 'null'] },
+              },
+              required: ['passportNumber','surname','givenNames','fullName','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber'],
+              additionalProperties: false,
+            },
+            ambiguities: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  field:        { type: 'string' },
+                  position:     { type: 'number' },
+                  alternatives: { type: 'array', items: { type: 'string' } },
+                },
+                required: ['field', 'position', 'alternatives'],
+                additionalProperties: false,
+              },
+            },
+            warnings: { type: 'array', items: { type: 'string' } },
+          },
+          required: ['printed', 'spatial', 'mrz', 'final', 'ambiguities', 'warnings'],
+          additionalProperties: false,
+        },
+      },
+    }
 
     const controller = new AbortController()
     const t = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS)
@@ -162,9 +328,9 @@ Rules:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
-          max_tokens: 1200,
-          response_format: { type: 'json_object' },
+          model: 'gpt-4.1',
+          max_tokens: 2500,
+          response_format: RESPONSE_SCHEMA,
           messages: [
             {
               role: 'system',
@@ -175,7 +341,7 @@ Rules:
               content: [
                 {
                   type: 'text',
-                  text: 'Extract all passport fields from this image. Return only the JSON object as specified in the system instructions.',
+                  text: 'Extract all passport fields from this image.',
                 },
                 { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
               ],
@@ -197,7 +363,6 @@ Rules:
       })
     }
 
-    // Step 4: parse OpenAI response and the inner JSON payload
     let completion
     try {
       completion = JSON.parse(rawText)
@@ -216,27 +381,24 @@ Rules:
       return jsonResponse(res, 502, { error: 'Assistant did not return valid JSON', detail: content.slice(0, 200) })
     }
 
-    const sexRaw = String(extracted.sex ?? '')
-      .trim()
-      .toUpperCase()
-      .slice(0, 1)
+    // Pull reconciled values from the `final` object (structured output guarantee)
+    const f = extracted.final ?? {}
+    const sexRaw = String(f.sex ?? '').trim().toUpperCase().slice(0, 1)
     const sex = sexRaw === 'M' || sexRaw === 'F' ? sexRaw : ''
 
-    // Map new rich schema back to the existing API contract,
-    // falling back to legacy field names for backward compatibility.
     const out = {
-      firstName: String(extracted.givenNames ?? extracted.firstName ?? '').trim(),
-      lastName: String(extracted.surname ?? extracted.lastName ?? '').trim(),
-      birthDate: String(extracted.dateOfBirth ?? extracted.birthDate ?? '').trim(),
-      passportNumber: String(extracted.passportNumber ?? '').trim(),
-      issuingCountry: String(extracted.nationality ?? extracted.issuingCountry ?? extracted.country ?? '').trim(),
+      firstName:     String(f.givenNames ?? '').trim(),
+      lastName:      String(f.surname ?? '').trim(),
+      birthDate:     String(f.dateOfBirth ?? '').trim(),
+      passportNumber:String(f.passportNumber ?? '').trim(),
+      issuingCountry:String(f.nationality ?? '').trim(),
       sex,
-      nationalId: String(extracted.israeliIdNumber ?? extracted.nationalId ?? '').trim(),
-      // Extended fields from the new schema
-      placeOfBirth: String(extracted.placeOfBirth ?? '').trim() || undefined,
-      dateOfIssue: String(extracted.dateOfIssue ?? '').trim() || undefined,
-      dateOfExpiry: String(extracted.dateOfExpiry ?? '').trim() || undefined,
-      warnings: Array.isArray(extracted.warnings) ? extracted.warnings : [],
+      nationalId:    String(f.israeliIdNumber ?? '').trim(),
+      placeOfBirth:  String(f.placeOfBirth ?? '').trim() || undefined,
+      dateOfIssue:   String(f.dateOfIssue ?? '').trim() || undefined,
+      dateOfExpiry:  String(f.dateOfExpiry ?? '').trim() || undefined,
+      warnings:      Array.isArray(extracted.warnings) ? extracted.warnings : [],
+      ambiguities:   Array.isArray(extracted.ambiguities) ? extracted.ambiguities : [],
     }
 
     // Strip undefined keys so JSON stays clean
