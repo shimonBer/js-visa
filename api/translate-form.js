@@ -301,10 +301,8 @@ PERSONAL INFORMATION 2
 (REPEATABLE GROUP)
 
 * National Identification Number
-  Rule: digits only — strip hyphens and spaces (e.g. 3-0515466-8 → 305154668).
-  For Israeli passports: this is the same number as the Passport Book Number (I.D. No. on the passport face).
-  Always prefer the value read from the passport scan over the form field value.
-  The two must always match (after stripping hyphens). If they differ, use the passport scan value.
+  Rule: use the idNumber field value exactly as provided (digits only, no hyphens).
+  If idNumber is absent or empty → output: ❗ MISSING
 
 * U.S. Social Security Number
   Rule: if hasSocialSecurityNumber is "no" or absent → output: NO
@@ -526,7 +524,9 @@ SOCIAL MEDIA
 * Passport Number
 
 * Passport Book Number
-  Rule: only relevant for Israeli passports. If passportIssuingCountry is not Israel or the value is absent → output: No
+  Rule: use the passportBookNumber field value exactly as provided.
+  If passportBookNumber is absent or empty → output: No
+  Do not derive this from other fields or from the passport scan.
 
 * Country of Issuance
 

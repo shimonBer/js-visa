@@ -386,19 +386,29 @@ fullName = givenNames + " " + surname (null if either is null).`
     const sexRaw = String(f.sex ?? '').trim().toUpperCase().slice(0, 1)
     const sex = sexRaw === 'M' || sexRaw === 'F' ? sexRaw : ''
 
+    const nationalIdDigits = String(f.israeliIdNumber ?? '').replace(/[-\s]/g, '').trim()
+    const isIsraeli = /^israel$/i.test(String(f.nationality ?? '').trim())
+
+    // Format passportBookNumber as D-DDDDDDD-D only for Israeli passports with a valid 9-digit ID
+    let passportBookNumber
+    if (isIsraeli && /^\d{9}$/.test(nationalIdDigits)) {
+      passportBookNumber = `${nationalIdDigits.slice(0, 1)}-${nationalIdDigits.slice(1, 8)}-${nationalIdDigits.slice(8)}`
+    }
+
     const out = {
-      firstName:     String(f.givenNames ?? '').trim(),
-      lastName:      String(f.surname ?? '').trim(),
-      birthDate:     String(f.dateOfBirth ?? '').trim(),
-      passportNumber:String(f.passportNumber ?? '').trim(),
-      issuingCountry:String(f.nationality ?? '').trim(),
+      firstName:          String(f.givenNames ?? '').trim(),
+      lastName:           String(f.surname ?? '').trim(),
+      birthDate:          String(f.dateOfBirth ?? '').trim(),
+      passportNumber:     String(f.passportNumber ?? '').trim(),
+      issuingCountry:     String(f.nationality ?? '').trim(),
       sex,
-      nationalId:    String(f.israeliIdNumber ?? '').replace(/[-\s]/g, '').trim(),
-      placeOfBirth:  String(f.placeOfBirth ?? '').trim() || undefined,
-      dateOfIssue:   String(f.dateOfIssue ?? '').trim() || undefined,
-      dateOfExpiry:  String(f.dateOfExpiry ?? '').trim() || undefined,
-      warnings:      Array.isArray(extracted.warnings) ? extracted.warnings : [],
-      ambiguities:   Array.isArray(extracted.ambiguities) ? extracted.ambiguities : [],
+      nationalId:         nationalIdDigits,
+      passportBookNumber,
+      placeOfBirth:       String(f.placeOfBirth ?? '').trim() || undefined,
+      dateOfIssue:        String(f.dateOfIssue ?? '').trim() || undefined,
+      dateOfExpiry:       String(f.dateOfExpiry ?? '').trim() || undefined,
+      warnings:           Array.isArray(extracted.warnings) ? extracted.warnings : [],
+      ambiguities:        Array.isArray(extracted.ambiguities) ? extracted.ambiguities : [],
     }
 
     // Strip undefined keys so JSON stays clean

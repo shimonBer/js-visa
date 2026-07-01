@@ -810,6 +810,8 @@ export default function DS160IsraelForm({
       if (r.sex === 'M') setValue('sex', 'male', { shouldDirty: true })
       else if (r.sex === 'F') setValue('sex', 'female', { shouldDirty: true })
       if (r.nationalId) setValue('idNumber', r.nationalId, { shouldDirty: true })
+      if (r.passportBookNumber) setValue('passportBookNumber', r.passportBookNumber, { shouldDirty: true })
+      else setValue('passportBookNumber', '', { shouldDirty: true })
       setPassportOcr({ status: 'idle', message: 'שדות דרכון עודכנו מהצילום.' })
     } catch (e) {
       setPassportOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי דרכון' })
