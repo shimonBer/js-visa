@@ -54,6 +54,14 @@ export default async function handler(req, res) {
     return jsonResponse(res, 503, { error: 'I-94 lookup is disabled', code: 'I94_DISABLED' })
   }
 
+  // Playwright cannot run on Vercel's serverless infra — requires local dev
+  if (process.env.VERCEL && process.env.VERCEL_ENV !== 'development') {
+    return jsonResponse(res, 503, {
+      error: 'I-94 lookup requires local Playwright and cannot run on Vercel. Use vercel dev locally.',
+      code: 'LOCAL_ONLY',
+    })
+  }
+
   let body
   try { body = await readBodyJson(req) } catch {
     return jsonResponse(res, 400, { error: 'Invalid JSON body' })

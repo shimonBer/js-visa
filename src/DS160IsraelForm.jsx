@@ -1741,6 +1741,7 @@ export default function DS160IsraelForm({
                     {i94State.status === 'error' && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200" title={i94State.error}>
                         ✗ I-94
+                        {i94State.error?.includes('local') || i94State.error?.includes('LOCAL') ? ' (local only)' : ''}
                       </span>
                     )}
                     <button
