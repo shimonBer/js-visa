@@ -1724,8 +1724,8 @@ export default function DS160IsraelForm({
                 <div className="flex-1 min-w-0">
                   <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אי פעם ביקרת בארה״ב?" name="visitedUSBefore" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                 </div>
-                {/* I-94 lookup — always visible once passport data is present */}
-                {i94Enabled && canRunI94 && (
+                {/* I-94 lookup — always visible when feature is enabled */}
+                {i94Enabled && (
                   <div className="flex items-center gap-2 shrink-0">
                     {i94State.status === 'loading' && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 animate-pulse">
@@ -1745,10 +1745,10 @@ export default function DS160IsraelForm({
                     )}
                     <button
                       type="button"
-                      disabled={i94State.status === 'loading'}
+                      disabled={i94State.status === 'loading' || !canRunI94}
                       onClick={() => { i94AutoRanRef.current = true; void handleI94Lookup() }}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-slate-800 text-white hover:bg-slate-900 text-xs font-semibold disabled:opacity-40"
-                      title="שלוף היסטוריית כניסות מ-I-94 אוטומטית"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-slate-800 text-white hover:bg-slate-900 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={canRunI94 ? 'שלוף היסטוריית כניסות מ-I-94' : 'נדרש: שם, תאריך לידה, מספר דרכון ומדינת הנפקה'}
                     >
                       🔍 בדוק I-94
                     </button>
