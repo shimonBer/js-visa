@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     const sessionId  = randomBytes(8).toString('hex')
     const outputPath = `/tmp/i94-${sessionId}.json`
 
-    console.log('[i94] spawning Playwright script', { sessionId, firstName, lastName })
+    console.log('[i94] spawning Playwright script', { sessionId, firstName, lastName, birthDate, passportNumber, country })
 
     const child = spawn(
       process.execPath,
