@@ -1,8 +1,21 @@
 /**
  * POST /api/browser-use
- * Browser Use Cloud API v3: create session, wait 20s, poll GET /sessions/{id} every 20s until terminal (max 5 min).
- * API key: process.env.BROWSER_USE_API_KEY (header X-Browser-Use-API-Key)
+ *
+ * Two modes:
+ *   A) BROWSER_USE_API_KEY set → Browser Use Cloud API v3 (two fast actions: create / poll)
+ *   B) No key → local Playwright fallback: spawns autofill/fetch-i94.js as a child process,
+ *      writes result to /tmp/i94-{id}.json, poll action reads that file.
+ *      Works in `vercel dev` / any local Node environment. Fails gracefully in production.
  */
+
+import { spawn } from 'child_process'
+import { createHash, randomBytes } from 'crypto'
+import { existsSync, readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 const BASE_URL = 'https://api.browser-use.com/api/v3'
 const SESSIONS_URL = `${BASE_URL}/sessions`
@@ -366,9 +379,6 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.BROWSER_USE_API_KEY?.trim()
-  if (!apiKey) {
-    return jsonResponse(res, 503, { error: 'Browser Use not configured', code: 'BROWSER_USE_DISABLED' })
-  }
 
   let body
   try {
@@ -378,6 +388,68 @@ export default async function handler(req, res) {
   }
 
   const action = String(body?.action ?? 'create')
+
+  // ── Local Playwright fallback (no Browser Use API key) ────────────────────
+  if (!apiKey) {
+    const scriptPath = join(__dirname, '../autofill/fetch-i94.js')
+    if (!existsSync(scriptPath)) {
+      return jsonResponse(res, 503, { error: 'Browser Use not configured and local script not found', code: 'BROWSER_USE_DISABLED' })
+    }
+
+    if (action === 'create') {
+      const { firstName, lastName, birthDate, passportNumber, country } = body ?? {}
+      if (!firstName || !lastName || !birthDate || !passportNumber || !country) {
+        return jsonResponse(res, 400, { error: 'Missing required fields' })
+      }
+      const sessionId = randomBytes(8).toString('hex')
+      const outputPath = `/tmp/i94-${sessionId}.json`
+
+      logBv('local playwright fallback: spawning fetch-i94.js', { sessionId, outputPath })
+
+      const openaiKey = process.env.OPENAI_API_KEY ?? ''
+      const child = spawn(
+        process.execPath,
+        [
+          scriptPath,
+          '--firstName', String(firstName),
+          '--lastName', String(lastName),
+          '--birthDate', String(birthDate),
+          '--passport', String(passportNumber),
+          '--country', String(country),
+          '--headless',
+          '--output', outputPath,
+        ],
+        {
+          detached: true,
+          stdio: 'ignore',
+          env: { ...process.env, OPENAI_API_KEY: openaiKey },
+        },
+      )
+      child.unref()
+
+      return jsonResponse(res, 200, { pending: true, sessionId, mode: 'local' })
+    }
+
+    if (action === 'poll') {
+      const sessionId = String(body?.sessionId ?? '').trim()
+      if (!sessionId) return jsonResponse(res, 400, { error: 'Missing sessionId' })
+
+      const outputPath = `/tmp/i94-${sessionId}.json`
+      if (!existsSync(outputPath)) {
+        return jsonResponse(res, 200, { pending: true, sessionId, mode: 'local' })
+      }
+
+      try {
+        const result = JSON.parse(readFileSync(outputPath, 'utf8'))
+        logBv('local playwright result read', { sessionId, success: result.success, entries: result.history?.length })
+        return jsonResponse(res, 200, { pending: false, ...result })
+      } catch (e) {
+        return jsonResponse(res, 500, { error: `Could not read result: ${e.message}` })
+      }
+    }
+
+    return jsonResponse(res, 400, { error: `Unknown action: ${action}` })
+  }
 
   // ── action = "create" ──────────────────────────────────────────────────────
   if (action === 'create') {

@@ -986,7 +986,8 @@ export default function DS160IsraelForm({
     if (!i94Enabled) return
     if (i94AutoRanRef.current) return
     if (!canRunI94) return
-    if (i94SkipBecausePriorVisits) return
+    const existingVisits = getValues('previousUSVisits')
+    if (Array.isArray(existingVisits) && existingVisits.some((v) => String(v?.visit ?? '').trim())) return
     i94AutoRanRef.current = true
     void handleI94Lookup()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1719,42 +1720,46 @@ export default function DS160IsraelForm({
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">ויזה קודמת לארה&quot;ב</h2>
             <div className="grid grid-cols-1 gap-4">
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אי פעם ביקרת בארה״ב?" name="visitedUSBefore" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אי פעם ביקרת בארה״ב?" name="visitedUSBefore" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                </div>
+                {/* I-94 lookup — always visible once passport data is present */}
+                {i94Enabled && canRunI94 && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    {i94State.status === 'loading' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 animate-pulse">
+                        <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                        I-94…
+                      </span>
+                    )}
+                    {i94State.status === 'idle' && i94State.data?.success && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200" title="I-94 נטען בהצלחה">
+                        ✓ I-94
+                      </span>
+                    )}
+                    {i94State.status === 'error' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200" title={i94State.error}>
+                        ✗ I-94
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      disabled={i94State.status === 'loading'}
+                      onClick={() => { i94AutoRanRef.current = true; void handleI94Lookup() }}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-slate-800 text-white hover:bg-slate-900 text-xs font-semibold disabled:opacity-40"
+                      title="שלוף היסטוריית כניסות מ-I-94 אוטומטית"
+                    >
+                      🔍 בדוק I-94
+                    </button>
+                  </div>
+                )}
+              </div>
               {w.visitedUSBefore === 'yes' && (
                 <div className="flex flex-col mb-2">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <label className="font-semibold text-gray-700">בערך מתי ולכמה זמן [עד 5 אחרונות]</label>
-                      {/* Inline I-94 status badge — non-disruptive */}
-                      {i94State.status === 'loading' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 animate-pulse">
-                          <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                          I-94
-                        </span>
-                      )}
-                      {i94State.status === 'idle' && i94State.data?.success && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200" title="I-94 נטען בהצלחה">
-                          ✓ I-94
-                        </span>
-                      )}
-                      {i94State.status === 'error' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200" title={i94State.error}>
-                          ✗ I-94
-                        </span>
-                      )}
-                    </div>
+                    <label className="font-semibold text-gray-700">בערך מתי ולכמה זמן [עד 5 אחרונות]</label>
                     <div className="flex gap-2">
-                      {i94Enabled && canRunI94 && (
-                        <button
-                          type="button"
-                          disabled={i94State.status === 'loading'}
-                          onClick={() => { i94AutoRanRef.current = true; void handleI94Lookup() }}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold disabled:opacity-40"
-                          title="שלוף היסטוריית כניסות מ-I-94"
-                        >
-                          🔍 I-94
-                        </button>
-                      )}
                       <button
                         type="button"
                         onClick={() => appendPreviousVisit({ visit: '' })}
