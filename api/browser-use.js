@@ -338,31 +338,49 @@ async function pollSessionUntilDone(apiKey, sessionId) {
 }
 
 /**
+ * POST /api/browser-use
+ *
+ * Two fast actions — each completes in a few seconds so Vercel Hobby's
+ * 10-second function timeout is never breached. The client drives the loop.
+ *
+ * action = "create"
+ *   Body: { action:"create", firstName, lastName, birthDate, passportNumber, country }
+ *   Returns: { sessionId, status }   (just fires the Browser Use job and returns)
+ *
+ * action = "poll"
+ *   Body: { action:"poll", sessionId }
+ *   Returns: { pending: true }  — job still running
+ *         or { pending: false, success, history[] }  — job finished
+ *
  * @param {import('http').IncomingMessage} req
  * @param {import('http').ServerResponse} res
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    logBv('handler rejected non-POST', { method: req.method })
     res.setHeader('Allow', 'POST')
     return jsonResponse(res, 405, { error: 'Method not allowed' })
   }
 
   if (process.env.I94_ENABLED === 'false') {
-    logBv('handler I94_ENABLED=false — feature disabled')
     return jsonResponse(res, 503, { error: 'I-94 lookup is disabled', code: 'I94_DISABLED' })
   }
 
   const apiKey = process.env.BROWSER_USE_API_KEY?.trim()
   if (!apiKey) {
-    logBv('handler BROWSER_USE_API_KEY missing')
     return jsonResponse(res, 503, { error: 'Browser Use not configured', code: 'BROWSER_USE_DISABLED' })
   }
 
+  let body
   try {
-    logBv('handler POST /api/browser-use invoked', { hasApiKey: Boolean(apiKey) })
+    body = await readBodyJson(req)
+  } catch (e) {
+    return jsonResponse(res, 400, { error: 'Invalid JSON body' })
+  }
 
-    const body = await readBodyJson(req)
+  const action = String(body?.action ?? 'create')
+
+  // ── action = "create" ──────────────────────────────────────────────────────
+  if (action === 'create') {
     const firstName = String(body?.firstName ?? '').trim()
     const lastName = String(body?.lastName ?? '').trim()
     const birthDate = String(body?.birthDate ?? '').trim()
@@ -370,67 +388,82 @@ export default async function handler(req, res) {
     const country = String(body?.country ?? '').trim()
 
     if (!firstName || !lastName || !birthDate || !passportNumber || !country) {
-      logBv('handler validation failed: missing I-94 fields', {
-        hasFirstName: Boolean(firstName),
-        hasLastName: Boolean(lastName),
-        hasBirthDate: Boolean(birthDate),
-        hasPassportNumber: Boolean(passportNumber),
-        hasCountry: Boolean(country),
-      })
       return jsonResponse(res, 400, {
         error: 'Missing required fields: firstName, lastName, birthDate, passportNumber, country',
       })
     }
 
-    logBv('handler validated traveller fields', { firstName, lastName, birthDate, passportNumber, country })
-
-    const task = buildI94Task({ firstName, lastName, birthDate, passportNumber, country })
-
-    // Step 1: create a Browser Use v3 session with the I-94 task
-    const created = await fetchJsonLogged(
-      SESSIONS_URL,
-      {
-        method: 'POST',
-        headers: {
-          'X-Browser-Use-API-Key': apiKey,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+    try {
+      const task = buildI94Task({ firstName, lastName, birthDate, passportNumber, country })
+      const created = await fetchJsonLogged(
+        SESSIONS_URL,
+        {
+          method: 'POST',
+          headers: {
+            'X-Browser-Use-API-Key': apiKey,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({ task }),
         },
-        body: JSON.stringify({ task }),
-      },
-      'POST /sessions (create)',
-    )
-    const sessionId = created?.id
-    if (!sessionId || typeof sessionId !== 'string') {
-      logBv('create session response missing id', summarizeSessionPayload(created))
-      throw new Error('Browser Use create session response missing id')
+        'POST /sessions (create)',
+      )
+
+      const sessionId = created?.id
+      if (!sessionId || typeof sessionId !== 'string') {
+        throw new Error('Browser Use create session response missing id')
+      }
+
+      const initialStatus = String(created?.status ?? '')
+      logBv('create ok', { sessionId, initialStatus })
+
+      // Rare: job already finished by the time we get the response
+      if (TERMINAL_STATUSES.has(initialStatus)) {
+        const normalized = normalizeBrowserUseResult(created?.output ?? created)
+        return jsonResponse(res, 200, { pending: false, ...normalized })
+      }
+
+      return jsonResponse(res, 200, { pending: true, sessionId, status: initialStatus })
+    } catch (e) {
+      const msg = e?.message || 'create error'
+      console.error('[browser-use] create error', msg)
+      return jsonResponse(res, 500, { error: msg })
     }
-    logBv('create session ok', { sessionId, initialStatus: created?.status })
-
-    // If the task finished before we start polling (rare), return output immediately
-    if (typeof created?.status === 'string' && TERMINAL_STATUSES.has(created.status)) {
-      logBv('create response already terminal; skipping poll', {
-        status: created.status,
-        payload: summarizeSessionPayload(created),
-      })
-      const normalizedEarly = normalizeBrowserUseResult(created?.output ?? created)
-      logBv('handler returning early (terminal on create)', normalizedEarly)
-      return jsonResponse(res, 200, normalizedEarly)
-    }
-
-    // Step 2: poll session until stopped / timed_out / error
-    const finalSession = await pollSessionUntilDone(apiKey, sessionId)
-    logBv('poll complete; final session summary', summarizeSessionPayload(finalSession))
-
-    // Step 3: extract structured output from the final session payload
-    const output = finalSession?.output
-    const normalized = normalizeBrowserUseResult(output ?? finalSession)
-    logBv('handler returning normalized I-94 payload', normalized)
-
-    return jsonResponse(res, 200, normalized)
-  } catch (e) {
-    const msg = e?.message || 'browser-use error'
-    console.error('[browser-use] handler error', msg, e instanceof Error ? e.stack : e)
-    return jsonResponse(res, 500, { error: msg })
   }
+
+  // ── action = "poll" ────────────────────────────────────────────────────────
+  if (action === 'poll') {
+    const sessionId = String(body?.sessionId ?? '').trim()
+    if (!sessionId) {
+      return jsonResponse(res, 400, { error: 'Missing sessionId' })
+    }
+
+    try {
+      const pollUrl = `${SESSIONS_URL}/${encodeURIComponent(sessionId)}`
+      const session = await fetchJsonLogged(
+        pollUrl,
+        {
+          method: 'GET',
+          headers: { 'X-Browser-Use-API-Key': apiKey, Accept: 'application/json' },
+        },
+        `GET /sessions/${sessionId}`,
+      )
+
+      const status = String(session?.status ?? '')
+      logBv('poll result', { sessionId, status })
+
+      if (!TERMINAL_STATUSES.has(status)) {
+        return jsonResponse(res, 200, { pending: true, sessionId, status })
+      }
+
+      const normalized = normalizeBrowserUseResult(session?.output ?? session)
+      return jsonResponse(res, 200, { pending: false, ...normalized })
+    } catch (e) {
+      const msg = e?.message || 'poll error'
+      console.error('[browser-use] poll error', msg)
+      return jsonResponse(res, 500, { error: msg })
+    }
+  }
+
+  return jsonResponse(res, 400, { error: `Unknown action: ${action}` })
 }

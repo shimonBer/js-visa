@@ -479,6 +479,7 @@ export default function DS160IsraelForm({
   const [usLicenseOcr, setUsLicenseOcr] = useState({ status: 'idle', message: '' })
   const [previousVisaOcr, setPreviousVisaOcr] = useState({ status: 'idle', message: '' })
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
+  const i94AutoRanRef = useRef(false)
   const [saveBeforeTranslatePrompt, setSaveBeforeTranslatePrompt] = useState(false)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
   const [translateUi, setTranslateUi] = useState({
@@ -927,6 +928,70 @@ export default function DS160IsraelForm({
     return Boolean(first && last && okDate && String(wI94Passport ?? '').trim() && String(wI94Country ?? '').trim())
   }, [wI94FirstEn, wI94LastEn, wI94FirstHe, wI94LastHe, wI94Day, wI94Month, wI94Year, wI94Passport, wI94Country])
 
+  /** Parse MM/DD/YYYY or YYYY-MM-DD into a Date (returns null on failure) */
+  function parseI94Date(str) {
+    if (!str) return null
+    // MM/DD/YYYY
+    const mdy = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+    if (mdy) return new Date(Number(mdy[3]), Number(mdy[1]) - 1, Number(mdy[2]))
+    // YYYY-MM-DD
+    const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (ymd) return new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]))
+    return null
+  }
+
+  /** Format a duration in milliseconds into a human-readable stay length */
+  function formatStayDuration(ms) {
+    const days = Math.round(ms / 86_400_000)
+    if (days <= 0) return 'less than a day'
+    if (days === 1) return '1 day'
+    if (days < 14) return `${days} days`
+    if (days < 45) return `${Math.round(days / 7)} weeks`
+    const months = Math.round(days / 30.44)
+    return months === 1 ? '1 month' : `${months} months`
+  }
+
+  /**
+   * Convert raw I-94 history into DS-160 visit strings.
+   * Pairs each Arrival with the next Departure to compute Length of Stay.
+   * Format: "Arrival Date: MM/DD/YYYY · Length of Stay: X months"
+   */
+  function computeVisitStrings(history) {
+    if (!Array.isArray(history) || history.length === 0) return []
+
+    const arrivals = history.filter((h) => /arriv|admit|entry/i.test(String(h?.type ?? '')))
+    const departures = history.filter((h) => /depart|exit/i.test(String(h?.type ?? '')))
+
+    // If we can't distinguish arrivals/departures, fall back to all rows
+    const rows = arrivals.length > 0 ? arrivals : history
+
+    return rows.map((row) => {
+      const arrDate = parseI94Date(String(row?.date ?? ''))
+      let stayStr = ''
+      if (arrDate) {
+        const nextDep = departures
+          .map((d) => parseI94Date(String(d?.date ?? '')))
+          .filter((d) => d && d > arrDate)
+          .sort((a, b) => a - b)[0]
+        stayStr = nextDep ? formatStayDuration(nextDep - arrDate) : ''
+      }
+      const datePart = `Arrival Date: ${String(row?.date ?? '').trim()}`
+      const stayPart = stayStr ? ` · Length of Stay: ${stayStr}` : ''
+      return { visit: `${datePart}${stayPart}` }
+    }).filter((r) => r.visit && r.visit !== 'Arrival Date: ')
+  }
+
+  /** Auto-trigger once when all required fields are present */
+  useEffect(() => {
+    if (!i94Enabled) return
+    if (i94AutoRanRef.current) return
+    if (!canRunI94) return
+    if (i94SkipBecausePriorVisits) return
+    i94AutoRanRef.current = true
+    void handleI94Lookup()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canRunI94])
+
   async function handleI94Lookup() {
     const existingVisits = getValues('previousUSVisits')
     if (Array.isArray(existingVisits) && existingVisits.some((v) => String(v?.visit ?? '').trim())) {
@@ -950,11 +1015,7 @@ export default function DS160IsraelForm({
       setI94State({ status: 'idle', error: '', data })
 
       if (data.success && Array.isArray(data.history) && data.history.length > 0) {
-        const visitRows = data.history
-          .map((row) => ({
-            visit: [row.date, row.type, row.location].map((s) => String(s ?? '').trim()).filter(Boolean).join(' — '),
-          }))
-          .filter((r) => r.visit)
+        const visitRows = computeVisitStrings(data.history)
         if (visitRows.length > 0) {
           setValue('visitedUSBefore', 'yes', { shouldDirty: true })
           setValue('previousUSVisits', visitRows, { shouldDirty: true })
@@ -1662,8 +1723,38 @@ export default function DS160IsraelForm({
               {w.visitedUSBefore === 'yes' && (
                 <div className="flex flex-col mb-2">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="font-semibold text-gray-700">בערך מתי ולכמה זמן [עד 5 אחרונות]</label>
+                    <div className="flex items-center gap-2">
+                      <label className="font-semibold text-gray-700">בערך מתי ולכמה זמן [עד 5 אחרונות]</label>
+                      {/* Inline I-94 status badge — non-disruptive */}
+                      {i94State.status === 'loading' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 animate-pulse">
+                          <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                          I-94
+                        </span>
+                      )}
+                      {i94State.status === 'idle' && i94State.data?.success && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200" title="I-94 נטען בהצלחה">
+                          ✓ I-94
+                        </span>
+                      )}
+                      {i94State.status === 'error' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200" title={i94State.error}>
+                          ✗ I-94
+                        </span>
+                      )}
+                    </div>
                     <div className="flex gap-2">
+                      {i94Enabled && canRunI94 && (
+                        <button
+                          type="button"
+                          disabled={i94State.status === 'loading'}
+                          onClick={() => { i94AutoRanRef.current = true; void handleI94Lookup() }}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold disabled:opacity-40"
+                          title="שלוף היסטוריית כניסות מ-I-94"
+                        >
+                          🔍 I-94
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => appendPreviousVisit({ visit: '' })}
