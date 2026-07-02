@@ -11,7 +11,7 @@ import { extractPassportFieldsFromFile } from './lib/passportOcr.js'
 import { extractSocialSecurityNumberFromFile } from './lib/socialSecurityOcr.js'
 import { extractUsLicenseFieldsFromFile } from './lib/usLicenseOcr.js'
 import { extractUsVisaDatesFromFile } from './lib/usVisaOcr.js'
-import { fetchI94TravelHistory } from './lib/browserUse.js'
+import { fetchI94TravelHistory } from './lib/i94Lookup.js'
 import { translateFormToEnglish } from './lib/translateForm.js'
 import {
   buildTranslationFingerprint,

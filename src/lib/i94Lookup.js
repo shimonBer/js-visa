@@ -1,5 +1,5 @@
 /**
- * I-94 travel history lookup via /api/browser-use.
+ * I-94 travel history lookup via /api/i94-lookup.
  *
  * The server function now has two fast actions so it never breaches Vercel
  * Hobby's 10-second timeout. The client drives the polling loop.
@@ -21,7 +21,7 @@ export async function fetchI94TravelHistory(input, opts = {}) {
 
   // ── Step 1: create session (fast, < 5s) ───────────────────────────────────
   onStatus('יוצר סשן…')
-  const createRes = await fetch('/api/browser-use', {
+  const createRes = await fetch('/api/i94-lookup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -51,7 +51,7 @@ export async function fetchI94TravelHistory(input, opts = {}) {
     pollCount++
     onStatus(`בודק סטטוס… (${pollCount})`)
 
-    const pollRes = await fetch('/api/browser-use', {
+    const pollRes = await fetch('/api/i94-lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'poll', sessionId }),
