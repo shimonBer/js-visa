@@ -1,15 +1,23 @@
 /**
- * POST /api/browser-use
+ * POST /api/browser-use — I-94 travel history via local Playwright
  *
- * Two modes:
- *   A) BROWSER_USE_API_KEY set → Browser Use Cloud API v3 (two fast actions: create / poll)
- *   B) No key → local Playwright fallback: spawns autofill/fetch-i94.js as a child process,
- *      writes result to /tmp/i94-{id}.json, poll action reads that file.
- *      Works in `vercel dev` / any local Node environment. Fails gracefully in production.
+ * Two fast actions so the Vercel Hobby 10-second timeout is never breached.
+ * The client drives the polling loop (see src/lib/browserUse.js).
+ *
+ * action = "create"
+ *   Body: { action, firstName, lastName, birthDate, passportNumber, country }
+ *   Spawns autofill/fetch-i94.js as a detached background process.
+ *   Returns: { pending: true, sessionId }
+ *
+ * action = "poll"
+ *   Body: { action, sessionId }
+ *   Checks /tmp/i94-{sessionId}.json written by the Playwright script.
+ *   Returns: { pending: true }  — still running
+ *         or { pending: false, success, history[] }  — done
  */
 
 import { spawn } from 'child_process'
-import { createHash, randomBytes } from 'crypto'
+import { randomBytes } from 'crypto'
 import { existsSync, readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
@@ -17,87 +25,10 @@ import { dirname, join } from 'path'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const BASE_URL = 'https://api.browser-use.com/api/v3'
-const SESSIONS_URL = `${BASE_URL}/sessions`
-/** Wait before first GET /sessions/{id} after POST /sessions (per product spec). */
-const POLL_INITIAL_WAIT_MS = 20_000
-/** Wait between subsequent polls. */
-const POLL_INTERVAL_MS = 20_000
-/** Max wall time for polling (5 min at 20s cadence). */
-const POLL_TIMEOUT_MS = 300_000
-
-/** Max characters of upstream response body to log (avoid huge logs). */
-const MAX_LOG_BODY_CHARS = 15_000
-
-function logBv(message, /** @type {Record<string, unknown>} */ data = {}) {
-  console.log('[browser-use]', message, data)
-}
-
-/**
- * @param {unknown} body
- */
-function summarizeSessionPayload(body) {
-  if (!body || typeof body !== 'object') return { type: typeof body }
-  const o = /** @type {Record<string, unknown>} */ (body)
-  return {
-    keys: Object.keys(o),
-    id: o.id,
-    status: o.status,
-    hasOutput: o.output != null,
-    outputType: o.output != null ? typeof o.output : 'none',
-    error: o.error,
-    message: typeof o.message === 'string' ? o.message.slice(0, 500) : o.message,
-  }
-}
-
-/**
- * Fetch Browser Use API, log HTTP status + raw body (truncated) + parsed summary, return JSON.
- * @param {string} url
- * @param {RequestInit} options
- * @param {string} label
- */
-async function fetchJsonLogged(url, options, label) {
-  const started = Date.now()
-  const res = await fetch(url, options)
-  const text = await res.text()
-  const elapsedMs = Date.now() - started
-  const bodyForLog =
-    text.length > MAX_LOG_BODY_CHARS
-      ? `${text.slice(0, MAX_LOG_BODY_CHARS)}\n... [truncated ${text.length - MAX_LOG_BODY_CHARS} chars]`
-      : text
-
-  let parsed = null
-  let parseError = null
-  if (text) {
-    try {
-      parsed = JSON.parse(text)
-    } catch (e) {
-      parseError = e instanceof Error ? e.message : String(e)
-    }
-  }
-
-  logBv(`${label} HTTP response`, {
-    url,
-    method: options.method || 'GET',
-    httpStatus: res.status,
-    ok: res.ok,
-    elapsedMs,
-    bodyLength: text.length,
-    parseError,
-    bodyText: bodyForLog,
-  })
-
-  if (parsed && typeof parsed === 'object') {
-    logBv(`${label} parsed summary`, summarizeSessionPayload(parsed))
-  }
-
-  if (!res.ok) {
-    throw new Error(`${label} failed (${res.status}): ${text.slice(0, 500)}`)
-  }
-  if (parseError) {
-    throw new Error(`${label}: invalid JSON body (${parseError})`)
-  }
-  return parsed
+function jsonResponse(res, status, body) {
+  res.statusCode = status
+  res.setHeader('Content-Type', 'application/json; charset=utf-8')
+  res.end(JSON.stringify(body))
 }
 
 /** @param {import('http').IncomingMessage} req */
@@ -106,268 +37,13 @@ async function readBodyJson(req) {
     return req.body
   }
   const chunks = []
-  for await (const chunk of req) {
-    chunks.push(chunk)
-  }
+  for await (const chunk of req) chunks.push(chunk)
   const raw = Buffer.concat(chunks).toString('utf8')
   if (!raw) return {}
-  try {
-    return JSON.parse(raw)
-  } catch {
-    throw new Error('Invalid JSON body')
-  }
+  try { return JSON.parse(raw) } catch { throw new Error('Invalid JSON body') }
 }
 
-function jsonResponse(res, status, body) {
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json; charset=utf-8')
-  res.end(JSON.stringify(body))
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-/** Terminal session statuses (see OpenAPI BuAgentSessionStatus). */
-const TERMINAL_STATUSES = new Set(['stopped', 'timed_out', 'error'])
-
-/**
- * Build natural-language task with injected values.
- * @param {{ firstName: string, lastName: string, birthDate: string, passportNumber: string, country: string }} p
- */
-function buildI94Task(p) {
-  const { firstName, lastName, birthDate, passportNumber, country } = p
-
-  logBv('buildI94Task input fields', {
-    firstName,
-    lastName,
-    birthDate,
-    passportNumber,
-    country,
-  })
-
-  const successExample = JSON.stringify(
-    {
-      success: true,
-      history: [{ date: '', type: '', location: '' }],
-    },
-    null,
-    2,
-  )
-  const failExample = JSON.stringify({ success: false, history: [] }, null, 2)
-
-  const task = [
-    'You are operating a real web browser.',
-    '',
-    'IMPORTANT BEHAVIOR RULES:',
-    '',
-    '* Behave like a normal human user.',
-    '* Use realistic timing between actions.',
-    '* Do NOT interact too quickly.',
-    '* Add small delays between typing and clicks.',
-    '* Type naturally into input fields instead of inserting all text instantly.',
-    '* Occasionally move the mouse, scroll naturally, and interact with the page in a human-like way.',
-    '* The site uses reCAPTCHA and bot detection, so avoid behavior that looks automated.',
-    '* Wait for elements to fully render before interacting.',
-    '* If a popup, loading state, or dynamic content appears, wait for it properly.',
-    '',
-    'TASK:',
-    '',
-    '1. Open:',
-    '   https://i94.cbp.dhs.gov/home',
-    '',
-    '2. Wait for the homepage to fully load.',
-    '',
-    '3. Click:',
-    '   "View Travel History"',
-    '',
-    '4. Wait for the Terms of Service (or similar consent modal) to appear.',
-    '',
-    '5. Scroll the modal completely to the bottom.',
-    '',
-    '6. Click the Agree / Continue / Accept button to proceed.',
-    '',
-    '7. Fill the form with EXACTLY these values:',
-    '',
-    '* First name:',
-    `  ${firstName}`,
-    '',
-    '* Last name:',
-    `  ${lastName}`,
-    '',
-    '* Birth date:',
-    `  ${birthDate}`,
-    '',
-    'IMPORTANT:',
-    'Use the exact date format expected by the website.',
-    'If necessary, convert to MM/DD/YYYY.',
-    '',
-    '* Passport number:',
-    `  ${passportNumber}`,
-    '',
-    '* Passport country / issuing country:',
-    `  ${country}`,
-    '',
-    '8. Submit the form.',
-    '',
-    '9. Wait for the results page to fully load.',
-    '',
-    '10. Extract ALL travel history entries.',
-    '',
-    'For each row extract:',
-    '',
-    '* date',
-    '* entry/exit type',
-    '* airport / border crossing / location',
-    '',
-    '11. Return ONLY valid raw JSON.',
-    '',
-    'DO NOT:',
-    '',
-    '* explain actions',
-    '* include markdown',
-    '* include commentary',
-    '* include code blocks',
-    '',
-    'Return EXACTLY this structure:',
-    '',
-    successExample,
-    '',
-    'If the process fails, no records are found, reCAPTCHA blocks progress, or the data cannot be retrieved, return ONLY:',
-    '',
-    failExample,
-  ].join('\n')
-
-  logBv('buildI94Task task string', {
-    taskLengthChars: task.length,
-    task,
-  })
-
-  return task
-}
-
-/**
- * Normalize agent output into { success, history }.
- * @param {unknown} parsed
- * @param {number} [depth]
- */
-function normalizeBrowserUseResult(parsed, depth = 0) {
-  if (depth === 0) {
-    logBv('normalizeBrowserUseResult input', {
-      type: typeof parsed,
-      keys: parsed && typeof parsed === 'object' ? Object.keys(/** @type {object} */ (parsed)) : null,
-    })
-  }
-  if (parsed && typeof parsed === 'object') {
-    const o = /** @type {Record<string, unknown>} */ (parsed)
-    if (typeof o.success === 'boolean' && Array.isArray(o.history)) {
-      const out = {
-        success: o.success,
-        history: o.history.map((h) => ({
-          date: String((h && h.date) ?? ''),
-          type: String((h && h.type) ?? ''),
-          location: String((h && h.location) ?? ''),
-        })),
-      }
-      logBv('normalizeBrowserUseResult matched { success, history }', {
-        depth,
-        success: out.success,
-        historyLength: out.history.length,
-      })
-      return out
-    }
-    const inner = o.result ?? o.output ?? o.data
-    if (typeof inner === 'string') {
-      try {
-        return normalizeBrowserUseResult(JSON.parse(inner), depth + 1)
-      } catch {
-        logBv('normalizeBrowserUseResult inner string JSON.parse failed', {
-          depth,
-          preview: inner.slice(0, 400),
-        })
-        /* fall through */
-      }
-    }
-    if (inner && typeof inner === 'object') {
-      logBv('normalizeBrowserUseResult recurse into inner object', { depth, innerKeys: Object.keys(inner) })
-      return normalizeBrowserUseResult(inner, depth + 1)
-    }
-  }
-  logBv('normalizeBrowserUseResult fallback { success: false, history: [] }', { depth })
-  return { success: false, history: [] }
-}
-
-/**
- * Poll GET /sessions/{id} until status is terminal or timeout.
- * @param {string} apiKey
- * @param {string} sessionId
- * @returns {Promise<unknown>} final session JSON (includes output)
- */
-async function pollSessionUntilDone(apiKey, sessionId) {
-  const deadline = Date.now() + POLL_TIMEOUT_MS
-  logBv('pollSessionUntilDone start', {
-    sessionId,
-    deadlineIso: new Date(deadline).toISOString(),
-    POLL_INITIAL_WAIT_MS,
-    POLL_INTERVAL_MS,
-    POLL_TIMEOUT_MS,
-  })
-
-  await sleep(POLL_INITIAL_WAIT_MS)
-  logBv('pollSessionUntilDone initial wait complete', { sessionId })
-
-  let pollIndex = 0
-  while (Date.now() < deadline) {
-    pollIndex += 1
-    const pollUrl = `${SESSIONS_URL}/${encodeURIComponent(sessionId)}`
-    const session = await fetchJsonLogged(
-      pollUrl,
-      {
-        method: 'GET',
-        headers: {
-          'X-Browser-Use-API-Key': apiKey,
-          Accept: 'application/json',
-        },
-      },
-      `GET /sessions/${sessionId} (poll #${pollIndex})`,
-    )
-    const status = typeof session?.status === 'string' ? session.status : ''
-    logBv(`poll #${pollIndex} decision`, {
-      status: status || '(empty)',
-      isTerminal: TERMINAL_STATUSES.has(status),
-      msRemaining: Math.max(0, deadline - Date.now()),
-    })
-
-    if (TERMINAL_STATUSES.has(status)) {
-      logBv('pollSessionUntilDone terminal reached', { sessionId, status, pollCount: pollIndex })
-      return session
-    }
-
-    await sleep(POLL_INTERVAL_MS)
-  }
-
-  logBv('pollSessionUntilDone timed out', { sessionId, lastPollIndex: pollIndex })
-  throw new Error(`Browser Use session ${sessionId} timed out after ${POLL_TIMEOUT_MS}ms`)
-}
-
-/**
- * POST /api/browser-use
- *
- * Two fast actions — each completes in a few seconds so Vercel Hobby's
- * 10-second function timeout is never breached. The client drives the loop.
- *
- * action = "create"
- *   Body: { action:"create", firstName, lastName, birthDate, passportNumber, country }
- *   Returns: { sessionId, status }   (just fires the Browser Use job and returns)
- *
- * action = "poll"
- *   Body: { action:"poll", sessionId }
- *   Returns: { pending: true }  — job still running
- *         or { pending: false, success, history[] }  — job finished
- *
- * @param {import('http').IncomingMessage} req
- * @param {import('http').ServerResponse} res
- */
+/** @param {import('http').IncomingMessage} req @param {import('http').ServerResponse} res */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -378,86 +54,25 @@ export default async function handler(req, res) {
     return jsonResponse(res, 503, { error: 'I-94 lookup is disabled', code: 'I94_DISABLED' })
   }
 
-  const apiKey = process.env.BROWSER_USE_API_KEY?.trim()
-
   let body
-  try {
-    body = await readBodyJson(req)
-  } catch (e) {
+  try { body = await readBodyJson(req) } catch {
     return jsonResponse(res, 400, { error: 'Invalid JSON body' })
   }
 
   const action = String(body?.action ?? 'create')
+  const scriptPath = join(__dirname, '../autofill/fetch-i94.js')
 
-  // ── Local Playwright fallback (no Browser Use API key) ────────────────────
-  if (!apiKey) {
-    const scriptPath = join(__dirname, '../autofill/fetch-i94.js')
-    if (!existsSync(scriptPath)) {
-      return jsonResponse(res, 503, { error: 'Browser Use not configured and local script not found', code: 'BROWSER_USE_DISABLED' })
-    }
-
-    if (action === 'create') {
-      const { firstName, lastName, birthDate, passportNumber, country } = body ?? {}
-      if (!firstName || !lastName || !birthDate || !passportNumber || !country) {
-        return jsonResponse(res, 400, { error: 'Missing required fields' })
-      }
-      const sessionId = randomBytes(8).toString('hex')
-      const outputPath = `/tmp/i94-${sessionId}.json`
-
-      logBv('local playwright fallback: spawning fetch-i94.js', { sessionId, outputPath })
-
-      const openaiKey = process.env.OPENAI_API_KEY ?? ''
-      const child = spawn(
-        process.execPath,
-        [
-          scriptPath,
-          '--firstName', String(firstName),
-          '--lastName', String(lastName),
-          '--birthDate', String(birthDate),
-          '--passport', String(passportNumber),
-          '--country', String(country),
-          '--headless',
-          '--output', outputPath,
-        ],
-        {
-          detached: true,
-          stdio: 'ignore',
-          env: { ...process.env, OPENAI_API_KEY: openaiKey },
-        },
-      )
-      child.unref()
-
-      return jsonResponse(res, 200, { pending: true, sessionId, mode: 'local' })
-    }
-
-    if (action === 'poll') {
-      const sessionId = String(body?.sessionId ?? '').trim()
-      if (!sessionId) return jsonResponse(res, 400, { error: 'Missing sessionId' })
-
-      const outputPath = `/tmp/i94-${sessionId}.json`
-      if (!existsSync(outputPath)) {
-        return jsonResponse(res, 200, { pending: true, sessionId, mode: 'local' })
-      }
-
-      try {
-        const result = JSON.parse(readFileSync(outputPath, 'utf8'))
-        logBv('local playwright result read', { sessionId, success: result.success, entries: result.history?.length })
-        return jsonResponse(res, 200, { pending: false, ...result })
-      } catch (e) {
-        return jsonResponse(res, 500, { error: `Could not read result: ${e.message}` })
-      }
-    }
-
-    return jsonResponse(res, 400, { error: `Unknown action: ${action}` })
+  if (!existsSync(scriptPath)) {
+    return jsonResponse(res, 503, { error: 'fetch-i94.js not found — run in local dev', code: 'LOCAL_ONLY' })
   }
 
   // ── action = "create" ──────────────────────────────────────────────────────
   if (action === 'create') {
-    const firstName = String(body?.firstName ?? '').trim()
-    const lastName = String(body?.lastName ?? '').trim()
-    const birthDate = String(body?.birthDate ?? '').trim()
+    const firstName    = String(body?.firstName    ?? '').trim()
+    const lastName     = String(body?.lastName     ?? '').trim()
+    const birthDate    = String(body?.birthDate    ?? '').trim()
     const passportNumber = String(body?.passportNumber ?? '').trim()
-    const country = String(body?.country ?? '').trim()
+    const country      = String(body?.country      ?? '').trim()
 
     if (!firstName || !lastName || !birthDate || !passportNumber || !country) {
       return jsonResponse(res, 400, {
@@ -465,77 +80,53 @@ export default async function handler(req, res) {
       })
     }
 
-    try {
-      const task = buildI94Task({ firstName, lastName, birthDate, passportNumber, country })
-      const created = await fetchJsonLogged(
-        SESSIONS_URL,
-        {
-          method: 'POST',
-          headers: {
-            'X-Browser-Use-API-Key': apiKey,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({ task }),
-        },
-        'POST /sessions (create)',
-      )
+    const sessionId  = randomBytes(8).toString('hex')
+    const outputPath = `/tmp/i94-${sessionId}.json`
 
-      const sessionId = created?.id
-      if (!sessionId || typeof sessionId !== 'string') {
-        throw new Error('Browser Use create session response missing id')
-      }
+    console.log('[i94] spawning Playwright script', { sessionId, firstName, lastName })
 
-      const initialStatus = String(created?.status ?? '')
-      logBv('create ok', { sessionId, initialStatus })
+    const child = spawn(
+      process.execPath,
+      [
+        scriptPath,
+        '--firstName',  firstName,
+        '--lastName',   lastName,
+        '--birthDate',  birthDate,
+        '--passport',   passportNumber,
+        '--country',    country,
+        '--headless',
+        '--output',     outputPath,
+      ],
+      {
+        detached: true,
+        stdio:    'ignore',
+        env:      { ...process.env },
+      },
+    )
+    child.unref()
 
-      // Rare: job already finished by the time we get the response
-      if (TERMINAL_STATUSES.has(initialStatus)) {
-        const normalized = normalizeBrowserUseResult(created?.output ?? created)
-        return jsonResponse(res, 200, { pending: false, ...normalized })
-      }
-
-      return jsonResponse(res, 200, { pending: true, sessionId, status: initialStatus })
-    } catch (e) {
-      const msg = e?.message || 'create error'
-      console.error('[browser-use] create error', msg)
-      return jsonResponse(res, 500, { error: msg })
-    }
+    return jsonResponse(res, 200, { pending: true, sessionId })
   }
 
   // ── action = "poll" ────────────────────────────────────────────────────────
   if (action === 'poll') {
     const sessionId = String(body?.sessionId ?? '').trim()
-    if (!sessionId) {
-      return jsonResponse(res, 400, { error: 'Missing sessionId' })
+    if (!sessionId) return jsonResponse(res, 400, { error: 'Missing sessionId' })
+
+    const outputPath = `/tmp/i94-${sessionId}.json`
+
+    if (!existsSync(outputPath)) {
+      return jsonResponse(res, 200, { pending: true, sessionId })
     }
 
     try {
-      const pollUrl = `${SESSIONS_URL}/${encodeURIComponent(sessionId)}`
-      const session = await fetchJsonLogged(
-        pollUrl,
-        {
-          method: 'GET',
-          headers: { 'X-Browser-Use-API-Key': apiKey, Accept: 'application/json' },
-        },
-        `GET /sessions/${sessionId}`,
-      )
-
-      const status = String(session?.status ?? '')
-      logBv('poll result', { sessionId, status })
-
-      if (!TERMINAL_STATUSES.has(status)) {
-        return jsonResponse(res, 200, { pending: true, sessionId, status })
-      }
-
-      const normalized = normalizeBrowserUseResult(session?.output ?? session)
-      return jsonResponse(res, 200, { pending: false, ...normalized })
+      const result = JSON.parse(readFileSync(outputPath, 'utf8'))
+      console.log('[i94] result ready', { sessionId, success: result.success, entries: result.history?.length })
+      return jsonResponse(res, 200, { pending: false, ...result })
     } catch (e) {
-      const msg = e?.message || 'poll error'
-      console.error('[browser-use] poll error', msg)
-      return jsonResponse(res, 500, { error: msg })
+      return jsonResponse(res, 500, { error: `Could not read result: ${e?.message}` })
     }
   }
 
-  return jsonResponse(res, 400, { error: `Unknown action: ${action}` })
+  return jsonResponse(res, 400, { error: `Unknown action: "${action}"` })
 }
