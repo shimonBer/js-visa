@@ -171,18 +171,43 @@ const DS160_KNOWN = [
   { match: /^dob day$|^day \*?$/i,        sel: 'input[id$="tbxDOBDay"], select[id$="ddlDOBDay"]' },
   { match: /^dob month$|^month \*?$/i,    sel: 'select[id$="ddlDOBMonth"], input[id$="tbxDOBMonth"]' },
   { match: /^dob year$|^year \*?$/i,      sel: 'input[id$="tbxDOBYear"], select[id$="ddlDOBYear"]' },
-  // City / Place of Birth — DS-160 label is "City/Town of Birth"
-  { match: /city.*birth|place.*birth|birth.*city|town.*birth|city.town/i,
+  // City / Place of Birth — DS-160 label on the form is just "City"
+  { match: /^city\s*\*?$|city.*birth|place.*birth|birth.*city|town.*birth|city.town/i,
     sel: 'input[id$="tbxPOBCity"], input[id*="POBCity"], input[id*="BirthCity"], input[id*="POBCit"], input[id*="CityBirth"]' },
-  { match: /state.*birth|province.*birth/i,          sel: 'input[id$="tbxPOBSP"], input[id*="POBSP"]' },
-  { match: /country.*birth/i,             sel: 'select[id$="ddlPOBCountry"]' },
+  { match: /^state\/province\s*\*?$|state.*birth|province.*birth/i,
+    sel: 'input[id$="tbxAPP_POB_ST_PROVINCE"], input[id$="tbxPOBSP"], input[id*="POBSP"], input[id*="POB_ST"]' },
+  { match: /country.*birth|country.*region.*birth/i, sel: 'select[id$="ddlPOBCountry"]' },
   // Personal Info 2
   { match: /country.*origin|nationality/i, sel: 'select[id$="ddlCountryOfOrigin"]' },
   { match: /national.*id/i,               sel: 'input[id$="txtNationalID"], input[id$="tbxNationalID"]' },
   // Travel Info
-  { match: /purpose.*trip|visa class/i,   sel: 'select[id$="ddlVisaClass"]' },
-  { match: /arrival.*date|date.*arrival/i, sel: 'input[id$="tbxDateOfArrival"], input[id$="tbxArrivalDate"]' },
-  { match: /length.*stay|stay.*length/i,  sel: 'input[id$="tbxLengthOfStay"]' },
+  { match: /purpose.*trip|^purpose$/i,
+    sel: 'select[id*="ddlPurposeOfTrip"], select[id$="ddlVisaClass"]' },
+  { match: /^specify$|other.*purpose|visa.*specify/i,
+    sel: 'select[id*="ddlOtherPurpose"]' },
+  // Arrival date — split dropdowns
+  { match: /arrival.*month|month.*arrival/i,
+    sel: 'select[id*="ddlTravelMonthOfArrival"], select[id*="ddlArrivalMonth"]' },
+  { match: /arrival.*day|day.*arrival/i,
+    sel: 'select[id*="ddlTravelDayOfArrival"], input[id*="tbxArrivalDay"]' },
+  { match: /arrival.*year|year.*arrival/i,
+    sel: 'input[id*="tbxTravelYearOfArrival"], input[id*="tbxArrivalYear"]' },
+  { match: /arrival.*date|date.*arrival/i,
+    sel: 'input[id$="tbxDateOfArrival"], input[id$="tbxArrivalDate"]' },
+  // Length of stay — quantity input + unit dropdown
+  { match: /length.*stay.*unit|stay.*unit|duration.*unit/i,
+    sel: 'select[id$="ddlTRAVEL_LOS_CD"], select[id*="ddlDurOfStay"], select[id*="ddlLengthOfStayUnit"]' },
+  // fill → quantity input; selectOption will hit the unit dropdown via the unit-match above
+  { match: /length.*stay|stay.*length|duration.*stay|intended.*stay/i,
+    sel: 'input[id$="tbxTRAVEL_LOS"], input[id*="tbxDurOfStay"], input[id$="tbxLengthOfStay"]' },
+  // explicit unit dropdown selector (also matched by length.*stay.*unit above)
+  { match: /^stay unit$|^los unit$/i,
+    sel: 'select[id$="ddlTRAVEL_LOS_CD"]' },
+  // Who is paying
+  { match: /paying.*trip|person.*paying|who.*paying|payer/i,
+    sel: 'select[id$="ddlWhoIsPaying"], select[id*="ddlPayer"]' },
+  { match: /relationship.*payer|payer.*relation/i,
+    sel: 'select[id*="ddlPayerRelationship"], select[id*="ddlPayRelationship"]' },
   // Contact
   { match: /primary.*phone|home.*phone/i, sel: 'input[id$="tbxPhoneNumberHome"]' },
   { match: /work.*phone|employer.*phone/i, sel: 'input[id$="tbxPhoneNumberWork"]' },
@@ -193,6 +218,187 @@ const DS160_KNOWN = [
   { match: /issue.*date|date.*issue/i,    sel: 'input[id$="tbxPassIssDt"]' },
   { match: /expir.*date|date.*expir/i,    sel: 'input[id$="tbxPassExpDt"]' },
   { match: /city.*issuance|issuance.*city/i, sel: 'input[id$="tbxPassIssCit"]' },
+]
+
+/**
+ * Known "Does Not Apply" checkboxes mapped to the field they disable.
+ * When GPT outputs {"type":"check","label":"Does Not Apply"} we try these
+ * selectors first (most reliable) before falling back to generic scanning.
+ *
+ * Strategy: find the checkbox by its own ID, OR find it in the same <tr> as
+ * the associated text input (DS-160 always puts them in the same table row).
+ */
+const DS160_KNOWN_CHECKBOXES = [
+  {
+    // State/Province of birth "Does Not Apply"
+    match: /state.*province|province.*state|^state\/?province/i,
+    directSelectors: [
+      'input[id$="cbexAPP_POB_ST_PROVINCE_NA"]',
+      'input[type="checkbox"][id*="cbexAPP_POB_ST_PROVINCE"]',
+      'input[type="checkbox"][id*="POB_ST_PROVINCE"]',
+      'input[type="checkbox"][id*="POBSP"]',
+    ],
+    nearInputSel: 'input[id$="tbxAPP_POB_ST_PROVINCE"], input[id$="tbxPOBSP"]',
+  },
+  {
+    // U.S. Social Security Number "Does Not Apply"
+    match: /social security|ssn/i,
+    directSelectors: [
+      'input[id$="cbexAPP_SSN_NA"]',
+      'input[type="checkbox"][id*="SSN_NA"]',
+      'input[type="checkbox"][id*="SSN"]',
+    ],
+    nearInputSel: 'input[id$="tbxAPP_SSN1"], input[id*="SSN1"]',
+  },
+  {
+    // U.S. Taxpayer ID Number "Does Not Apply"
+    match: /taxpayer|tax.*id|tin/i,
+    directSelectors: [
+      'input[id$="cbexAPP_TAX_ID_NA"]',
+      'input[type="checkbox"][id*="TAX_ID_NA"]',
+      'input[type="checkbox"][id*="TAX_ID"]',
+    ],
+    nearInputSel: 'input[id$="tbxAPP_TAX_ID"], input[id*="TAX_ID"]',
+  },
+]
+
+/**
+ * Try to check a "Does Not Apply" checkbox for a specific known field.
+ * Searches by direct ID, then by proximity to the associated input
+ * (same <tr>, same parent <table>, or nearest "Does Not Apply" label in DOM order).
+ */
+async function checkDoesNotApplyFor(page, fieldLabel) {
+  for (const { match, directSelectors, nearInputSel } of DS160_KNOWN_CHECKBOXES) {
+    if (!match.test(fieldLabel)) continue
+
+    // 1. Try direct ID selectors — use .click() (not .check()) so that the
+    //    checkbox's onclick handler (e.g. enableTbx) fires correctly.
+    for (const sel of directSelectors) {
+      try {
+        const el = page.locator(sel).first()
+        await el.waitFor({ state: 'attached', timeout: 2000 })
+        await el.scrollIntoViewIfNeeded().catch(() => {})
+        if (!await el.isChecked()) await el.click()
+        log(`✅ "Does Not Apply" clicked via direct selector: "${sel}"`)
+        return true
+      } catch { /* try next */ }
+    }
+
+    // 2. JS: find the checkbox whose label text is "Does Not Apply" that appears
+    //    immediately after (or nearest to) the known input in the DOM.
+    const inputSelFirst = nearInputSel.split(',')[0].trim()
+    try {
+      const clicked = await page.evaluate((inputSel) => {
+        const inp = document.querySelector(inputSel)
+        if (!inp) return false
+
+        // Walk up to find the nearest ancestor that also contains a
+        // "Does Not Apply" label/checkbox — try up to 6 levels.
+        for (let el = inp.parentElement, depth = 0; el && depth < 6; el = el.parentElement, depth++) {
+          const labels = Array.from(el.querySelectorAll('label'))
+          const dnaLabel = labels.find(l => /does not apply/i.test(l.textContent || ''))
+          if (dnaLabel) {
+            // Click the associated checkbox (either via for= or adjacent input)
+            const cbId = dnaLabel.getAttribute('for')
+            const cb = cbId
+              ? document.getElementById(cbId)
+              : dnaLabel.previousElementSibling instanceof HTMLInputElement
+                ? dnaLabel.previousElementSibling
+                : el.querySelector('input[type="checkbox"]')
+            if (cb) { cb.click(); return true }
+          }
+          // Also check for a checkbox directly (no label) in the container
+          const cbs = Array.from(el.querySelectorAll('input[type="checkbox"]'))
+          if (cbs.length === 1) { cbs[0].click(); return true }
+        }
+        return false
+      }, inputSelFirst)
+
+      if (clicked) {
+        log('✅ "Does Not Apply" clicked via JS proximity search')
+        return true
+      }
+    } catch { /* ignore */ }
+
+    // 3. Playwright: find a label with text "Does Not Apply" in the same
+    //    ancestor <table> as the input (handles separate <tr> layout).
+    for (const inputSel of nearInputSel.split(',').map(s => s.trim())) {
+      try {
+        const inp = page.locator(inputSel).first()
+        await inp.waitFor({ state: 'attached', timeout: 2000 })
+        const table = inp.locator('xpath=ancestor::table[1]')
+        const dnaLabel = table.locator('label:has-text("Does Not Apply")').first()
+        if (await dnaLabel.count() > 0) {
+          await dnaLabel.scrollIntoViewIfNeeded().catch(() => {})
+          await dnaLabel.click()
+          log(`✅ "Does Not Apply" clicked via ancestor-table label search`)
+          return true
+        }
+        // If no label, grab the only checkbox in the table and click it
+        const cb = table.locator('input[type="checkbox"]').first()
+        if (await cb.count() > 0) {
+          await cb.scrollIntoViewIfNeeded().catch(() => {})
+          if (!await cb.isChecked()) await cb.click()
+          log(`✅ "Does Not Apply" clicked via ancestor-table checkbox`)
+          return true
+        }
+      } catch { /* try next */ }
+    }
+  }
+  return false
+}
+
+/**
+ * Known radio-button questions mapped to their ASP.NET RadioButtonList IDs.
+ * Index _0 = Yes, _1 = No (standard ASP.NET rendering).
+ * value="Y" / value="N" is the common DS-160 pattern.
+ */
+const DS160_KNOWN_RADIOS = [
+  {
+    match: /other names|maiden|alias|professional.*name|religious.*name/i,
+    yesSelectors: ['input[id$="rblOtherNames_0"]', 'input[id*="rblOtherNames"][value="Y"]'],
+    noSelectors:  ['input[id$="rblOtherNames_1"]', 'input[id*="rblOtherNames"][value="N"]'],
+  },
+  {
+    match: /telecode/i,
+    yesSelectors: ['input[id$="rblTelecodeQuestion_0"]', 'input[id*="rblTelecodeQuestion"][value="Y"]'],
+    noSelectors:  ['input[id$="rblTelecodeQuestion_1"]', 'input[id*="rblTelecodeQuestion"][value="N"]'],
+  },
+  {
+    match: /permanent resident.*other|other.*permanent resident|perm.*res/i,
+    yesSelectors: ['input[id$="rblPermResOtherCntryInd_0"]', 'input[id*="rblPermResOtherCntryInd"][value="Y"]'],
+    noSelectors:  ['input[id$="rblPermResOtherCntryInd_1"]', 'input[id*="rblPermResOtherCntryInd"][value="N"]'],
+  },
+  {
+    match: /specific travel plans|made.*specific|travel plans/i,
+    yesSelectors: ['input[id*="rblSpecificTravelPlans_0"]', 'input[id*="SpecificTravelPlans"][value="Y"]'],
+    noSelectors:  ['input[id*="rblSpecificTravelPlans_1"]', 'input[id*="SpecificTravelPlans"][value="N"]'],
+  },
+  // Previous U.S. Travel page — labels match translated.txt exactly
+  {
+    // "Have you ever been in the United States?"
+    match: /have you ever been in the united states|ever been in the u\.?s\.?/i,
+    yesSelectors: ['input[id$="rblPREV_US_TRAVEL_IND_0"]', 'input[id*="rblPREV_US_TRAVEL_IND"][value="Y"]'],
+    noSelectors:  ['input[id$="rblPREV_US_TRAVEL_IND_1"]', 'input[id*="rblPREV_US_TRAVEL_IND"][value="N"]'],
+  },
+  {
+    // "Have you ever been issued a U.S. visa?"
+    match: /have you ever been issued a u\.?s\.? visa|ever been issued.*visa/i,
+    yesSelectors: ['input[id$="rblPREV_VISA_IND_0"]', 'input[id*="rblPREV_VISA_IND"][value="Y"]'],
+    noSelectors:  ['input[id$="rblPREV_VISA_IND_1"]', 'input[id*="rblPREV_VISA_IND"][value="N"]'],
+  },
+  {
+    // "Have you ever been refused a U.S. visa or denied admission?"
+    match: /refused a u\.?s\.? visa or denied admission|refused.*visa.*denied|visa refused|refused admission|withdrawn.*port/i,
+    yesSelectors: ['input[id$="rblPREV_VISA_REFUSED_IND_0"]', 'input[id*="rblPREV_VISA_REFUSED_IND"][value="Y"]'],
+    noSelectors:  ['input[id$="rblPREV_VISA_REFUSED_IND_1"]', 'input[id*="rblPREV_VISA_REFUSED_IND"][value="N"]'],
+  },
+  {
+    // "Has anyone ever filed an immigrant petition on your behalf?"
+    match: /filed an immigrant petition on your behalf|immigrant petition.*behalf|iv.*petition/i,
+    yesSelectors: ['input[id$="rblIV_PETITION_IND_0"]', 'input[id*="rblIV_PETITION_IND"][value="Y"]'],
+    noSelectors:  ['input[id$="rblIV_PETITION_IND_1"]', 'input[id*="rblIV_PETITION_IND"][value="N"]'],
+  },
 ]
 
 /**
@@ -313,6 +519,22 @@ async function clickRadioForQuestion(page, questionLabel, value) {
   const questionSnippet = questionLabel.slice(0, 25).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const containsQuestion = (txt) => txt && txt.includes(questionLabel.slice(0, 25))
 
+  // ── Strategy 0: DS160_KNOWN_RADIOS — direct ASP.NET ID lookup (most reliable) ─
+  for (const { match, yesSelectors, noSelectors } of DS160_KNOWN_RADIOS) {
+    if (!match.test(questionLabel)) continue
+    const selectors = isYes ? yesSelectors : noSelectors
+    for (const sel of selectors) {
+      try {
+        const el = page.locator(sel).first()
+        await el.waitFor({ state: 'attached', timeout: 3000 })
+        await el.scrollIntoViewIfNeeded().catch(() => {})
+        await el.click()
+        log(`Radio clicked via DS160_KNOWN_RADIOS: "${sel}"`)
+        return
+      } catch { /* try next */ }
+    }
+  }
+
   // ── Strategy 1: <tr> or <div> ancestor that contains the question text ──────
   for (const containerSel of [
     `tr:has-text("${questionLabel.slice(0, 30)}")`,
@@ -428,17 +650,39 @@ export async function executeAction(page, action) {
     const monthName   = MONTH_NAMES[monthIndex]
     const monthAbbrev = MONTH_ABBREVS[monthIndex]
 
-    // Determine field ID suffix based on label
-    const isSpouseDOB  = /spouse/i.test(label)
-    const isFatherDOB  = /father/i.test(label)
-    const isMotherDOB  = /mother/i.test(label)
-    const dayIdHint    = isSpouseDOB ? 'SpsDOBDay'    : isFatherDOB ? 'FthrDOBDay'   : isMotherDOB ? 'MthrDOBDay'   : 'DOBDay'
-    const monthIdHint  = isSpouseDOB ? 'SpsDOBMonth'  : isFatherDOB ? 'FthrDOBMonth' : isMotherDOB ? 'MthrDOBMonth' : 'DOBMonth'
-    const yearIdHint   = isSpouseDOB ? 'SpsDOBYear'   : isFatherDOB ? 'FthrDOBYear'  : isMotherDOB ? 'MthrDOBYear'  : 'DOBYear'
+    // Determine field selectors based on label context
+    const isSpouseDOB   = /spouse/i.test(label)
+    const isFatherDOB   = /father/i.test(label)
+    const isMotherDOB   = /mother/i.test(label)
+    const isArrivalDate = /arrival|intended.*date|date.*arrival/i.test(label)
 
-    const daySelectors   = [`input[id$="${dayIdHint}"]`,  `select[id$="${dayIdHint}"]`,  'input[id$="tbxDOBDay"]',  'select[id$="ddlDOBDay"]']
-    const monthSelectors = [`select[id$="${monthIdHint}"]`, `input[id$="${monthIdHint}"]`, 'select[id$="ddlDOBMonth"]', 'input[id$="tbxDOBMonth"]']
-    const yearSelectors  = [`input[id$="${yearIdHint}"]`,  `select[id$="${yearIdHint}"]`,  'input[id$="tbxDOBYear"]',  'select[id$="ddlDOBYear"]']
+    let daySelectors, monthSelectors, yearSelectors
+
+    if (isArrivalDate) {
+      // Intended Date of Arrival: Day=dropdown (value="1"–"31"), Month=dropdown (3-letter), Year=text input
+      daySelectors   = [
+        'select[id$="ddlTRAVEL_DTEDay"]',
+        'select[id*="ddlTravelDayOfArrival"]',
+        'select[id*="ArrivalDay"]',
+      ]
+      monthSelectors = [
+        'select[id$="ddlTRAVEL_DTEMonth"]',
+        'select[id*="ddlTravelMonthOfArrival"]',
+        'select[id*="ArrivalMonth"]',
+      ]
+      yearSelectors  = [
+        'input[id$="tbxTRAVEL_DTEYear"]',
+        'input[id*="tbxTravelYearOfArrival"]',
+        'input[id*="ArrivalYear"]',
+      ]
+    } else {
+      const dayIdHint   = isSpouseDOB ? 'SpsDOBDay'   : isFatherDOB ? 'FthrDOBDay'   : isMotherDOB ? 'MthrDOBDay'   : 'DOBDay'
+      const monthIdHint = isSpouseDOB ? 'SpsDOBMonth' : isFatherDOB ? 'FthrDOBMonth' : isMotherDOB ? 'MthrDOBMonth' : 'DOBMonth'
+      const yearIdHint  = isSpouseDOB ? 'SpsDOBYear'  : isFatherDOB ? 'FthrDOBYear'  : isMotherDOB ? 'MthrDOBYear'  : 'DOBYear'
+      daySelectors   = [`input[id$="${dayIdHint}"]`,   `select[id$="${dayIdHint}"]`,   'input[id$="tbxDOBDay"]',   'select[id$="ddlDOBDay"]']
+      monthSelectors = [`select[id$="${monthIdHint}"]`, `input[id$="${monthIdHint}"]`, 'select[id$="ddlDOBMonth"]', 'input[id$="tbxDOBMonth"]']
+      yearSelectors  = [`input[id$="${yearIdHint}"]`,   `select[id$="${yearIdHint}"]`, 'input[id$="tbxDOBYear"]',  'select[id$="ddlDOBYear"]']
+    }
 
     async function setDateField(selectors, ...candidates) {
       const vals = candidates.filter(Boolean)
@@ -560,11 +804,32 @@ export async function executeAction(page, action) {
     if (/\d{1,2}\/\d{1,2}\/\d{4}/.test(value) && /date|birth|dob/i.test(label || '')) {
       return executeAction(page, { type: 'fill', label, value })
     }
+
+    // For LOS unit: if the value looks like a unit (Year/Month/Week/Day/Hour),
+    // target the unit dropdown directly regardless of label.
+    if (/year|month|week|day|hour|24 hour/i.test(value) && /stay|los/i.test(label || '')) {
+      const unitSel = page.locator('select[id$="ddlTRAVEL_LOS_CD"]').first()
+      if (await unitSel.isVisible({ timeout: 2000 }).catch(() => false)) {
+        try { await unitSel.selectOption({ label: value }); return } catch {}
+        try { await unitSel.selectOption({ value: value[0].toUpperCase() }); return } catch {}
+      }
+    }
+
     // First try as a <select> element
     try {
       const el = await findElement(page, { label })
-      await el.selectOption({ label: value })
-      return
+      const tag = await el.evaluate(e => e.tagName.toLowerCase()).catch(() => 'select')
+      if (tag === 'select') {
+        try { await el.selectOption({ label: value }); return } catch {}
+        try { await el.selectOption({ value }); return } catch {}
+      }
+      // Found an input instead of a select — scan nearby selects in the same row
+      const row = el.locator('xpath=ancestor::tr[1]')
+      const nearSelect = row.locator('select').first()
+      if (await nearSelect.count() > 0) {
+        try { await nearSelect.selectOption({ label: value }); return } catch {}
+        try { await nearSelect.selectOption({ value }); return } catch {}
+      }
     } catch { /* fall through to radio */ }
     // Fallback: treat as radio (e.g. agent used selectOption for a Yes/No field)
     await clickRadioForQuestion(page, label, value)
@@ -577,56 +842,60 @@ export async function executeAction(page, action) {
   }
 
   if (type === 'check') {
-    // Guard: if this is a "Does Not Apply / Technology Not Available" checkbox,
-    // check whether any visible text input on the page contains non-Latin text
-    // (Hebrew, Arabic, etc.). If so, block the check — the field was already filled
-    // and checking the box would erase the value.
-    if (/does not apply|technology not available/i.test(label || text || '')) {
-      const inputs = await page.locator('input[type="text"]').all()
-      for (const inp of inputs) {
-        const val = await inp.inputValue().catch(() => '')
-        if (/[^\x00-\x7F]/.test(val)) {
-          log(`⚠️  Blocked "Does Not Apply" — input has non-Latin value: "${val.slice(0, 30)}"`)
-          return
-        }
-      }
-    }
+    const checkLabel = label || text || ''
 
-    // "Does Not Apply" checkboxes are usually near the field label
-    try {
-      const el = await findElement(page, { label: label || text })
-      await el.check()
-    } catch {
-      // Fallback: find any visible unchecked checkbox whose nearby text matches
-      const checkboxes = await page.locator('input[type="checkbox"]').all()
-      for (const cb of checkboxes) {
-        try {
-          const parentText = await cb.locator('xpath=..').textContent()
-          if (parentText && parentText.toLowerCase().includes((label || text).toLowerCase())) {
-            await cb.check()
+    // Guard: block "Does Not Apply / Technology Not Available" ONLY when it targets
+    // the native-alphabet field — check only that specific input, not the whole page.
+    // (Checking all inputs was blocking State/Province when Hebrew was present elsewhere.)
+    if (/does not apply|technology not available/i.test(checkLabel)) {
+      try {
+        const nativeEl = page.locator('input[id$="tbxAPFulNamNatAlph"]').first()
+        const nativeVal = await nativeEl.inputValue().catch(() => '')
+        if (nativeVal && /[^\x00-\x7F]/.test(nativeVal)) {
+          // Only block if the action is actually targeting the native-alphabet row
+          const fieldHintRaw = action.fieldLabel || action.for || ''
+          if (!fieldHintRaw || /native|alphabet|natAlph/i.test(fieldHintRaw)) {
+            log(`⚠️  Blocked "Does Not Apply" — native-alphabet input has value: "${nativeVal.slice(0, 30)}"`)
             return
           }
-        } catch { /* skip */ }
-      }
-      throw new Error(`Checkbox not found for label="${label}"`)
+        }
+      } catch { /* native field not present on this page, continue */ }
     }
-    return
+
+    // Try known field-specific "Does Not Apply" first (e.g. State/Province)
+    const fieldHint = action.fieldLabel || action.for || checkLabel
+    if (fieldHint) {
+      const handled = await checkDoesNotApplyFor(page, fieldHint)
+      if (handled) return
+    }
+
+    // Generic: find checkbox by label text
+    try {
+      const el = await findElement(page, { label: checkLabel })
+      await el.check()
+      return
+    } catch { /* fall through */ }
+
+    // Last fallback: scan all checkboxes for nearby matching text
+    const checkboxes = await page.locator('input[type="checkbox"]').all()
+    for (const cb of checkboxes) {
+      try {
+        const parentText = await cb.locator('xpath=..').textContent()
+        if (parentText && parentText.toLowerCase().includes(checkLabel.toLowerCase())) {
+          await cb.check()
+          return
+        }
+      } catch { /* skip */ }
+    }
+    throw new Error(`Checkbox not found for label="${checkLabel}"`)
   }
 
   if (type === 'click') {
     // Guard: block clicking "Does Not Apply" / "Technology Not Available" if
-    // the native alphabet input already has a non-Latin value — same logic as `check`.
+    // Block clicking "Does Not Apply" / "Technology Not Available" only when
+    // the native-alphabet input has a value (same scoped guard as the check handler).
     const clickTarget = (text || label || '').toLowerCase()
     if (/does not apply|technology not available/i.test(clickTarget)) {
-      const inputs = await page.locator('input[type="text"]').all()
-      for (const inp of inputs) {
-        const val = await inp.inputValue().catch(() => '')
-        if (/[^\x00-\x7F]/.test(val)) {
-          log(`⚠️  Blocked click on "Does Not Apply" — input has non-Latin value: "${val.slice(0, 30)}"`)
-          return
-        }
-      }
-      // Also check by the known native alphabet field ID directly
       try {
         const nativeEl = page.locator('input[id$="tbxAPFulNamNatAlph"]').first()
         const nativeVal = await nativeEl.inputValue().catch(() => '')
@@ -637,9 +906,29 @@ export async function executeAction(page, action) {
       } catch { /* field not present, continue */ }
     }
 
-    const el = await findElement(page, { text, label })
-    await el.click()
-    return
+    // For "Next" / "Continue" navigation clicks, fall back to finding any
+    // visible DS-160 submit button whose value starts with "Next" or "Continue".
+    try {
+      const el = await findElement(page, { text, label })
+      await el.click()
+      return
+    } catch {
+      if (/^next|^continue/i.test((text || label || ''))) {
+        const submitBtns = await page.locator('input[type="submit"], button[type="submit"]').all()
+        for (const btn of submitBtns) {
+          try {
+            const btnText = (await btn.getAttribute('value') || await btn.textContent() || '').trim()
+            if (/^next|^continue/i.test(btnText) && await btn.isVisible()) {
+              await btn.scrollIntoViewIfNeeded().catch(() => {})
+              await btn.click()
+              log(`✅ Navigation click via submit-button fallback: "${btnText}"`)
+              return
+            }
+          } catch { /* try next */ }
+        }
+      }
+      throw new Error(`Click target not found — text="${text}" label="${label}"`)
+    }
   }
 
   if (type === 'wait') {
@@ -727,15 +1016,34 @@ RULES:
 - For the security question setup: select "WHAT WAS YOUR HOME PHONE NUMBER WHEN YOU WERE A CHILD?" and enter answer "049824393"
 - If you see a CAPTCHA image on the page: output {"type":"solveCaptcha"}
 - If a field has N/A in the applicant data: check "Does Not Apply" if the checkbox is present, otherwise skip
-- CRITICAL: For "Full Name in Native Alphabet" — NEVER output a check OR click action targeting "Does Not Apply" or "Technology Not Available" for this field. Always output ONLY a fill action with the native-alphabet name from the applicant data. After filling the native name, move directly to the next field — do NOT interact with the "Does Not Apply" checkbox at all. The checkbox must remain unchecked for Israeli/Arabic applicants who have a name in native script
+- CRITICAL: For "Full Name in Native Alphabet" — if the applicant data contains a native-alphabet name (Hebrew, Arabic, or any non-Latin script), you MUST fill it using {"type":"fill"} and you MUST NEVER output {"type":"check"} or {"type":"click"} targeting "Does Not Apply" or "Technology Not Available" for this field — not before, not after, not ever. The checkbox must stay unchecked. After filling, move immediately to the next field. Only check "Does Not Apply" for this field if the applicant data explicitly has N/A or is completely absent for the native name.
 - If a field has ❗ MISSING: skip it (leave blank)
-- Click "Next" or "Continue" only after ALL visible fields on the current section are filled
+- Click "Next" or "Continue" only after ALL visible fields on the current section are filled. Use the EXACT visible button text (e.g. "Next: Personal 2", "Next: Work/Education", "Next: Security") — never shorten it to just "Next"
 - NEVER output {"type":"done"} — the form is in development mode and must never be submitted
 - NEVER click any button containing the words: Submit, Sign and Submit, Final Submit
 - If you are on a preview/review screen (no editable fields visible): click the Next or Continue button
 - Fill fields in top-to-bottom, left-to-right order as they appear on screen
-- DS-160 exact label names to use: "City/Town of Birth" (not "City of Birth"), "State/Province of Birth" (not "State of Birth"), "Country/Region of Birth" (not "Country of Birth")
-- For Date of Birth always use {"type":"fill","label":"Date of Birth","value":"DD/MM/YYYY"} — the code handles splitting into the Day/Month/Year dropdowns automatically. Never use selectOption for date fields`
+- DS-160 exact label names: city of birth is labeled "City"; state/province of birth is labeled "State/Province" — if the applicant data has N/A or no value for that field, output {"type":"check","label":"Does Not Apply","fieldLabel":"State/Province"} to check its "Does Not Apply" checkbox; only use {"type":"fill","label":"State/Province"} when there is an actual value; country of birth is labeled "Country/Region of Birth" and is a <select> dropdown — always use {"type":"selectOption"} for it
+- For Date of Birth always use {"type":"fill","label":"Date of Birth","value":"DD/MM/YYYY"} — the code handles splitting into the Day/Month/Year dropdowns automatically. Never use selectOption for date fields
+- Personal Information 2 rules:
+  * "Are you a permanent resident of a country/region other than your country/region of origin?" is a radio button — use {"type":"radio"} with Yes or No
+  * National Identification Number — always fill with the value (Israeli ID number); NEVER check "Does Not Apply" for this field
+  * U.S. Social Security Number — if the applicant has a value, fill it; if absent/N/A, output {"type":"check","label":"Does Not Apply","fieldLabel":"Social Security Number"}
+  * U.S. Taxpayer ID Number — if the applicant has a value, fill it; if absent/N/A, output {"type":"check","label":"Does Not Apply","fieldLabel":"Taxpayer ID"}
+- Travel Information rules:
+  * "Purpose of Trip to the U.S." is a <select> dropdown — use {"type":"selectOption","label":"Purpose of Trip to the U.S.","value":"TEMP. BUSINESS OR PLEASURE VISITOR (B)"} (or whichever class matches). After selecting, output {"type":"wait"} — a second "Specify" dropdown will appear
+  * "Specify" dropdown — use {"type":"selectOption","label":"Specify","value":"BUSINESS OR TOURISM (TEMPORARY VISITOR) (B1/B2)"} (or the most specific match). After selecting, output {"type":"wait"}
+  * "Have you made specific travel plans?" is a radio button — use {"type":"radio"} with Yes or No. After answering, output {"type":"wait"}
+  * If YES to specific travel plans: fill arrival city, arrival date fields. State field for destination is a <select> dropdown — use {"type":"selectOption"}
+  * If NO to specific travel plans: for "Intended Date of Arrival" output {"type":"fill","label":"Intended Date of Arrival","value":"DD/MM/YYYY"} — the code automatically fills the Day dropdown (options 1–31), the Month dropdown (3-letter: JAN/FEB…DEC), and the Year text input; for "Intended Length of Stay in U.S." output TWO actions: first {"type":"fill","label":"Intended Length of Stay in U.S.","value":"<integer>"} for the quantity — the value MUST be a whole integer with no decimals or fractions; if the duration is fractional, convert down to the next smaller unit to get a whole number (e.g. 1.5 months → 6 weeks; 0.5 years → 6 months; 2.5 weeks → 18 days); then {"type":"selectOption","label":"Intended Length of Stay in U.S.","value":"Month(s)"} for the unit — exact unit option texts are: "Year(s)", "Month(s)", "Week(s)", "Day(s)", "Less Than 24 Hours"
+  * "Person/Organization Paying for Your Trip" is a <select> dropdown — use {"type":"selectOption"} with the exact option text: "Self", "Other Person", "Present Employer", "Employer in the U.S.", or "Other Company/Organization". Most likely "Self". After selecting, output {"type":"wait"} — if not Self, additional fields will appear
+  * ZIP Code field in U.S. address — if unknown or N/A, simply skip it (leave blank, no "Does Not Apply" checkbox exists for it)
+- Previous U.S. Travel page — all four questions are radio buttons, use {"type":"radio"} with the label copied EXACTLY as it appears on screen:
+  * "Have you ever been in the United States?" → Yes/No
+  * "Have you ever been issued a U.S. Visa?" → Yes/No; if Yes, fill visa number, issue date, expiry date
+  * "Have you ever been refused a U.S. Visa, or been refused admission to the United States, or withdrawn your application for admission at the port of entry?" → Yes/No; if Yes, fill explanation
+  * "Has anyone ever filed an immigrant petition on your behalf with the United States Citizenship and Immigration Services?" → Yes/No; if Yes, fill explanation
+  * If a field value is N/A in the applicant data and there is no "Does Not Apply" checkbox visible, skip the field entirely`
 
 /**
  * Ask GPT-4o what the next action should be.
@@ -802,10 +1110,122 @@ export async function askAgent(screenshotBuffer, translatedText, actionHistory, 
   }
 }
 
+// ─── Page context detection ──────────────────────────────────────────────────
+
+/**
+ * Detect which DS-160 page/section the browser is currently on.
+ *
+ * PRIMARY: URL-based detection — each DS-160 section has a distinct .aspx filename.
+ * FALLBACK: page heading text (h2/h3/legend), only if URL gives no match.
+ * We deliberately avoid scanning the full body text because DS-160 keeps hidden
+ * fields from previous pages in the DOM, causing false-positive matches.
+ */
+async function detectCurrentPageContext(page) {
+  try {
+    const url = page.url().toLowerCase()
+
+    // ── URL-based detection (most reliable) ─────────────────────────────────
+    if (url.includes('default.aspx'))          return 'captcha'
+    if (url.includes('disclaimer'))             return 'disclaimer'
+    if (url.includes('appsecurityquestion') ||
+        url.includes('securityquestion'))       return 'security_question'
+    if (url.includes('personalinfo1') ||
+        url.includes('personal_info1'))         return 'personal1'
+    if (url.includes('personalinfo2') ||
+        url.includes('personal_info2'))         return 'personal2'
+    if (url.includes('travelinfo') ||
+        url.includes('travel_info'))            return 'travel'
+    if (url.includes('travelcompanion') ||
+        url.includes('travel_companion'))       return 'companions'
+    if (url.includes('previoustravel') ||
+        url.includes('previous_travel'))        return 'prev_travel'
+    if (url.includes('addressphone') ||
+        url.includes('address_phone'))          return 'address'
+    if (url.includes('passport'))               return 'passport'
+    if (url.includes('contactpeople') ||
+        url.includes('contact'))                return 'contact'
+    if (url.includes('familyinfo') ||
+        url.includes('family'))                 return 'family'
+    if (url.includes('workeducation') ||
+        url.includes('work_education'))         return 'work_edu'
+    if (url.includes('securityandbackground') ||
+        url.includes('security_background'))    return 'security'
+    if (url.includes('review') ||
+        url.includes('preview'))                return 'review'
+
+    // ── Heading-based fallback (avoid full body scan) ────────────────────────
+    for (const sel of ['h2', 'h3', 'legend', '.step-title']) {
+      try {
+        const text = (await page.locator(sel).first().textContent({ timeout: 500 }))?.toLowerCase() || ''
+        if (text.includes('personal information 1'))  return 'personal1'
+        if (text.includes('personal information 2'))  return 'personal2'
+        if (text.includes('travel information'))      return 'travel'
+        if (text.includes('travel companion'))        return 'companions'
+        if (text.includes('previous u.s. travel') ||
+            text.includes('previous us travel'))      return 'prev_travel'
+        if (text.includes('address'))                 return 'address'
+        if (text.includes('passport'))                return 'passport'
+        if (text.includes('work') || text.includes('education')) return 'work_edu'
+        if (text.includes('security') && text.includes('background')) return 'security'
+        if (text.includes('review') || text.includes('preview'))      return 'review'
+      } catch { /* try next */ }
+    }
+
+    return 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+/**
+ * Extract only the section(s) of the translated text relevant to the current page.
+ * Falls back to the full text if context is unknown.
+ */
+function filterTranslatedText(translatedText, pageContext) {
+  const SECTION_PATTERNS = {
+    personal1:    /PERSONAL INFORMATION 1[\s\S]*?(?=\nPERSONAL INFORMATION 2|\n🟦|$)/i,
+    personal2:    /PERSONAL INFORMATION 2[\s\S]*?(?=\n🟦|$)/i,
+    travel:       /🟦 TRAVEL INFORMATION[\s\S]*?(?=\n🟦|$)/i,
+    companions:   /🟦 TRAVEL COMPANIONS[\s\S]*?(?=\n🟦|$)/i,
+    prev_travel:  /🟦 PREVIOUS U\.?S\.? TRAVEL[\s\S]*?(?=\n🟦|$)/i,
+    address:      /🟦 ADDRESS AND PHONE[\s\S]*?(?=\n🟦|$)/i,
+    passport:     /🟦 PASSPORT[\s\S]*?(?=\n🟦|$)/i,
+    contact:      /🟦 CONTACT[\s\S]*?(?=\n🟦|$)/i,
+    family:       /🟦 FAMILY[\s\S]*?(?=\n🟦|$)/i,
+    work_edu:     /🟦 WORK.*EDUCATION[\s\S]*?(?=\n🟦|$)/i,
+    security:     /🟦 SECURITY[\s\S]*?(?=\n🟦|$)/i,
+  }
+
+  const pattern = SECTION_PATTERNS[pageContext]
+  if (!pattern) return translatedText  // unknown page — send everything
+
+  const match = translatedText.match(pattern)
+  return match ? match[0].trim() : translatedText
+}
+
 // ─── Main agent loop ─────────────────────────────────────────────────────────
 
 const MAX_STEPS = 500
 const MAX_CONSECUTIVE_ERRORS = 5
+// Per-page stall limits — longer for dense sections like Travel and Security
+const PAGE_STALL_LIMITS = {
+  travel:           60,
+  security:         60,
+  work_edu:         50,
+  family:           50,
+  address:          40,
+  personal1:        35,
+  personal2:        35,
+  prev_travel:      35,
+  passport:         35,
+  contact:          30,
+  companions:       25,
+  security_question:20,
+  captcha:          15,
+  disclaimer:       10,
+  review:           20,
+  unknown:          40,
+}
 
 /**
  * Run the agent loop until it signals done (or reaches step limit).
@@ -819,6 +1239,9 @@ export async function runAgent(page, translatedText, apiKey) {
   let consecutiveErrors = 0
   // Track the native alphabet value so we can restore it if the page clears it
   let nativeAlphabetValue = ''
+  // Stall detection
+  let currentPageContext = 'unknown'
+  let stepsOnCurrentPage = 0
 
   log('Agent loop started.')
 
@@ -828,12 +1251,38 @@ export async function runAgent(page, translatedText, apiKey) {
     // Detect and log section changes
     await detectAndLogSection(page)
 
+    // ── Page context + stall detection ──────────────────────────────────────
+    const pageContext = await detectCurrentPageContext(page)
+    if (pageContext === currentPageContext) {
+      stepsOnCurrentPage++
+    } else {
+      if (currentPageContext !== 'unknown') {
+        log(`📄 Page changed: "${currentPageContext}" → "${pageContext}" (after ${stepsOnCurrentPage} steps)`)
+      }
+      currentPageContext = pageContext
+      stepsOnCurrentPage = 1
+    }
+
+    const stallLimit = PAGE_STALL_LIMITS[pageContext] ?? 40
+    if (stepsOnCurrentPage > stallLimit) {
+      throw new Error(
+        `⛔ Stall detected — stuck on page "${pageContext}" for ${stepsOnCurrentPage} consecutive steps ` +
+        `(limit: ${stallLimit}). This usually means a CAPTCHA was not solved, a required field was missed, ` +
+        `or a navigation button was not clicked. Aborting.`
+      )
+    }
+
+    log(`[page: ${pageContext}, step-on-page: ${stepsOnCurrentPage}]`)
+
+    // Filter translated text to only the current page's section
+    const relevantText = filterTranslatedText(translatedText, pageContext)
+
     // Screenshot
     const screenshot = await page.screenshot({ fullPage: false })
 
     let action
     try {
-      action = await askAgent(screenshot, translatedText, actionHistory, apiKey)
+      action = await askAgent(screenshot, relevantText, actionHistory, apiKey)
       consecutiveErrors = 0
     } catch (err) {
       consecutiveErrors++

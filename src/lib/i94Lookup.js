@@ -54,7 +54,16 @@ export async function fetchI94TravelHistory(input, opts = {}) {
     const pollRes = await fetch('/api/i94-lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'poll', sessionId }),
+      // Resend traveler data as fallback if /tmp file is gone on the server
+      body: JSON.stringify({
+        action: 'poll',
+        sessionId,
+        firstName:      input.firstName,
+        lastName:       input.lastName,
+        birthDate:      input.birthDate,
+        passportNumber: input.passportNumber,
+        country:        input.country,
+      }),
     })
 
     const pollJson = await parseResponse(pollRes, `poll #${pollCount}`)
