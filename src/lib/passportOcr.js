@@ -1,7 +1,7 @@
 /**
  * POST passport image bytes to /api/extract-passport (same origin; use vercel dev locally).
  * @param {File} file
- * @returns {Promise<{ firstName: string, lastName: string, birthDate: string, passportNumber: string, issuingCountry: string, sex: string, nationalId: string }>}
+ * @returns {Promise<{ firstName: string, lastName: string, birthDate: string, passportNumber: string, issuingCountry: string, sex: string, nationalId: string, passportIssueDate: string, passportExpirationDate: string }>}
  */
 export async function extractPassportFieldsFromFile(file) {
   if (!(file instanceof File)) {
@@ -36,5 +36,7 @@ export async function extractPassportFieldsFromFile(file) {
     issuingCountry: String(json.issuingCountry ?? json.country ?? ''),
     sex: String(json.sex ?? '').trim().toUpperCase().slice(0, 1),
     nationalId: String(json.nationalId ?? '').trim(),
+    passportIssueDate: String(json.dateOfIssue ?? '').trim(),
+    passportExpirationDate: String(json.dateOfExpiry ?? '').trim(),
   }
 }

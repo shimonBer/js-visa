@@ -6,6 +6,11 @@
 export const FIELD_META = {
   passportId:               { label: 'מספר דרכון',                    type: 'text' },
   passportIssuingCountry:   { label: 'מדינת הנפקת דרכון',             type: 'text' },
+  passportType:             { label: 'סוג דרכון',                     type: 'text' },
+  passportIssuingCity:      { label: 'עיר הנפקת דרכון',               type: 'text' },
+  passportIssuingAuthority: { label: 'הרשות המנפיקה',                 type: 'text' },
+  passportIssueDate:        { label: 'תאריך הנפקת דרכון',             type: 'date' },
+  passportExpirationDate:   { label: 'תאריך פקיעת דרכון',             type: 'date' },
   firstName:                { label: 'שם פרטי (עברית)',               type: 'text' },
   lastName:                 { label: 'שם משפחה (עברית)',              type: 'text' },
   firstNameEnglish:         { label: 'שם פרטי (אנגלית)',              type: 'text' },
@@ -16,25 +21,36 @@ export const FIELD_META = {
   birthDateMonth:           { label: 'חודש לידה',                     type: 'number' },
   birthDateYear:            { label: 'שנת לידה',                      type: 'number' },
   birthCity:                { label: 'עיר לידה',                      type: 'text' },
+  birthCountry:             { label: 'מדינת לידה',                    type: 'text' },
   idNumber:                 { label: 'מספר תעודת זהות',               type: 'text' },
   addressStreet:            { label: 'רחוב מגורים',                   type: 'text' },
   addressCity:              { label: 'עיר מגורים',                    type: 'text' },
+  addressZip:               { label: 'מיקוד מגורים',                  type: 'text' },
   phoneNumber:              { label: 'מספר טלפון',                    type: 'text' },
   email:                    { label: 'דואר אלקטרוני',                 type: 'email' },
   arrivalCity:              { label: 'עיר הגעה בארה״ב',               type: 'text' },
   departureDateUS:          { label: 'תאריך עזיבה מארה״ב',            type: 'text' },
   departureCity:            { label: 'עיר יציאה מארה״ב',              type: 'text' },
   plannedStayDuration:      { label: 'משך שהייה מתוכנן',             type: 'text' },
-  accommodationInUS:        { label: 'מקום לינה בארה״ב',              type: 'text' },
+  accommodationStreet1:     { label: 'כתובת לינה בארה״ב — רחוב (שורה 1)', type: 'text' },
+  accommodationStreet2:     { label: 'כתובת לינה בארה״ב — רחוב (שורה 2)', type: 'text' },
+  accommodationState:       { label: 'כתובת לינה בארה״ב — מדינה (State)',  type: 'text' },
+  accommodationZip:         { label: 'כתובת לינה בארה״ב — מיקוד',          type: 'text' },
   selfPaying:               { label: 'משלם בעצמו',                    type: 'radio', options: ['כן', 'לא'] },
   tripPayerFullName:        { label: 'שם מלא של הממן',                type: 'text' },
   tripPayerEmail:           { label: 'דואר אלקטרוני של הממן',         type: 'email' },
   tripPayerPhone:           { label: 'טלפון של הממן',                  type: 'text' },
-  tripPayerAddress:         { label: 'כתובת של הממן',                  type: 'text' },
+  tripPayerStreet:          { label: 'כתובת הממן — רחוב',              type: 'text' },
+  tripPayerCity:            { label: 'כתובת הממן — עיר',               type: 'text' },
+  tripPayerCountry:         { label: 'כתובת הממן — מדינה',             type: 'text' },
   fatherFullName:           { label: 'שם מלא של האב',                 type: 'text' },
   motherFullName:           { label: 'שם מלא של האם',                 type: 'text' },
+  fatherUSStatus:           { label: 'סטטוס האבא בארה״ב',             type: 'text' },
+  motherUSStatus:           { label: 'סטטוס האמא בארה״ב',             type: 'text' },
   languages:                { label: 'שפות',                          type: 'text' },
   currentOccupation:        { label: 'עיסוק נוכחי',                   type: 'text' },
+  hasOrganizations:         { label: 'חברות בארגונים',                type: 'radio', options: ['לא', 'כן'] },
+  organizationName:         { label: 'שם ארגון',                      type: 'text' },
   // Conditional
   previousNameValue:        { label: 'שם קודם',                       type: 'text' },
   foreignCitizenshipCountry:{ label: 'מדינת אזרחות נוספת',            type: 'text' },
@@ -42,6 +58,8 @@ export const FIELD_META = {
   previousUSVisits:         { label: 'ביקורים קודמים בארה״ב',         type: 'text' },
   lastVisaIssueDate:        { label: 'תאריך הנפקת ויזה קודמת',        type: 'date' },
   lastVisaExpirationDate:   { label: 'תאריך תפוגת ויזה קודמת',       type: 'date' },
+  visaNumber:               { label: 'מספר ויזה קודמת',               type: 'text' },
+  sameVisaType:             { label: 'אותו סוג ויזה כמו הפעם הקודמת', type: 'radio', options: ['כן', 'לא'] },
   visaRefusalExplanation:   { label: 'פירוט סירוב ויזה',              type: 'textarea' },
   deniedEntryDetails:       { label: 'פרטי דחיית כניסה',              type: 'textarea' },
   illegalStayDetails:       { label: 'פרטי שהייה בלתי חוקית',        type: 'textarea' },
@@ -54,7 +72,10 @@ export const FIELD_META = {
   lostPassportDescription:  { label: 'תיאור אבדן / גניבת דרכון',      type: 'textarea' },
   contactFullName:          { label: 'שם איש קשר בארה״ב',             type: 'text' },
   contactPhone:             { label: 'טלפון איש קשר בארה״ב',          type: 'text' },
-  contactAddress:           { label: 'כתובת איש קשר בארה״ב',         type: 'text' },
+  contactStreet:            { label: 'כתובת איש קשר — רחוב',          type: 'text' },
+  contactCity:              { label: 'כתובת איש קשר — עיר',           type: 'text' },
+  contactState:             { label: 'כתובת איש קשר — מדינה (State)', type: 'text' },
+  contactZip:               { label: 'כתובת איש קשר — מיקוד',         type: 'text' },
   relativeFullName:         { label: 'שם קרוב משפחה בארה״ב',          type: 'text' },
   employerName:             { label: 'שם המעסיק',                     type: 'text' },
   employerStreet:           { label: 'רחוב המעסיק',                   type: 'text' },
@@ -109,6 +130,9 @@ export function calculateCompleteness(data) {
   // Always required
   req('passportId')
   req('passportIssuingCountry')
+  req('passportType')
+  req('passportIssueDate')
+  req('passportExpirationDate')
   req('firstName')
   req('lastName')
   req('firstNameEnglish')
@@ -119,23 +143,36 @@ export function calculateCompleteness(data) {
   req('birthDateMonth')
   req('birthDateYear')
   req('birthCity')
+  req('birthCountry')
+  req('birthCountry')
   req('idNumber')
   req('addressStreet')
   req('addressCity')
   req('phoneNumber')
   req('email')
   if (data?.specificTravelPlans !== 'yes') req('plannedStayDuration')
-  req('accommodationInUS')
+  req('accommodationStreet1')
   if (data?.selfPaying === 'no') {
     req('tripPayerFullName')
     req('tripPayerEmail')
     req('tripPayerPhone')
-    req('tripPayerAddress')
+    req('tripPayerStreet')
+    req('tripPayerCity')
+    req('tripPayerCountry')
   }
   req('fatherFullName')
   req('motherFullName')
+  if (data?.fatherInUS === 'yes') req('fatherUSStatus')
+  if (data?.motherInUS === 'yes') req('motherUSStatus')
   req('languages')
   req('currentOccupation')
+  req('hasOrganizations')
+  if (data?.hasOrganizations === 'yes') {
+    const orgs = data.organizations || []
+    if (!orgs.length || !String(orgs[0]?.name ?? '').trim()) {
+      ctx._list.push({ field: 'organizationName', label: 'שם ארגון', type: 'text' })
+    }
+  }
 
   // Conditional
   if (data?.hadPreviousName === 'yes') req('previousNameValue')
@@ -151,8 +188,10 @@ export function calculateCompleteness(data) {
     }
   }
   if (data?.hadUSVisa === 'yes') {
+    req('visaNumber')
     req('lastVisaIssueDate')
     req('lastVisaExpirationDate')
+    req('sameVisaType')
   }
   if (data?.visaRefused === 'yes') req('visaRefusalExplanation')
   if (data?.deniedEntryToUS === 'yes') req('deniedEntryDetails')
@@ -170,7 +209,9 @@ export function calculateCompleteness(data) {
   if (data?.hasUSContact === 'yes') {
     req('contactFullName')
     req('contactPhone')
-    req('contactAddress')
+    req('contactStreet')
+    req('contactCity')
+    req('contactZip')
   }
   if (data?.hasCloseRelativesInUS === 'yes') {
     const relatives = data.usRelatives || []

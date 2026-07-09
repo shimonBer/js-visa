@@ -278,6 +278,8 @@ PERSONAL INFORMATION 1
   If absent, not applicable, or Israel (which has no states) → N/A
 
 * Country / region of Birth
+  Rule: use the birthCountry field value directly.
+  If absent or empty → ❗ MISSING
 
 
 PERSONAL INFORMATION 2
@@ -294,11 +296,11 @@ PERSONAL INFORMATION 2
     * Passport Number
 
 * Are you a permanent resident of another country? YES/NO
+  Rule: use isPermanentResidentElsewhere field (yes → YES, no → NO); default NO if absent
 
   * IF YES:
 
-    * Country
-(REPEATABLE GROUP)
+    * Country: permanentResidenceCountry
 
 * National Identification Number
   Rule: use the idNumber field value exactly as provided (digits only, no hyphens).
@@ -338,7 +340,7 @@ PERSONAL INFORMATION 2
   Rule: read arrivalFlight field; if unknown → leave blank (never ❗ MISSING)
 
 * Arrival City
-  Rule: read arrivalCity field; if absent infer from accommodationInUS; otherwise N/A
+  Rule: read arrivalCity field; if absent infer from accommodationStreet1/accommodationState; otherwise N/A
 
 * Date of Departure from U.S.
   Rule: read departureDateUS field; if empty → ❗ MISSING
@@ -350,7 +352,8 @@ PERSONAL INFORMATION 2
   Rule: read departureCity field; if empty → ❗ MISSING
 
 * Provide the locations you plan to visit in the U.S.
-  (Repeatable Group)
+  Rule: use locationsToVisit field; output each comma-separated entry as a separate location line.
+  If absent or empty → N/A
 
 
 * if NO:
@@ -359,12 +362,12 @@ PERSONAL INFORMATION 2
 * Intended Length of Stay
   Rule: use plannedStayDuration field directly (free-text, e.g. "three months"); if empty or absent → ❗ MISSING
 
-* Address Where You Will Stay in the U.S. The address should include:
-
-* Street Address (Line 1) 
-* Street Address (Line 2) *Optional 
-* State 
-* ZIP Code (if known) 
+* Address Where You Will Stay in the U.S.:
+  Rule: read the following fields directly — do NOT parse or infer from a single text blob.
+  Street Address (Line 1): accommodationStreet1
+  Street Address (Line 2): accommodationStreet2 (Optional — N/A if empty)
+  State: accommodationState (Optional — N/A if empty)
+  ZIP Code: accommodationZip (Optional — N/A if empty)
 
 
 PERSON/ENTITY PAYING FOR TRIP
@@ -373,11 +376,11 @@ PERSON/ENTITY PAYING FOR TRIP
   Rule: if selfPaying is "yes" (or absent) →
     output: Who is paying for the trip? Self
     (omit Name / Relationship / Phone Number / Email Address / Address lines entirely)
-  If selfPaying is "no" → output all fields below using tripPayerFullName, tripPayerEmail, tripPayerPhone, tripPayerAddress:
+  If selfPaying is "no" → output all fields below using tripPayerFullName, tripPayerEmail, tripPayerPhone, tripPayerStreet/tripPayerCity/tripPayerCountry:
 * Name → tripPayerFullName
 * Phone Number → tripPayerPhone
 * Email Address → tripPayerEmail
-* Address → tripPayerAddress
+* Address: combine tripPayerStreet + tripPayerCity + tripPayerCountry (e.g. "25 HaRishonim St, Hadar Am, Israel")
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -393,10 +396,12 @@ PERSON/ENTITY PAYING FOR TRIP
 
 (REPEATABLE GROUP)
 
-* Are you traveling as part of a group or organization?
+* Are you traveling as part of a group or organization? YES/NO
+  Rule: use travelingAsGroup field (yes → YES, no → NO); default NO if absent
+
   * IF YES:
 
-    * Group name
+    * Group name: travelGroupName
 
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -423,7 +428,9 @@ PERSON/ENTITY PAYING FOR TRIP
     * Visa Issue Date
     * Visa Expiration Date
     * Visa Number
+      Rule: use visaNumber field if present; otherwise extract from existingVisaScan; if unavailable → N/A
     * Same Visa Type? YES/NO
+      Rule: use sameVisaType field (yes → YES, no → NO); default YES if absent
     * Are you applying in the same country where the visa above was issued, and is this your principal country of residence? YES/NO
       Rule: derive from visaIssuedInIsrael (yes → YES, no → NO); default YES if absent
     * Have you been ten-printed? YES/NO
@@ -454,40 +461,46 @@ PERSON/ENTITY PAYING FOR TRIP
 HOME ADDRESS
 
 * Street Address
-
+  Rule: combine addressStreet + addressApt (if present) into a single line.
 * City
 * State/Province (can check Does not apply)
-* Postal Zone/ZIP Code (can check Does not apply)
+  Rule: Israel has no states → Does not apply
+* Postal Zone/ZIP Code
+  Rule: use addressZip if present; otherwise → Does not apply
 * Country
+  Rule: always Israel (unless another country of residence is specified)
 
 * Is your mailing address the same as your home address? YES/NO
+  Rule: use mailingAddressSame field (yes → YES, no → NO); default YES if absent
 
   * IF NO:
 
-    * Mailing Street Address
-    * City
+    * Mailing Street Address: mailingStreet
+    * City: mailingCity
     * State/Province (can check Does not apply)
-    * Postal Zone/ZIP Code (can check Does not apply)
-    * Country
+      Rule: Does not apply (Israeli address has no state)
+    * Postal Zone/ZIP Code: mailingZip (if empty → Does not apply)
+    * Country: mailingCountry
   * IF YES:
     Mailing Address: SAME AS HOME ADDRESS
 
 CONTACT INFORMATION
 
-* Primary Phone Number 
-* Secondary Phone Number (can check Does not apply)
+* Primary Phone Number: combine phoneCountryCode + phoneNumber
+* Secondary Phone Number: secondaryPhone — if empty → N/A
   Rule: NOT mandatory — if absent or empty → output: N/A (never output ❗ MISSING for this field)
 * Work Phone Number (can check Does not apply)
   Rule: NOT mandatory — if absent or empty → output: N/A (never output ❗ MISSING for this field)
-* Have you used any other phone numbers in the last five years? 
-  * IF YES:
-    (REPEATABLE GROUP)
-    * Additional Phone Number 
-* Email Address
-* Have you used any other email addresses in the last five years? 
-  * IF YES:
-    (REPEATABLE GROUP)
-    * Additional Email Address 
+* Have you used any other phone numbers in the last five years? YES/NO
+  Rule: use otherPhonesLastFiveYears field; default NO if absent
+  * IF YES: list from otherPhonesList (comma-separated → one per line)
+    Rule: if absent → N/A
+* Have you used any other email addresses in the last five years? YES/NO
+  Rule: use otherEmailsLastFiveYears field; default NO if absent
+  * IF YES: list from otherEmailsList (comma-separated → one per line)
+    Rule: if absent → N/A
+* Email Address: email
+* Have you used any other email addresses in the last five years? → already mapped above
 
 SOCIAL MEDIA
 
@@ -519,7 +532,7 @@ SOCIAL MEDIA
 🟦 PASSPORT INFORMATION
 
 * Passport/Travel Document Type
-  Choose from REGULAR, DIPLOMATIC, OFFICIAL, OTHER (if not specified, choose REGULAR)
+  Rule: use passportType field directly (REGULAR / OFFICIAL / DIPLOMATIC / LAISSEZ-PASSER / OTHER); default REGULAR if absent
 
 * Passport Number
 
@@ -531,17 +544,21 @@ SOCIAL MEDIA
 * Country of Issuance
 
 * City of Issuance
-  Rule: output the English city name only (e.g. Jerusalem). Never include Hebrew characters in this field — if the passport shows only Hebrew, transliterate to English.
+  Rule: use passportIssuingCity field if present; otherwise extract from passportScan; if unavailable → N/A
+  Output English city name only (e.g. Jerusalem). Never include Hebrew characters.
 
 * Issuing Authority
-  Rule: output the English authority name only (e.g. Ministry of Interior). Never include Hebrew characters in this field — if the passport shows only Hebrew, translate/transliterate to English.
+  Rule: use passportIssuingAuthority field if present; otherwise extract from passportScan; if unavailable → N/A
+  Output English authority name only (e.g. Ministry of Interior). Never include Hebrew characters.
 
 * State/Province of Issuance
   Rule: if absent or empty → N/A
 
 * Passport Issue Date
+  Rule: use passportIssueDate field if present; otherwise extract from passportScan; if unavailable → ❗ MISSING
 
 * Passport Expiration Date
+  Rule: use passportExpirationDate field if present; otherwise extract from passportScan; if unavailable → ❗ MISSING
 
 * Have you ever lost a passport or had one stolen? YES/NO
 
@@ -570,11 +587,11 @@ SOCIAL MEDIA
     * Relationship to You
 
     U.S. ADDRESS
-
-    * Street Address
-    * City
-    * State
-    * ZIP Code
+    Rule: read the following fields directly — do NOT parse or infer from a single text blob.
+    * Street Address: contactStreet
+    * City: contactCity
+    * State: contactState (Optional — N/A if empty)
+    * ZIP Code: contactZip
 
     CONTACT DETAILS
 
@@ -596,10 +613,11 @@ FATHER
   Rule: if fatherBirthDate is empty or absent → output: N/A
 
 * Is your father in the United States? YES/NO
+  Rule: use fatherInUS field (yes → YES, no → NO); default NO if absent
 
   * IF YES:
 
-    * Status in the U.S.
+    * Status in the U.S.: fatherUSStatus
 
 MOTHER
 
@@ -611,10 +629,11 @@ MOTHER
   Rule: if motherBirthDate is empty or absent → output: N/A
 
 * Is your mother in the United States? YES/NO
+  Rule: use motherInUS field (yes → YES, no → NO); default NO if absent
 
   * IF YES:
 
-    * Status in the U.S.
+    * Status in the U.S.: motherUSStatus
 
 RELATIVES IN THE U.S.
 
@@ -794,6 +813,7 @@ RELATIVES IN THE U.S.
     * Start Date
     * End Date
     * Job Duties
+      Rule: use prevJobDuties field if present; otherwise → N/A
 
 
 (REPEATABLE GROUP)
@@ -853,21 +873,23 @@ TRAVEL HISTORY
 ORGANIZATIONS
 
 * Have you belonged to, contributed to, or worked for any professional, social, or charitable organizations? YES/NO
+  Rule: use hasOrganizations field (yes → YES, no → NO); default NO if absent
 
   * IF YES:
-
-    * Organization Name
-    * Organization Type
+    Rule: iterate over the organizations array; for each entry output:
+    * Organization Name: organizations[i].name
+    * Organization Type: organizations[i].type
 
 (REPEATABLE GROUP)
 
 SPECIALIZED SKILLS
 
 * Do you possess specialized skills or training involving firearms, explosives, nuclear, biological, or chemical experience? YES/NO
+  Rule: use hasSpecializedSkills field (yes → YES, no → NO); default NO if absent
 
   * IF YES:
 
-    * Full Description
+    * Full Description: specializedSkillsDescription — if absent → N/A
 
 
 MILITARY SERVICE
