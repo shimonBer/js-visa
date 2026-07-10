@@ -1,50 +1,91 @@
 /**
- * I-94 travel history lookup via /api/i94-lookup.
+ * I-94 travel history lookup.
  *
- * The server function now has two fast actions so it never breaches Vercel
- * Hobby's 10-second timeout. The client drives the polling loop.
+ * If VITE_I94_SERVICE_URL is set (e.g. https://i94.up.railway.app), calls
+ * that Railway service directly — a single POST that waits up to 120 seconds.
+ * This bypasses Vercel's 10-second serverless timeout entirely.
  *
- *   1. POST { action:"create", ...fields }  → { pending:true, sessionId }
- *   2. Loop: POST { action:"poll", sessionId } every POLL_INTERVAL_MS
- *      until { pending:false, success, history[] } or timeout/error
+ * If VITE_I94_SERVICE_URL is not set, falls back to the create/poll pattern
+ * via /api/i94-lookup (local vercel dev only).
  *
- * @param {{ firstName: string, lastName: string, birthDate: string, passportNumber: string, country: string }} input
- * @param {{ totalTimeoutMs?: number, pollIntervalMs?: number, onStatus?: (msg: string) => void }} [opts]
- * @returns {Promise<{ success: boolean, history: { date: string, type: string, location: string }[] }>}
+ * @param {{ firstName, lastName, birthDate, passportNumber, country }} input
+ * @param {{ onStatus?: (msg: string) => void }} [opts]
+ * @returns {Promise<{ success: boolean, history: { date, type, location }[] }>}
  */
 export async function fetchI94TravelHistory(input, opts = {}) {
-  const totalTimeoutMs = opts.totalTimeoutMs ?? 300_000   // 5 min total
-  const pollIntervalMs = opts.pollIntervalMs ?? 15_000    // poll every 15s
   const onStatus = opts.onStatus ?? (() => {})
+  const railwayUrl = import.meta.env?.VITE_I94_SERVICE_URL
+  const secret     = import.meta.env?.VITE_I94_SECRET ?? ''
 
+  if (railwayUrl) {
+    return fetchDirect(railwayUrl, secret, input, onStatus)
+  }
+  return fetchViaPolling(input, opts)
+}
+
+// ─── Direct Railway call (single request, long timeout) ─────────────────────
+
+async function fetchDirect(serviceUrl, secret, input, onStatus) {
+  onStatus('מתחבר לשירות…')
+
+  const base = serviceUrl.replace(/\/$/, '')
+  const headers = { 'Content-Type': 'application/json' }
+  if (secret) headers['Authorization'] = `Bearer ${secret}`
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 120_000)  // 2 min client timeout
+
+  try {
+    onStatus('מחפש היסטוריית כניסות…')
+    const res = await fetch(`${base}/lookup`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        firstName:      input.firstName,
+        lastName:       input.lastName,
+        birthDate:      input.birthDate,
+        passportNumber: input.passportNumber,
+        country:        input.country,
+      }),
+      signal: controller.signal,
+    })
+
+    clearTimeout(timer)
+    const text = await res.text()
+    let json
+    try { json = text ? JSON.parse(text) : {} } catch {
+      throw new Error(`שגיאה בתגובה: ${text.slice(0, 200)}`)
+    }
+    if (!res.ok) throw new Error(json?.error ?? `שגיאה ${res.status}`)
+    onStatus('הושלם')
+    return normalizeResult(json)
+  } catch (e) {
+    clearTimeout(timer)
+    if (e.name === 'AbortError') throw new Error('הזמן פג — הבדיקה לקחה יותר מ-2 דקות')
+    throw e
+  }
+}
+
+// ─── Local polling fallback (vercel dev) ─────────────────────────────────────
+
+async function fetchViaPolling(input, opts = {}) {
+  const totalTimeoutMs = opts.totalTimeoutMs ?? 300_000
+  const pollIntervalMs = opts.pollIntervalMs ?? 15_000
+  const onStatus = opts.onStatus ?? (() => {})
   const deadline = Date.now() + totalTimeoutMs
 
-  // ── Step 1: create session (fast, < 5s) ───────────────────────────────────
   onStatus('יוצר סשן…')
   const createRes = await fetch('/api/i94-lookup', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'create',
-      firstName: input.firstName,
-      lastName: input.lastName,
-      birthDate: input.birthDate,
-      passportNumber: input.passportNumber,
-      country: input.country,
-    }),
+    body: JSON.stringify({ action: 'create', ...input }),
   })
-
   const createJson = await parseResponse(createRes, 'create')
-
-  // Already done (rare)
-  if (createJson.pending === false) {
-    return normalizeResult(createJson)
-  }
+  if (createJson.pending === false) return normalizeResult(createJson)
 
   const sessionId = createJson.sessionId
   if (!sessionId) throw new Error('No sessionId returned from create')
 
-  // ── Step 2: client-side polling loop ──────────────────────────────────────
   let pollCount = 0
   while (Date.now() < deadline) {
     await sleep(pollIntervalMs)
@@ -54,25 +95,13 @@ export async function fetchI94TravelHistory(input, opts = {}) {
     const pollRes = await fetch('/api/i94-lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Resend traveler data as fallback if /tmp file is gone on the server
-      body: JSON.stringify({
-        action: 'poll',
-        sessionId,
-        firstName:      input.firstName,
-        lastName:       input.lastName,
-        birthDate:      input.birthDate,
-        passportNumber: input.passportNumber,
-        country:        input.country,
-      }),
+      body: JSON.stringify({ action: 'poll', sessionId, ...input }),
     })
-
     const pollJson = await parseResponse(pollRes, `poll #${pollCount}`)
-
     if (pollJson.pending === false) {
       onStatus('הושלם')
       return normalizeResult(pollJson)
     }
-    // still running — loop
   }
 
   throw new Error(`I-94 lookup timed out after ${Math.round(totalTimeoutMs / 60000)} min`)
@@ -80,9 +109,7 @@ export async function fetchI94TravelHistory(input, opts = {}) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms))
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
 async function parseResponse(res, label) {
   const text = await res.text()
@@ -90,7 +117,7 @@ async function parseResponse(res, label) {
   try { json = text ? JSON.parse(text) : {} } catch {
     throw new Error(`${label}: invalid JSON (${text.slice(0, 200)})`)
   }
-  if (!res.ok) throw new Error(json?.error || json?.detail || `${label} failed (${res.status})`)
+  if (!res.ok) throw new Error(json?.error || `${label} failed (${res.status})`)
   return json
 }
 
@@ -98,9 +125,9 @@ function normalizeResult(json) {
   return {
     success: Boolean(json.success),
     history: Array.isArray(json.history)
-      ? json.history.map((h) => ({
-          date: String(h?.date ?? ''),
-          type: String(h?.type ?? ''),
+      ? json.history.map(h => ({
+          date:     String(h?.date ?? ''),
+          type:     String(h?.type ?? ''),
           location: String(h?.location ?? ''),
         }))
       : [],
