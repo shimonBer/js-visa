@@ -455,23 +455,17 @@ export default function DS160IsraelForm({
       extraDocumentsNote: '',
       phoneCountryCode: '972',
       phoneNumber: '',
-      secondaryPhoneDoesNotApply: false,
       workPhone: '',
-      workPhoneDoesNotApply: false,
       otherPhones: [{ number: '' }],
       otherEmails: [{ address: '' }],
       email: '',
       // home address extra fields
       addressStreet2: '',
       addressState: '',
-      addressStateDoesNotApply: false,
-      addressZipDoesNotApply: false,
       addressCountry: '',
       // mailing address full structure
       mailingStreet2: '',
       mailingState: '',
-      mailingStateDoesNotApply: false,
-      mailingZipDoesNotApply: false,
       mondayItemId: '',
       accommodationStreet1: '',
       accommodationStreet2: '',
@@ -487,15 +481,12 @@ export default function DS160IsraelForm({
       tripPayerGivenName: '',
       tripPayerPhone: '',
       tripPayerEmail: '',
-      tripPayerEmailDoesNotApply: false,
       tripPayerRelationship: '',
       tripPayerSameAddress: 'yes',
       tripPayerAddressStreet1: '',
       tripPayerAddressStreet2: '',
       tripPayerAddressCity: '',
-      tripPayerAddressStateDoesNotApply: false,
       tripPayerAddressState: '',
-      tripPayerAddressZipDoesNotApply: false,
       tripPayerAddressZip: '',
       tripPayerAddressCountry: '',
       // OTHER_COMPANY_ORGANIZATION fields
@@ -961,6 +952,7 @@ export default function DS160IsraelForm({
       }
       if (r.passportNumber) setValue('passportId', r.passportNumber, { shouldDirty: true })
       if (r.issuingCountry) setValue('passportIssuingCountry', r.issuingCountry, { shouldDirty: true })
+      if (r.issuingCountry) setValue('nationality', r.issuingCountry, { shouldDirty: true })
       if (r.issuingCountry && !getValues('birthCountry')) setValue('birthCountry', r.issuingCountry, { shouldDirty: true })
       if (r.passportIssueDate) setValue('passportIssueDate', r.passportIssueDate, { shouldDirty: true })
       if (r.passportExpirationDate) setValue('passportExpirationDate', r.passportExpirationDate, { shouldDirty: true })
@@ -1286,7 +1278,6 @@ export default function DS160IsraelForm({
       req('tripPayerSurname')
       req('tripPayerGivenName')
       req('tripPayerPhone')
-      if (!values.tripPayerEmailDoesNotApply) req('tripPayerEmail')
       req('tripPayerRelationship')
       if (values.tripPayerSameAddress === 'no') {
         req('tripPayerAddressStreet1')
@@ -1568,12 +1559,6 @@ export default function DS160IsraelForm({
     travelingAsGroup: watch('travelingAsGroup'),
     otherPhonesLastFiveYears: watch('otherPhonesLastFiveYears'),
     otherEmailsLastFiveYears: watch('otherEmailsLastFiveYears'),
-    secondaryPhoneDoesNotApply: watch('secondaryPhoneDoesNotApply'),
-    workPhoneDoesNotApply: watch('workPhoneDoesNotApply'),
-    addressStateDoesNotApply: watch('addressStateDoesNotApply'),
-    addressZipDoesNotApply: watch('addressZipDoesNotApply'),
-    mailingStateDoesNotApply: watch('mailingStateDoesNotApply'),
-    mailingZipDoesNotApply: watch('mailingZipDoesNotApply'),
     hasWebsiteContent: watch('hasWebsiteContent'),
     currentOccupation: watch('currentOccupation'),
     workedAnotherJobLast5Years: watch('workedAnotherJobLast5Years'),
@@ -1591,10 +1576,7 @@ export default function DS160IsraelForm({
     criminalRecord: watch('criminalRecord'),
     selfPaying: watch('selfPaying'),
     tripPayerType: watch('tripPayerType'),
-    tripPayerEmailDoesNotApply: watch('tripPayerEmailDoesNotApply'),
     tripPayerSameAddress: watch('tripPayerSameAddress'),
-    tripPayerAddressStateDoesNotApply: watch('tripPayerAddressStateDoesNotApply'),
-    tripPayerAddressZipDoesNotApply: watch('tripPayerAddressZipDoesNotApply'),
   }
 
   const allFormValues = watch()
@@ -1711,8 +1693,8 @@ export default function DS160IsraelForm({
                 <h3 className="col-span-full font-bold text-lg">פרטים אישיים</h3>
                 <FormInput register={register} getFieldError={getFieldError} label="שם פרטי (עברית)" name="firstName" dir="auto" />
                 <FormInput register={register} getFieldError={getFieldError} label="שם משפחה (עברית)" name="lastName" dir="auto" />
-                <FormInput register={register} getFieldError={getFieldError} label="שם פרטי באנגלית (מדרכון)" name="firstNameEnglish" hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית" />
-                <FormInput register={register} getFieldError={getFieldError} label="שם משפחה באנגלית (מדרכון)" name="lastNameEnglish" hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית" />
+                <FormInput register={register} getFieldError={getFieldError} label="שם פרטי באנגלית (מהדרכון)" name="firstNameEnglish" hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית" />
+                <FormInput register={register} getFieldError={getFieldError} label="שם משפחה באנגלית (מהדרכון)" name="lastNameEnglish" hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית" />
                 <div className="col-span-full mb-0">
                   <div className="-mb-4">
                     <FormRadioGroup register={register} getFieldError={getFieldError} label="האם היה לך שם קודם?" name="hadPreviousName" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
@@ -1859,14 +1841,14 @@ export default function DS160IsraelForm({
                   )}
                 </div>
                 <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" />
-                <FormInput register={register} getFieldError={getFieldError} label="מדינת לידה (באנגלית)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
+                <FormInput register={register} getFieldError={getFieldError} label="מדינת לידה (באנגלית, מהדרכון)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
               </div>
 
               {/* ── כרטיס 2: אזרחות ולאום ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
                 <h3 className="col-span-full font-bold text-lg">אזרחות ולאום</h3>
 
-                <FormInput register={register} getFieldError={getFieldError} label="לאום / אזרחות עיקרית (באנגלית)" name="nationality" hint="לדוגמה: ISRAELI" />
+                <FormInput register={register} getFieldError={getFieldError} label="לאום / אזרחות עיקרית (באנגלית, מהדרכון)" name="nationality" hint="ממולא אוטומטית מצילום הדרכון; לדוגמה: Israel" />
                 <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת זהות" name="idNumber" hint="ממולא אוטומטית מצילום הדרכון אם מופיע" />
 
                 {/* Extra nationality */}
@@ -1990,7 +1972,7 @@ export default function DS160IsraelForm({
                   </div>
                 </div>
                 <FormSelect register={register} getFieldError={getFieldError} label="סוג דרכון" name="passportType" options={['REGULAR', 'OFFICIAL', 'DIPLOMATIC', 'LAISSEZ-PASSER', 'OTHER']} />
-                <FormInput register={register} getFieldError={getFieldError} label="מדינת הנפקת דרכון (באנגלית)" name="passportIssuingCountry" hint="ניתן למלא ידנית או לעדכן אוטומטית מזיהוי צילום הדרכון" />
+                <FormInput register={register} getFieldError={getFieldError} label="מדינת הנפקת דרכון (באנגלית, מהדרכון)" name="passportIssuingCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר הנפקת דרכון (באנגלית)" name="passportIssuingCity" hint="לדוגמה: Jerusalem" optional />
                 <FormInput register={register} getFieldError={getFieldError} label="הרשות המנפיקה (באנגלית)" name="passportIssuingAuthority" hint="לדוגמה: Ministry of Interior" optional />
                 <FormInput register={register} getFieldError={getFieldError} label="תאריך הנפקת דרכון" name="passportIssueDate" hint="YYYY-MM-DD; ממולא אוטומטית מצילום הדרכון" />
@@ -2009,32 +1991,22 @@ export default function DS160IsraelForm({
                   </div>
                   <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="addressCity" />
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">מחוז / מדינה (State/Province)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">מחוז / מדינה (State/Province)<OptionalBadge /></label>
                     <input
                       {...register('addressState')}
-                      disabled={!!w.addressStateDoesNotApply}
                       placeholder="לדוגמה: Tel Aviv District"
                       dir="ltr"
-                      className="w-full rounded-md p-2 border border-gray-300 text-sm disabled:bg-gray-100 disabled:text-gray-400"
+                      className="w-full rounded-md p-2 border border-gray-300 text-sm"
                     />
-                    <label className="inline-flex items-center gap-1.5 mt-1 text-xs text-gray-600 cursor-pointer">
-                      <input type="checkbox" {...register('addressStateDoesNotApply')} className="rounded" />
-                      Does Not Apply
-                    </label>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">מיקוד (Postal/ZIP Code)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">מיקוד (Postal/ZIP Code)<OptionalBadge /></label>
                     <input
                       {...register('addressZip')}
-                      disabled={!!w.addressZipDoesNotApply}
                       placeholder="לדוגמה: 6473214"
                       dir="ltr"
-                      className="w-full rounded-md p-2 border border-gray-300 text-sm disabled:bg-gray-100 disabled:text-gray-400"
+                      className="w-full rounded-md p-2 border border-gray-300 text-sm"
                     />
-                    <label className="inline-flex items-center gap-1.5 mt-1 text-xs text-gray-600 cursor-pointer">
-                      <input type="checkbox" {...register('addressZipDoesNotApply')} className="rounded" />
-                      Does Not Apply
-                    </label>
                   </div>
                   <div>
                     <FormInput register={register} getFieldError={getFieldError} label="מדינה / ארץ (Country/Region)" name="addressCountry" hint="לדוגמה: Israel" />
@@ -2056,32 +2028,22 @@ export default function DS160IsraelForm({
                         </div>
                         <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="mailingCity" />
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">מחוז / מדינה (State/Province)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">מחוז / מדינה (State/Province)<OptionalBadge /></label>
                           <input
                             {...register('mailingState')}
-                            disabled={!!w.mailingStateDoesNotApply}
                             placeholder="State / Province"
                             dir="ltr"
-                            className="w-full rounded-md p-2 border border-gray-300 text-sm disabled:bg-gray-100 disabled:text-gray-400"
+                            className="w-full rounded-md p-2 border border-gray-300 text-sm"
                           />
-                          <label className="inline-flex items-center gap-1.5 mt-1 text-xs text-gray-600 cursor-pointer">
-                            <input type="checkbox" {...register('mailingStateDoesNotApply')} className="rounded" />
-                            Does Not Apply
-                          </label>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">מיקוד (Postal/ZIP Code)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">מיקוד (Postal/ZIP Code)<OptionalBadge /></label>
                           <input
                             {...register('mailingZip')}
-                            disabled={!!w.mailingZipDoesNotApply}
                             placeholder="ZIP / Postal Code"
                             dir="ltr"
-                            className="w-full rounded-md p-2 border border-gray-300 text-sm disabled:bg-gray-100 disabled:text-gray-400"
+                            className="w-full rounded-md p-2 border border-gray-300 text-sm"
                           />
-                          <label className="inline-flex items-center gap-1.5 mt-1 text-xs text-gray-600 cursor-pointer">
-                            <input type="checkbox" {...register('mailingZipDoesNotApply')} className="rounded" />
-                            Does Not Apply
-                          </label>
                         </div>
                         <FormInput register={register} getFieldError={getFieldError} label="מדינה / ארץ (Country/Region)" name="mailingCountry" hint="לדוגמה: Israel" />
                       </div>
@@ -2128,36 +2090,26 @@ export default function DS160IsraelForm({
 
                 {/* Secondary Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">טלפון משני (Secondary Phone Number)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">טלפון משני (Secondary Phone Number)<OptionalBadge /></label>
                   <input
                     type="tel"
                     {...register('secondaryPhone')}
-                    disabled={!!w.secondaryPhoneDoesNotApply}
                     placeholder="לדוגמה: 0523344505"
                     dir="ltr"
-                    className="w-full rounded-md p-2 border border-gray-300 text-sm disabled:bg-gray-100 disabled:text-gray-400"
+                    className="w-full rounded-md p-2 border border-gray-300 text-sm"
                   />
-                  <label className="inline-flex items-center gap-1.5 mt-1 text-xs text-gray-600 cursor-pointer">
-                    <input type="checkbox" {...register('secondaryPhoneDoesNotApply')} className="rounded" />
-                    Does Not Apply
-                  </label>
                 </div>
 
                 {/* Work Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">טלפון עבודה (Work Phone Number)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">טלפון עבודה (Work Phone Number)<OptionalBadge /></label>
                   <input
                     type="tel"
                     {...register('workPhone')}
-                    disabled={!!w.workPhoneDoesNotApply}
                     placeholder="לדוגמה: 0523344505"
                     dir="ltr"
-                    className="w-full rounded-md p-2 border border-gray-300 text-sm disabled:bg-gray-100 disabled:text-gray-400"
+                    className="w-full rounded-md p-2 border border-gray-300 text-sm"
                   />
-                  <label className="inline-flex items-center gap-1.5 mt-1 text-xs text-gray-600 cursor-pointer">
-                    <input type="checkbox" {...register('workPhoneDoesNotApply')} className="rounded" />
-                    Does Not Apply
-                  </label>
                 </div>
 
                 {/* Other Phones (5 years) */}
@@ -2323,13 +2275,7 @@ export default function DS160IsraelForm({
                       <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name="tripPayerSurname" />
                       <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="tripPayerGivenName" />
                       <FormInput register={register} getFieldError={getFieldError} label="מספר טלפון" name="tripPayerPhone" type="tel" />
-                      <div className="flex flex-col gap-1">
-                        <FormInput register={register} getFieldError={getFieldError} label="דואר אלקטרוני" name="tripPayerEmail" type="email" optional={!!w.tripPayerEmailDoesNotApply} />
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" {...register('tripPayerEmailDoesNotApply')} className="w-4 h-4 rounded border-gray-300" />
-                          Does Not Apply
-                        </label>
-                      </div>
+                      <FormInput register={register} getFieldError={getFieldError} label="דואר אלקטרוני" name="tripPayerEmail" type="email" optional />
                       <FormSelect register={register} getFieldError={getFieldError} label="קרבה למבקש" name="tripPayerRelationship" options={['CHILD', 'PARENT', 'SPOUSE', 'OTHER RELATIVE', 'FRIEND', 'OTHER']} />
                     </div>
                     <FormRadioGroup register={register} getFieldError={getFieldError} label="האם כתובת המשלם זהה לכתובת הבית / הדואר שלי?" name="tripPayerSameAddress" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
@@ -2338,20 +2284,8 @@ export default function DS160IsraelForm({
                         <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="tripPayerAddressStreet1" />
                         <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="tripPayerAddressStreet2" optional />
                         <FormInput register={register} getFieldError={getFieldError} label="עיר" name="tripPayerAddressCity" />
-                        <div className="flex flex-col gap-1">
-                          <FormInput register={register} getFieldError={getFieldError} label="מדינה / פרובינציה" name="tripPayerAddressState" optional={!!w.tripPayerAddressStateDoesNotApply} />
-                          <label className="flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="checkbox" {...register('tripPayerAddressStateDoesNotApply')} className="w-4 h-4 rounded border-gray-300" />
-                            Does Not Apply
-                          </label>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="tripPayerAddressZip" optional={!!w.tripPayerAddressZipDoesNotApply} />
-                          <label className="flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="checkbox" {...register('tripPayerAddressZipDoesNotApply')} className="w-4 h-4 rounded border-gray-300" />
-                            Does Not Apply
-                          </label>
-                        </div>
+                        <FormInput register={register} getFieldError={getFieldError} label="מדינה / פרובינציה" name="tripPayerAddressState" optional />
+                        <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="tripPayerAddressZip" optional />
                         <FormInput register={register} getFieldError={getFieldError} label="מדינה (ארץ)" name="tripPayerAddressCountry" hint="לדוגמה: Israel" />
                       </div>
                     )}
@@ -2371,20 +2305,8 @@ export default function DS160IsraelForm({
                       <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="tripPayerAddressStreet1" />
                       <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="tripPayerAddressStreet2" optional />
                       <FormInput register={register} getFieldError={getFieldError} label="עיר" name="tripPayerAddressCity" />
-                      <div className="flex flex-col gap-1">
-                        <FormInput register={register} getFieldError={getFieldError} label="מדינה / פרובינציה" name="tripPayerAddressState" optional={!!w.tripPayerAddressStateDoesNotApply} />
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" {...register('tripPayerAddressStateDoesNotApply')} className="w-4 h-4 rounded border-gray-300" />
-                          Does Not Apply
-                        </label>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="tripPayerAddressZip" optional={!!w.tripPayerAddressZipDoesNotApply} />
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
-                          <input type="checkbox" {...register('tripPayerAddressZipDoesNotApply')} className="w-4 h-4 rounded border-gray-300" />
-                          Does Not Apply
-                        </label>
-                      </div>
+                      <FormInput register={register} getFieldError={getFieldError} label="מדינה / פרובינציה" name="tripPayerAddressState" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="tripPayerAddressZip" optional />
                       <FormInput register={register} getFieldError={getFieldError} label="מדינה (ארץ)" name="tripPayerAddressCountry" hint="לדוגמה: Israel" />
                     </div>
                   </div>
