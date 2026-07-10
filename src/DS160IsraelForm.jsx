@@ -1452,275 +1452,304 @@ export default function DS160IsraelForm({
 
           <section className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שם הלקוח ומידע אישי</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:col-span-2 items-start">
-                <div id="field-passportId" className="flex flex-col mb-0">
-                  <label className="font-semibold mb-1 text-gray-700">מספר דרכון</label>
-                  <input
-                    type="text"
-                    autoComplete="off"
-                    {...register('passportId')}
-                    className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 font-mono w-full max-w-md border ${translationErrors.has('passportId') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                    dir="ltr"
-                    placeholder="למשל 201381722"
-                  />
-                  {translationErrors.has('passportId') && (
-                    <span className="text-red-500 text-sm mt-1">שדה חובה</span>
-                  )}
-                  <span className="text-xs text-gray-500 mt-1">
-                    מזהה טיוטה בפורמט{' '}
-                    <span className="font-mono" dir="ltr">
-                      מספר_YYYY-MM-DD
+            <div className="space-y-6">
+
+              {/* ── כרטיס 1: דרכון ושם ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 className="col-span-full font-bold text-lg">דרכון ושם</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 col-span-full items-start">
+                  <div id="field-passportId" className="flex flex-col mb-0">
+                    <label className="font-semibold mb-1 text-gray-700">מספר דרכון</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      {...register('passportId')}
+                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 font-mono w-full max-w-md border ${translationErrors.has('passportId') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                      dir="ltr"
+                      placeholder="למשל 201381722"
+                    />
+                    {translationErrors.has('passportId') && (
+                      <span className="text-red-500 text-sm mt-1">שדה חובה</span>
+                    )}
+                    <span className="text-xs text-gray-500 mt-1">
+                      מזהה טיוטה בפורמט{' '}
+                      <span className="font-mono" dir="ltr">מספר_YYYY-MM-DD</span>
+                      : התאריך הוא <strong>אוטומטית</strong> תאריך תחילת מילוי הטופס ({formStartedDateRef.current}).
                     </span>
-                    : התאריך הוא <strong>אוטומטית</strong> תאריך תחילת מילוי הטופס ({formStartedDateRef.current}).
-                  </span>
-                </div>
-                <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <p className="font-semibold text-gray-800">צילום דרכון</p>
-                  <p className="text-xs text-gray-600">
-                    גרירה או בחירת קובץ — זיהוי אוטומטי (GPT-4o): שם באנגלית, תאריך לידה, מספר דרכון, מדינת הנפקה, מין (MRZ), תעודת זהות אם מופיעה במסמך.
-                  </p>
-                  {passportOcr.status === 'loading' && (
-                    <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>
-                  )}
-                  {passportOcr.status === 'error' && (
-                    <p className="text-sm text-red-600" role="alert">
-                      {passportOcr.message}
+                  </div>
+                  <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
+                    <p className="font-semibold text-gray-800">צילום דרכון</p>
+                    <p className="text-xs text-gray-600">
+                      גרירה או בחירת קובץ — זיהוי אוטומטי (GPT-4o): שם באנגלית, תאריך לידה, מספר דרכון, מדינת הנפקה, מין (MRZ), תעודת זהות אם מופיעה במסמך.
                     </p>
-                  )}
-                  {passportOcr.status === 'idle' && passportOcr.message && (
-                    <p className="text-sm text-green-700">{passportOcr.message}</p>
-                  )}
-                  <DocumentFileSlot
-                    label="העלאת צילום דרכון"
-                    name="passportScan"
-                    register={register}
-                    setValue={setValue}
-                    getFieldError={getFieldError}
-                    watchedValue={passportScanWatch}
-                    accept="image/*,application/pdf"
-                    onFilePicked={(f) => {
-                      void runPassportOcrFromFile(f)
-                      void uploadDocumentImmediately('passportScan', f)
-                    }}
-                  />
+                    {passportOcr.status === 'loading' && (
+                      <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>
+                    )}
+                    {passportOcr.status === 'error' && (
+                      <p className="text-sm text-red-600" role="alert">{passportOcr.message}</p>
+                    )}
+                    {passportOcr.status === 'idle' && passportOcr.message && (
+                      <p className="text-sm text-green-700">{passportOcr.message}</p>
+                    )}
+                    <DocumentFileSlot
+                      label="העלאת צילום דרכון"
+                      name="passportScan"
+                      register={register}
+                      setValue={setValue}
+                      getFieldError={getFieldError}
+                      watchedValue={passportScanWatch}
+                      accept="image/*,application/pdf"
+                      onFilePicked={(f) => {
+                        void runPassportOcrFromFile(f)
+                        void uploadDocumentImmediately('passportScan', f)
+                      }}
+                    />
+                  </div>
                 </div>
+                <FormInput register={register} getFieldError={getFieldError} label="שם פרטי (עברית)" name="firstName" dir="auto" />
+                <FormInput register={register} getFieldError={getFieldError} label="שם משפחה (עברית)" name="lastName" dir="auto" />
+                <FormInput register={register} getFieldError={getFieldError} label="שם פרטי באנגלית (מדרכון)" name="firstNameEnglish" hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית" />
+                <FormInput register={register} getFieldError={getFieldError} label="שם משפחה באנגלית (מדרכון)" name="lastNameEnglish" hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית" />
+                <div className="col-span-full mb-0">
+                  <div className="-mb-4">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם היה לך שם קודם?" name="hadPreviousName" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  </div>
+                  {w.hadPreviousName === 'yes' && (
+                    <div className="mt-2 pr-2 border-r-2 border-blue-200">
+                      <FormInput register={register} getFieldError={getFieldError} label="שם קודם" name="previousNameValue" />
+                    </div>
+                  )}
+                </div>
+                <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת הזהות" name="idNumber" />
+                <FormSelect register={register} getFieldError={getFieldError} label="סוג דרכון" name="passportType" options={['REGULAR', 'OFFICIAL', 'DIPLOMATIC', 'LAISSEZ-PASSER', 'OTHER']} />
+                <FormInput register={register} getFieldError={getFieldError} label="מדינת הנפקת דרכון (באנגלית)" name="passportIssuingCountry" hint="ניתן למלא ידנית או לעדכן אוטומטית מזיהוי צילום הדרכון" />
+                <FormInput register={register} getFieldError={getFieldError} label="עיר הנפקת דרכון (באנגלית)" name="passportIssuingCity" hint="לדוגמה: Jerusalem" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="הרשות המנפיקה (באנגלית)" name="passportIssuingAuthority" hint="לדוגמה: Ministry of Interior" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="תאריך הנפקת דרכון" name="passportIssueDate" hint="YYYY-MM-DD; ממולא אוטומטית מצילום הדרכון" />
+                <FormInput register={register} getFieldError={getFieldError} label="תאריך פקיעת דרכון" name="passportExpirationDate" hint="YYYY-MM-DD; ממולא אוטומטית מצילום הדרכון" />
               </div>
-              <FormInput register={register} getFieldError={getFieldError} label="שם פרטי (עברית)" name="firstName" dir="auto" />
-              <FormInput register={register} getFieldError={getFieldError} label="שם משפחה (עברית)" name="lastName" dir="auto" />
-              <FormInput register={register} getFieldError={getFieldError}
-                label="שם פרטי באנגלית (מדרכון)"
-                name="firstNameEnglish"
-                hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית"
-              />
-              <FormInput register={register} getFieldError={getFieldError}
-                label="שם משפחה באנגלית (מדרכון)"
-                name="lastNameEnglish"
-                hint="ממולא אוטומטית מצילום הדרכון; לא מחליף את השם בעברית"
-              />
 
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="במידה והיה שם קודם" name="hadPreviousName" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
-              {w.hadPreviousName === 'yes' && (
-                <FormInput register={register} getFieldError={getFieldError} label="שם קודם (הקלד)" name="previousNameValue" />
-              )}
+              {/* ── כרטיס 2: פרטים אישיים ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 className="col-span-full font-bold text-lg">פרטים אישיים</h3>
+                <FormRadioGroup register={register} getFieldError={getFieldError} label="מין" name="sex" options={[{ label: 'זכר', value: 'male' }, { label: 'נקבה', value: 'female' }]} />
+                <FormSelect register={register} getFieldError={getFieldError} label="סטטוס משפחתי" name="maritalStatus" options={['רווק', 'נשוי', 'גרוש', 'אלמן', 'נשוי אזרחית', 'פרוד', 'חיים משותפים']} />
 
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="מין" name="sex" options={[{ label: 'זכר', value: 'male' }, { label: 'נקבה', value: 'female' }]} />
-              <FormSelect register={register} getFieldError={getFieldError} label="סטטוס" name="maritalStatus" options={['רווק', 'נשוי', 'גרוש', 'אלמן', 'נשוי אזרחית', 'פרוד', 'חיים משותפים']} />
+                {(w.maritalStatus === 'גרוש' || w.maritalStatus === 'פרוד') && (
+                  <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                      <h3 className="font-bold text-gray-800 text-base">פרטי בן זוג לשעבר</h3>
+                      <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name="exSpouseName" />
+                      <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="exSpouseBirthCityCountry" />
+                      <div className="flex flex-col">
+                        <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
+                        <div className="flex gap-2">
+                          <input type="text" {...register('exSpouseBirthDateDay')} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
+                          <input type="text" {...register('exSpouseBirthDateMonth')} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
+                          <input type="text" {...register('exSpouseBirthDateYear')} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
+                        </div>
+                      </div>
+                      <FormInput register={register} getFieldError={getFieldError} label="תאריך חתונה" name="exSpouseMarriageDate" />
+                      <FormInput register={register} getFieldError={getFieldError} label="תאריך גירושים" name="exSpouseDivorceDate" />
+                      <FormInput register={register} getFieldError={getFieldError} label="התגרשו בישראל?" name="exSpouseDivorcedInIsrael" />
+                    </div>
+                    <div className="space-y-3">
+                      {additionalExSpouseFields.map((field, i) => (
+                        <div key={field.id} className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-bold text-gray-800 text-base">בן/בת זוג לשעבר {i + 2}</h3>
+                            <button type="button" onClick={() => removeAdditionalExSpouse(i)} className="text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
+                          </div>
+                          <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name={`additionalExSpouses.${i}.name`} />
+                          <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name={`additionalExSpouses.${i}.birthCityCountry`} />
+                          <div className="flex flex-col">
+                            <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
+                            <div className="flex gap-2">
+                              <input type="text" {...register(`additionalExSpouses.${i}.birthDateDay`)} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
+                              <input type="text" {...register(`additionalExSpouses.${i}.birthDateMonth`)} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
+                              <input type="text" {...register(`additionalExSpouses.${i}.birthDateYear`)} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
+                            </div>
+                          </div>
+                          <FormInput register={register} getFieldError={getFieldError} label="תאריך חתונה" name={`additionalExSpouses.${i}.marriageDate`} />
+                          <FormInput register={register} getFieldError={getFieldError} label="תאריך גירושים" name={`additionalExSpouses.${i}.divorceDate`} />
+                          <FormInput register={register} getFieldError={getFieldError} label="התגרשו בישראל?" name={`additionalExSpouses.${i}.divorcedInIsrael`} />
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => appendAdditionalExSpouse({ name: '', birthCityCountry: '', birthDateDay: '', birthDateMonth: '', birthDateYear: '', marriageDate: '', divorceDate: '', divorcedInIsrael: '' })}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium border border-blue-300 rounded px-3 py-1.5 hover:bg-blue-50 transition-colors"
+                      >
+                        + הוסף בן/בת זוג לשעבר נוסף
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-              {(w.maritalStatus === 'גרוש' || w.maritalStatus === 'פרוד') && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
-                    <h3 className="font-bold text-gray-800 text-base">פרטי בן זוג לשעבר</h3>
-                    <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name="exSpouseName" />
-                    <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="exSpouseBirthCityCountry" />
+                {w.maritalStatus === 'אלמן' && (
+                  <div className="col-span-full border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                    <h3 className="font-bold text-gray-800 text-base">פרטי בן הזוג שנפטר</h3>
+                    <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name="deceasedSpouseName" />
+                    <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה" name="deceasedSpouseBirthDate" />
+                    <FormInput register={register} getFieldError={getFieldError} label="אזרחות" name="deceasedSpouseCitizenship" />
+                    <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="deceasedSpouseBirthCityCountry" />
+                  </div>
+                )}
+
+                {w.maritalStatus && w.maritalStatus !== 'רווק' && w.maritalStatus !== 'גרוש' && w.maritalStatus !== 'פרוד' && w.maritalStatus !== 'אלמן' && (
+                  <div className="col-span-full border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                    <h3 className="font-bold text-gray-800 text-base">פרטי בן/בת הזוג</h3>
+                    <FormInput register={register} getFieldError={getFieldError} label="שם בן/בת הזוג" name="spouseName" />
+                    <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="spouseBirthCityCountry" />
                     <div className="flex flex-col">
                       <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
                       <div className="flex gap-2">
-                        <input type="text" {...register('exSpouseBirthDateDay')} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
-                        <input type="text" {...register('exSpouseBirthDateMonth')} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
-                        <input type="text" {...register('exSpouseBirthDateYear')} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
+                        <input type="text" {...register('spouseBirthDateDay')} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
+                        <input type="text" {...register('spouseBirthDateMonth')} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
+                        <input type="text" {...register('spouseBirthDateYear')} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
                       </div>
                     </div>
-                    <FormInput register={register} getFieldError={getFieldError} label="תאריך חתונה" name="exSpouseMarriageDate" />
-                    <FormInput register={register} getFieldError={getFieldError} label="במידה והתגרשו- תאריך גירושים" name="exSpouseDivorceDate" />
-                    <FormInput register={register} getFieldError={getFieldError} label="במידה והתגרשו- התגרשם בישראל?" name="exSpouseDivorcedInIsrael" />
-                  </div>
-                  <div className="space-y-3">
-                    {additionalExSpouseFields.map((field, i) => (
-                      <div key={field.id} className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-bold text-gray-800 text-base">בן/בת זוג לשעבר {i + 2}</h3>
-                          <button type="button" onClick={() => removeAdditionalExSpouse(i)} className="text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
-                        </div>
-                        <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name={`additionalExSpouses.${i}.name`} />
-                        <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name={`additionalExSpouses.${i}.birthCityCountry`} />
-                        <div className="flex flex-col">
-                          <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
-                          <div className="flex gap-2">
-                            <input type="text" {...register(`additionalExSpouses.${i}.birthDateDay`)} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
-                            <input type="text" {...register(`additionalExSpouses.${i}.birthDateMonth`)} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
-                            <input type="text" {...register(`additionalExSpouses.${i}.birthDateYear`)} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
-                          </div>
-                        </div>
-                        <FormInput register={register} getFieldError={getFieldError} label="תאריך חתונה" name={`additionalExSpouses.${i}.marriageDate`} />
-                        <FormInput register={register} getFieldError={getFieldError} label="תאריך גירושים" name={`additionalExSpouses.${i}.divorceDate`} />
-                        <FormInput register={register} getFieldError={getFieldError} label="התגרשו בישראל?" name={`additionalExSpouses.${i}.divorcedInIsrael`} />
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => appendAdditionalExSpouse({ name: '', birthCityCountry: '', birthDateDay: '', birthDateMonth: '', birthDateYear: '', marriageDate: '', divorceDate: '', divorcedInIsrael: '' })}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium border border-blue-300 rounded px-3 py-1.5 hover:bg-blue-50 transition-colors"
-                    >
-                      + הוסף בן/בת זוג לשעבר נוסף
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {w.maritalStatus === 'אלמן' && (
-                <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
-                  <h3 className="font-bold text-gray-800 text-base">פרטי בן הזוג שנפטרו</h3>
-                  <FormInput register={register} getFieldError={getFieldError} label="שם מלא" name="deceasedSpouseName" />
-                  <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה" name="deceasedSpouseBirthDate" />
-                  <FormInput register={register} getFieldError={getFieldError} label="אזרחות" name="deceasedSpouseCitizenship" />
-                  <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="deceasedSpouseBirthCityCountry" />
-                </div>
-              )}
-
-              {w.maritalStatus && w.maritalStatus !== 'רווק' && w.maritalStatus !== 'גרוש' && w.maritalStatus !== 'פרוד' && w.maritalStatus !== 'אלמן' && (
-                <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
-                  <h3 className="font-bold text-gray-800 text-base">פרטי בן בת הזוג</h3>
-                  <FormInput register={register} getFieldError={getFieldError} label="שם בן\בת הזוג" name="spouseName" />
-                  <FormInput register={register} getFieldError={getFieldError} label="עיר ומדינת לידה" name="spouseBirthCityCountry" />
-                  <div className="flex flex-col">
-                    <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
-                    <div className="flex gap-2">
-                      <input type="text" {...register('spouseBirthDateDay')} placeholder="יום" className="rounded-md p-2 w-full border border-gray-300" />
-                      <input type="text" {...register('spouseBirthDateMonth')} placeholder="חודש" className="rounded-md p-2 w-full border border-gray-300" />
-                      <input type="text" {...register('spouseBirthDateYear')} placeholder="שנה" className="rounded-md p-2 w-full border border-gray-300" />
-                    </div>
-                  </div>
-                  <FormInput register={register} getFieldError={getFieldError} label="אזרחות עיקרית" name="spouseCitizenship" />
-                  <div className="col-span-full">
+                    <FormInput register={register} getFieldError={getFieldError} label="אזרחות עיקרית" name="spouseCitizenship" />
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input type="checkbox" {...register('spouseAddressSame')} className="w-4 h-4 rounded border-gray-300" />
                       <span className="text-sm font-medium text-gray-700">גרים באותה הכתובת</span>
                     </label>
+                    {!w.spouseAddressSame && (
+                      <FormInput register={register} getFieldError={getFieldError} label="כתובת בן/בת הזוג" name="spouseAddress" />
+                    )}
                   </div>
-                  {!w.spouseAddressSame && (
-                    <FormInput register={register} getFieldError={getFieldError} label="כתובת בן/בת הזוג" name="spouseAddress" />
+                )}
+
+                <div id="field-birthDateDay" className="flex flex-col mb-4">
+                  <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
+                  <div className="flex gap-2">
+                    <input type="text" {...register('birthDateDay')} placeholder="יום" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateDay') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                    <input type="text" {...register('birthDateMonth')} placeholder="חודש" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateMonth') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                    <input type="text" {...register('birthDateYear')} placeholder="שנה" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateYear') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                  </div>
+                  {(translationErrors.has('birthDateDay') || translationErrors.has('birthDateMonth') || translationErrors.has('birthDateYear')) && (
+                    <span className="text-red-500 text-sm mt-1">שדה חובה — יש למלא יום, חודש ושנה</span>
                   )}
                 </div>
-              )}
-
-              <div id="field-birthDateDay" className="flex flex-col mb-4">
-                <label className="font-semibold mb-1 text-gray-700">תאריך לידה</label>
-                <div className="flex gap-2">
-                  <input type="text" {...register('birthDateDay')} placeholder="יום" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateDay') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
-                  <input type="text" {...register('birthDateMonth')} placeholder="חודש" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateMonth') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
-                  <input type="text" {...register('birthDateYear')} placeholder="שנה" className={`rounded-md p-2 w-full border ${translationErrors.has('birthDateYear') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
-                </div>
-                {(translationErrors.has('birthDateDay') || translationErrors.has('birthDateMonth') || translationErrors.has('birthDateYear')) && (
-                  <span className="text-red-500 text-sm mt-1">שדה חובה — יש למלא יום, חודש ושנה</span>
-                )}
+                <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" />
+                <FormInput register={register} getFieldError={getFieldError} label="מדינת לידה (באנגלית)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
               </div>
 
-
-              <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" />
-              <FormInput register={register} getFieldError={getFieldError} label="מדינת לידה (באנגלית)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
-              <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת הזהות" name="idNumber" />
-              <FormSelect register={register} getFieldError={getFieldError} label="סוג דרכון" name="passportType" options={['REGULAR', 'OFFICIAL', 'DIPLOMATIC', 'LAISSEZ-PASSER', 'OTHER']} />
-              <FormInput register={register} getFieldError={getFieldError}
-                label="מדינת הנפקת דרכון (באנגלית)"
-                name="passportIssuingCountry"
-                hint="ניתן למלא ידנית או לעדכן אוטומטית מזיהוי צילום הדרכון"
-              />
-              <FormInput register={register} getFieldError={getFieldError} label="עיר הנפקת דרכון (באנגלית)" name="passportIssuingCity" hint="לדוגמה: Jerusalem" optional />
-              <FormInput register={register} getFieldError={getFieldError} label="הרשות המנפיקה (באנגלית)" name="passportIssuingAuthority" hint="לדוגמה: Ministry of Interior" optional />
-              <FormInput register={register} getFieldError={getFieldError} label="תאריך הנפקת דרכון" name="passportIssueDate" hint="YYYY-MM-DD; ממולא אוטומטית מצילום הדרכון" />
-              <FormInput register={register} getFieldError={getFieldError} label="תאריך פקיעת דרכון" name="passportExpirationDate" hint="YYYY-MM-DD; ממולא אוטומטית מצילום הדרכון" />
-              <FormInput register={register} getFieldError={getFieldError} label="כתובת מגורים נוכחית - רחוב" name="addressStreet" />
-              <FormInput register={register} getFieldError={getFieldError} label="(מספר דירה / apt number)" name="addressApt" optional />
-              <FormInput register={register} getFieldError={getFieldError} label="עיר" name="addressCity" />
-              <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="addressZip" hint="7 ספרות, לדוגמה: 6473214" optional />
-              <div className="col-span-full">
-                <FormRadioGroup register={register} getFieldError={getFieldError} label="כתובת הדואר זהה לכתובת המגורים?" name="mailingAddressSame" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
-                {w.mailingAddressSame === 'no' && (
-                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50 p-4 rounded border border-gray-200">
-                    <FormInput register={register} getFieldError={getFieldError} label="רחוב (כתובת דואר)" name="mailingStreet" optional />
-                    <FormInput register={register} getFieldError={getFieldError} label="עיר (כתובת דואר)" name="mailingCity" optional />
-                    <FormInput register={register} getFieldError={getFieldError} label="מיקוד (כתובת דואר)" name="mailingZip" optional />
-                    <FormInput register={register} getFieldError={getFieldError} label="מדינה (ארץ)" name="mailingCountry" hint="לדוגמה: Israel" optional />
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col mb-4">
-                <label className="font-semibold mb-1 text-gray-700">טלפון</label>
-                <div className="flex gap-2 items-start" dir="ltr">
-                  <div className="flex flex-col shrink-0">
-                    <select
-                      {...register('phoneCountryCode')}
-                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border h-[42px] ${getFieldError('phoneCountryCode') ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
-                      dir="ltr"
-                    >
-                      {COUNTRY_CODES.map((c) => (
-                        <option key={`${c.flag}-${c.code}`} value={c.code}>
-                          {c.flag} +{c.code} {c.name}
-                        </option>
-                      ))}
-                    </select>
-                    {getFieldError('phoneCountryCode') && <span className="text-red-500 text-sm mt-1">{getFieldError('phoneCountryCode')?.message || 'שגיאה'}</span>}
-                  </div>
-                  <div className="flex flex-col flex-1">
-                    <input
-                      type="tel"
-                      {...register('phoneNumber')}
-                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${getFieldError('phoneNumber') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                      placeholder="543344505"
-                      dir="ltr"
-                    />
-                    {getFieldError('phoneNumber') && <span className="text-red-500 text-sm mt-1">{getFieldError('phoneNumber')?.message || 'שגיאה'}</span>}
-                  </div>
+              {/* ── כרטיס 3: כתובת מגורים ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 className="col-span-full font-bold text-lg">כתובת מגורים נוכחית</h3>
+                <FormInput register={register} getFieldError={getFieldError} label="רחוב" name="addressStreet" />
+                <FormInput register={register} getFieldError={getFieldError} label="מספר דירה / apt number" name="addressApt" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="עיר" name="addressCity" />
+                <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="addressZip" hint="7 ספרות, לדוגמה: 6473214" optional />
+                <div className="col-span-full">
+                  <FormRadioGroup register={register} getFieldError={getFieldError} label="כתובת הדואר זהה לכתובת המגורים?" name="mailingAddressSame" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
+                  {w.mailingAddressSame === 'no' && (
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 bg-white p-4 rounded border border-gray-200">
+                      <h4 className="col-span-full font-semibold text-gray-700 text-sm">כתובת דואר</h4>
+                      <FormInput register={register} getFieldError={getFieldError} label="רחוב" name="mailingStreet" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="עיר" name="mailingCity" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="mailingZip" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מדינה (ארץ)" name="mailingCountry" hint="לדוגמה: Israel" optional />
+                    </div>
+                  )}
                 </div>
-                <span className="text-xs text-gray-400 mt-1">מספר ללא 0 בהתחלה</span>
               </div>
-              <FormInput register={register} getFieldError={getFieldError} label="טלפון עבודה / נייד נוסף" name="secondaryPhone" type="tel" hint="לדוגמה: 0523344505" optional />
-              <FormInput register={register} getFieldError={getFieldError} label="Email" name="email" type="email" />
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם השתמשת במספרי טלפון אחרים ב-5 השנים האחרונות?" name="otherPhonesLastFiveYears" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} optional />
-              {w.otherPhonesLastFiveYears === 'yes' && (
-                <FormInput register={register} getFieldError={getFieldError} label="מספרי טלפון נוספים (הפרד בפסיקים)" name="otherPhonesList" hint="לדוגמה: 0521234567, 0529876543" />
-              )}
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם השתמשת בכתובות אימייל אחרות ב-5 השנים האחרונות?" name="otherEmailsLastFiveYears" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} optional />
-              {w.otherEmailsLastFiveYears === 'yes' && (
-                <FormInput register={register} getFieldError={getFieldError} label="כתובות אימייל נוספות (הפרד בפסיקים)" name="otherEmailsList" hint="לדוגמה: old@gmail.com, work@company.com" />
-              )}
 
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="אזרחות זרה?" name="hasForeignCitizenship" options={[{ label: 'לא', value: 'no' }, { label: 'של איזה מדינה?', value: 'yes' }]} />
-              {w.hasForeignCitizenship === 'yes' && (
-                <div className="grid grid-cols-1 gap-4">
-                  <FormInput register={register} getFieldError={getFieldError} label="של איזה מדינה (אזרחות זרה)" name="foreignCitizenshipCountry" />
-                  <FormInput
-                    register={register}
-                    getFieldError={getFieldError}
-                    label="מספר זיהות באזרחות הזו (ת.ז. / מספר אזרחות וכו׳)"
-                    name="foreignCitizenshipId"
-                  />
-                  <DocumentFileSlot
-                    label="צילום תעודת האזרחות הזרה"
-                    name="foreignCitizenshipScan"
-                    register={register}
-                    setValue={setValue}
-                    getFieldError={getFieldError}
-                    watchedValue={watch('foreignCitizenshipScan')}
-                    accept="image/*,application/pdf"
-                  />
+              {/* ── כרטיס 4: פרטי קשר ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 className="col-span-full font-bold text-lg">פרטי קשר</h3>
+                <div className="flex flex-col mb-4">
+                  <label className="font-semibold mb-1 text-gray-700">טלפון</label>
+                  <div className="flex gap-2 items-start" dir="ltr">
+                    <div className="flex flex-col shrink-0">
+                      <select
+                        {...register('phoneCountryCode')}
+                        className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border h-[42px] ${getFieldError('phoneCountryCode') ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'}`}
+                        dir="ltr"
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={`${c.flag}-${c.code}`} value={c.code}>
+                            {c.flag} +{c.code} {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      {getFieldError('phoneCountryCode') && <span className="text-red-500 text-sm mt-1">{getFieldError('phoneCountryCode')?.message || 'שגיאה'}</span>}
+                    </div>
+                    <div className="flex flex-col flex-1">
+                      <input
+                        type="tel"
+                        {...register('phoneNumber')}
+                        className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${getFieldError('phoneNumber') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                        placeholder="543344505"
+                        dir="ltr"
+                      />
+                      {getFieldError('phoneNumber') && <span className="text-red-500 text-sm mt-1">{getFieldError('phoneNumber')?.message || 'שגיאה'}</span>}
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-400 mt-1">מספר ללא 0 בהתחלה</span>
                 </div>
-              )}
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אתה תושב קבע במדינה אחרת מלבד ישראל?" name="isPermanentResidentElsewhere" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} optional />
-              {w.isPermanentResidentElsewhere === 'yes' && (
-                <FormInput register={register} getFieldError={getFieldError} label="באיזה מדינה?" name="permanentResidenceCountry" hint="לדוגמה: Canada" />
-              )}
+                <FormInput register={register} getFieldError={getFieldError} label="טלפון עבודה / נייד נוסף" name="secondaryPhone" type="tel" hint="לדוגמה: 0523344505" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="Email" name="email" type="email" />
+                <div className="col-span-full mb-0">
+                  <div className="-mb-4">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם השתמשת במספרי טלפון אחרים ב-5 השנים האחרונות?" name="otherPhonesLastFiveYears" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} optional />
+                  </div>
+                  {w.otherPhonesLastFiveYears === 'yes' && (
+                    <div className="mt-2 pr-2 border-r-2 border-blue-200">
+                      <FormInput register={register} getFieldError={getFieldError} label="מספרי טלפון נוספים (הפרד בפסיקים)" name="otherPhonesList" hint="לדוגמה: 0521234567, 0529876543" />
+                    </div>
+                  )}
+                </div>
+                <div className="col-span-full mb-0">
+                  <div className="-mb-4">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם השתמשת בכתובות אימייל אחרות ב-5 השנים האחרונות?" name="otherEmailsLastFiveYears" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} optional />
+                  </div>
+                  {w.otherEmailsLastFiveYears === 'yes' && (
+                    <div className="mt-2 pr-2 border-r-2 border-blue-200">
+                      <FormInput register={register} getFieldError={getFieldError} label="כתובות אימייל נוספות (הפרד בפסיקים)" name="otherEmailsList" hint="לדוגמה: old@gmail.com, work@company.com" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ── כרטיס 5: אזרחות ── */}
+              <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 className="font-bold text-lg mb-4">אזרחות</h3>
+                <div className="mb-0">
+                  <div className="-mb-4">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="אזרחות זרה?" name="hasForeignCitizenship" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  </div>
+                  {w.hasForeignCitizenship === 'yes' && (
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4 pr-2 border-r-2 border-blue-200">
+                      <FormInput register={register} getFieldError={getFieldError} label="של איזה מדינה?" name="foreignCitizenshipCountry" />
+                      <FormInput register={register} getFieldError={getFieldError} label="מספר זיהות באזרחות הזו (ת.ז. / מספר אזרחות וכו׳)" name="foreignCitizenshipId" />
+                      <div className="md:col-span-2">
+                        <DocumentFileSlot
+                          label="צילום תעודת האזרחות הזרה"
+                          name="foreignCitizenshipScan"
+                          register={register}
+                          setValue={setValue}
+                          getFieldError={getFieldError}
+                          watchedValue={watch('foreignCitizenshipScan')}
+                          accept="image/*,application/pdf"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 mb-0">
+                  <div className="-mb-4">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אתה תושב קבע במדינה אחרת מלבד ישראל?" name="isPermanentResidentElsewhere" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} optional />
+                  </div>
+                  {w.isPermanentResidentElsewhere === 'yes' && (
+                    <div className="mt-2 pr-2 border-r-2 border-blue-200">
+                      <FormInput register={register} getFieldError={getFieldError} label="באיזה מדינה?" name="permanentResidenceCountry" hint="לדוגמה: Canada" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           </section>
 
@@ -2176,23 +2205,43 @@ export default function DS160IsraelForm({
             )}
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">הורים בני זוג ומשפחה</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <section className="space-y-6">
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">הורים ומשפחה</h2>
+
+            {/* ── הורים ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+              <h3 className="col-span-full font-bold text-lg">הורים</h3>
               <FormInput register={register} getFieldError={getFieldError} label="שם האבא" name="fatherFullName" />
               <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה של האבא" name="fatherBirthDate" />
               <div className="col-span-full">
-                <FormRadioGroup register={register} getFieldError={getFieldError} label="האם האבא נמצא בארה״ב?" name="fatherInUS" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
-                {w.fatherInUS === 'yes' && <FormSelect register={register} getFieldError={getFieldError} label="סטטוס האבא בארה״ב" name="fatherUSStatus" options={['אזרח', 'גרין קארד (LPR)', 'ויזת עבודה', 'ויזת סטודנט', 'מטייל', 'אחר']} />}
+                <div className="-mb-4">
+                  <FormRadioGroup register={register} getFieldError={getFieldError} label="האם האבא נמצא בארה״ב?" name="fatherInUS" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                </div>
+                {w.fatherInUS === 'yes' && (
+                  <div className="mt-2 pr-2 border-r-2 border-blue-200">
+                    <FormSelect register={register} getFieldError={getFieldError} label="סטטוס האבא בארה״ב" name="fatherUSStatus" options={['אזרח', 'גרין קארד (LPR)', 'ויזת עבודה', 'ויזת סטודנט', 'מטייל', 'אחר']} />
+                  </div>
+                )}
               </div>
-              <FormInput register={register} getFieldError={getFieldError} label="שם האמא" name="motherFullName" />
-              <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה של האמא" name="motherBirthDate" />
-              <div className="col-span-full">
-                <FormRadioGroup register={register} getFieldError={getFieldError} label="האם האמא נמצאת בארה״ב?" name="motherInUS" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
-                {w.motherInUS === 'yes' && <FormSelect register={register} getFieldError={getFieldError} label="סטטוס האמא בארה״ב" name="motherUSStatus" options={['אזרחית', 'גרין קארד (LPR)', 'ויזת עבודה', 'ויזת סטודנטית', 'מטיילת', 'אחר']} />}
+              <div className="col-span-full border-t border-gray-200 pt-4 mt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormInput register={register} getFieldError={getFieldError} label="שם האמא" name="motherFullName" />
+                  <FormInput register={register} getFieldError={getFieldError} label="תאריך לידה של האמא" name="motherBirthDate" />
+                </div>
+                <div className="mt-4">
+                  <div className="-mb-4">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם האמא נמצאת בארה״ב?" name="motherInUS" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  </div>
+                  {w.motherInUS === 'yes' && (
+                    <div className="mt-2 pr-2 border-r-2 border-blue-200">
+                      <FormSelect register={register} getFieldError={getFieldError} label="סטטוס האמא בארה״ב" name="motherUSStatus" options={['אזרחית', 'גרין קארד (LPR)', 'ויזת עבודה', 'ויזת סטודנטית', 'מטיילת', 'אחר']} />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* ── קרובים בארה״ב ── */}
             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך משפחה מקרבה ראשונה בארה״ב?" name="hasCloseRelativesInUS" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }, { label: 'יש רחוקה', value: 'distant' }]} />
 
             {w.hasCloseRelativesInUS === 'yes' && (
