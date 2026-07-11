@@ -1538,6 +1538,8 @@ export default function DS160IsraelForm({
     } else {
       req('plannedStayValue')
       req('plannedStayUnit')
+      req('accommodationStreet1')
+      req('accommodationCity')
     }
     req('tripPayerType')
     const ptype = values.tripPayerType
@@ -2724,6 +2726,18 @@ export default function DS160IsraelForm({
                     {(translationErrors.has('plannedStayValue') || translationErrors.has('plannedStayUnit')) && (
                       <span className="text-red-500 text-sm mt-1 block">שדה חובה</span>
                     )}
+                  </div>
+
+                  {/* Accommodation address — required even without specific plans */}
+                  <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
+                    <p className="text-sm font-semibold text-gray-700">כתובת לינה בארה״ב</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="accommodationStreet1" hint="לדוגמה: 9080 Sunrise Blvd" />
+                      <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="accommodationStreet2" hint="לדוגמה: Apt 4B" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="עיר" name="accommodationCity" />
+                      <FormInput register={register} getFieldError={getFieldError} label="מדינה (State)" name="accommodationState" hint="לדוגמה: FL" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP, אם ידוע)" name="accommodationZip" optional />
+                    </div>
                   </div>
                 </div>
               )}

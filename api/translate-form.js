@@ -251,8 +251,8 @@ PERSONAL INFORMATION 1
 
   * IF YES:
 
-    * Other Surnames
-    * Other Given Names
+    * Other Surnames — transliterate to English
+    * Other Given Names — transliterate to English
 
 * Do you have a telecode that represents your name? YES/NO
   Telecodes are 4 digit code numbers that represent characters in some non-Roman alphabet names.
@@ -1009,7 +1009,6 @@ If no photo is uploaded, skip this section.
 * Preferred Interview Language
   Rule: always output Hebrew unless specified otherwise. Never mark as ❗ MISSING.
 * U.S. Embassy / Consulate Location
-* Current Physical Location
 
 ━━━━━━━━━━━━━━━━━━━━
 ATTACHMENT-DRIVEN GAP FILLING
