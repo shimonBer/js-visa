@@ -3383,25 +3383,25 @@ export default function DS160IsraelForm({
           </section>
 
           <section className="space-y-6">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Family Information: Relatives</h2>
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מידע משפחתי: קרובים</h2>
             <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
               הערה: אנא מסור/י מידע על הוריך הביולוגיים. אם אומצת, מסור/י מידע על הוריך המאמצים.
             </p>
 
             {/* ── Father ── */}
             <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
-              <h3 className="font-bold text-lg">Father&apos;s Full Name and Date of Birth</h3>
+              <h3 className="font-bold text-lg">שם מלא ותאריך לידה — אב</h3>
 
               {/* Surnames */}
               <div className="flex flex-col gap-1">
-                <label className="font-semibold text-sm text-gray-700">שם משפחה (Surnames)</label>
+                <label className="font-semibold text-sm text-gray-700">שם משפחה</label>
                 <div className="flex items-center gap-3">
                   <input type="text" {...register('fatherSurnames')} disabled={watch('fatherSurnamesDoNotKnow')}
                     className={`rounded-md p-2 border flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${translationErrors.has('fatherSurnames') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     dir="ltr" placeholder="e.g., Hernandez Garcia" />
                   <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                     <input type="checkbox" {...register('fatherSurnamesDoNotKnow')} className="rounded" />
-                    Do Not Know
+                    לא ידוע
                   </label>
                 </div>
                 {translationErrors.has('fatherSurnames') && <span className="text-red-500 text-xs">נדרש שם פרטי או שם משפחה</span>}
@@ -3409,14 +3409,14 @@ export default function DS160IsraelForm({
 
               {/* Given Names */}
               <div className="flex flex-col gap-1">
-                <label className="font-semibold text-sm text-gray-700">שם פרטי (Given Names)</label>
+                <label className="font-semibold text-sm text-gray-700">שם פרטי</label>
                 <div className="flex items-center gap-3">
                   <input type="text" {...register('fatherGivenNames')} disabled={watch('fatherGivenNamesDoNotKnow')}
                     className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400"
                     dir="ltr" placeholder="e.g., Juan Miguel" />
                   <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                     <input type="checkbox" {...register('fatherGivenNamesDoNotKnow')} className="rounded" />
-                    Do Not Know
+                    לא ידוע
                   </label>
                 </div>
               </div>
@@ -3425,20 +3425,20 @@ export default function DS160IsraelForm({
               <div className="flex flex-col gap-1">
                 <div className="flex items-end gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
-                    <DateSelectInput label="תאריך לידה (Date of Birth)" name="fatherBirthDate" optional register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                    <DateSelectInput label="תאריך לידה" name="fatherBirthDate" optional register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                   </div>
                   <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer pb-1">
                     <input type="checkbox" {...register('fatherBirthDateDoNotKnow')} className="rounded" />
-                    Do Not Know
+                    לא ידוע
                   </label>
                 </div>
               </div>
 
               {/* Is father in the U.S.? */}
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="Q: Is your father in the U.S.?" name="fatherInUS" options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אביך נמצא בארה״ב?" name="fatherInUS" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
               {w.fatherInUS === 'yes' && (
                 <div className="pr-4 border-r-4 border-blue-400">
-                  <FormSelect register={register} getFieldError={getFieldError} label="Father&apos;s Status" name="fatherUSStatus"
+                  <FormSelect register={register} getFieldError={getFieldError} label="מעמד האב" name="fatherUSStatus"
                     options={['- SELECT ONE -', 'U.S. CITIZEN', 'U.S. LEGAL PERMANENT RESIDENT (LPR)', 'NONIMMIGRANT', 'OTHER/I DON\'T KNOW']} />
                 </div>
               )}
@@ -3446,18 +3446,18 @@ export default function DS160IsraelForm({
 
             {/* ── Mother ── */}
             <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
-              <h3 className="font-bold text-lg">Mother&apos;s Full Name and Date of Birth</h3>
+              <h3 className="font-bold text-lg">שם מלא ותאריך לידה — אם</h3>
 
               {/* Surnames */}
               <div className="flex flex-col gap-1">
-                <label className="font-semibold text-sm text-gray-700">שם משפחה (Surnames)</label>
+                <label className="font-semibold text-sm text-gray-700">שם משפחה</label>
                 <div className="flex items-center gap-3">
                   <input type="text" {...register('motherSurnames')} disabled={watch('motherSurnamesDoNotKnow')}
                     className={`rounded-md p-2 border flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${translationErrors.has('motherSurnames') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     dir="ltr" placeholder="e.g., Hernandez Garcia" />
                   <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                     <input type="checkbox" {...register('motherSurnamesDoNotKnow')} className="rounded" />
-                    Do Not Know
+                    לא ידוע
                   </label>
                 </div>
                 {translationErrors.has('motherSurnames') && <span className="text-red-500 text-xs">נדרש שם פרטי או שם משפחה</span>}
@@ -3465,14 +3465,14 @@ export default function DS160IsraelForm({
 
               {/* Given Names */}
               <div className="flex flex-col gap-1">
-                <label className="font-semibold text-sm text-gray-700">שם פרטי (Given Names)</label>
+                <label className="font-semibold text-sm text-gray-700">שם פרטי</label>
                 <div className="flex items-center gap-3">
                   <input type="text" {...register('motherGivenNames')} disabled={watch('motherGivenNamesDoNotKnow')}
                     className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400"
                     dir="ltr" placeholder="e.g., Juanita Miguel" />
                   <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                     <input type="checkbox" {...register('motherGivenNamesDoNotKnow')} className="rounded" />
-                    Do Not Know
+                    לא ידוע
                   </label>
                 </div>
               </div>
@@ -3480,19 +3480,19 @@ export default function DS160IsraelForm({
               {/* Date of Birth */}
               <div className="flex items-end gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
-                  <DateSelectInput label="תאריך לידה (Date of Birth)" name="motherBirthDate" optional register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                  <DateSelectInput label="תאריך לידה" name="motherBirthDate" optional register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                 </div>
                 <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer pb-1">
                   <input type="checkbox" {...register('motherBirthDateDoNotKnow')} className="rounded" />
-                  Do Not Know
+                  לא ידוע
                 </label>
               </div>
 
               {/* Is mother in the U.S.? */}
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="Q: Is your mother in the U.S.?" name="motherInUS" options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אמך נמצאת בארה״ב?" name="motherInUS" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
               {w.motherInUS === 'yes' && (
                 <div className="pr-4 border-r-4 border-blue-400">
-                  <FormSelect register={register} getFieldError={getFieldError} label="Mother&apos;s Status" name="motherUSStatus"
+                  <FormSelect register={register} getFieldError={getFieldError} label="מעמד האם" name="motherUSStatus"
                     options={['- SELECT ONE -', 'U.S. CITIZEN', 'U.S. LEGAL PERMANENT RESIDENT (LPR)', 'NONIMMIGRANT', 'OTHER/I DON\'T KNOW']} />
                 </div>
               )}
@@ -3500,36 +3500,36 @@ export default function DS160IsraelForm({
 
             {/* ── Q1: Immediate relatives (not parents) ── */}
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Do you have any immediate relatives, not including parents, in the United States?"
+              label="האם יש לך קרובי משפחה מדרגה ראשונה (לא כולל הורים) בארה״ב?"
               name="hasCloseRelativesInUS"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
 
             {w.hasCloseRelativesInUS === 'yes' && (
               <div className="space-y-4 pl-2 border-r-4 border-blue-400 pr-4">
-                <p className="text-sm text-gray-600">Provide the following information:</p>
+                <p className="text-sm text-gray-600">אנא מסור/י את הפרטים הבאים:</p>
                 {usRelativeFields.map((field, index) => (
                   <div key={field.id} className="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-gray-700">קרוב/ה #{index + 1}</span>
                       {usRelativeFields.length > 1 && (
-                        <button type="button" onClick={() => removeUSRelative(index)} className="text-red-500 text-sm hover:underline">Remove</button>
+                        <button type="button" onClick={() => removeUSRelative(index)} className="text-red-500 text-sm hover:underline">הסר</button>
                       )}
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="font-semibold text-sm text-gray-700">Surnames {translationErrors.has(`usRelatives.${index}.surnames`) && <span className="text-red-500">*</span>}</label>
+                      <label className="font-semibold text-sm text-gray-700">שם משפחה {translationErrors.has(`usRelatives.${index}.surnames`) && <span className="text-red-500">*</span>}</label>
                       <input type="text" {...register(`usRelatives.${index}.surnames`)}
                         className={`rounded-md p-2 border w-full ${translationErrors.has(`usRelatives.${index}.surnames`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                         dir="ltr" />
                       {translationErrors.has(`usRelatives.${index}.surnames`) && <span className="text-red-500 text-xs">נדרש לפחות שם אחד</span>}
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="font-semibold text-sm text-gray-700">Given Names</label>
+                      <label className="font-semibold text-sm text-gray-700">שם פרטי</label>
                       <input type="text" {...register(`usRelatives.${index}.givenNames`)}
                         className="rounded-md p-2 border border-gray-300 w-full" dir="ltr" />
                     </div>
-                    <FormSelect register={register} getFieldError={getFieldError} label="Relationship to You" name={`usRelatives.${index}.relationship`}
+                    <FormSelect register={register} getFieldError={getFieldError} label="קשר אליך" name={`usRelatives.${index}.relationship`}
                       options={['- SELECT ONE -', 'SPOUSE', 'FIANCÉ/FIANCÉE', 'CHILD', 'SIBLING']} />
-                    <FormSelect register={register} getFieldError={getFieldError} label="Relative's Status" name={`usRelatives.${index}.status`}
+                    <FormSelect register={register} getFieldError={getFieldError} label="מעמד הקרוב" name={`usRelatives.${index}.status`}
                       options={['- SELECT ONE -', 'U.S. CITIZEN', 'U.S. LEGAL PERMANENT RESIDENT (LPR)', 'NONIMMIGRANT', 'OTHER/I DON\'T KNOW']} />
                   </div>
                 ))}
@@ -3537,7 +3537,7 @@ export default function DS160IsraelForm({
                   onClick={() => appendUSRelative({ surnames: '', givenNames: '', relationship: '', status: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
-                  Add Another
+                  הוסף קרוב
                 </button>
               </div>
             )}
@@ -3545,73 +3545,73 @@ export default function DS160IsraelForm({
             {/* ── Q2: Any other relatives — only shown if Q1 is NO ── */}
             {w.hasCloseRelativesInUS === 'no' && (
               <FormRadioGroup register={register} getFieldError={getFieldError}
-                label="Q: Do you have any other relatives in the United States?"
+                label="האם יש לך קרובים נוספים בארה״ב?"
                 name="hasOtherRelativesInUS"
-                options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
             )}
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Present Work/Education/Training Information</h2>
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">תעסוקה / השכלה / הכשרה נוכחית</h2>
             <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
-              NOTE: Provide the following information concerning your current employment or education.
+              הערה: אנא מסור/י מידע על תעסוקתך או לימודיך הנוכחיים.
             </p>
-            <FormSelect register={register} getFieldError={getFieldError} label="Primary Occupation" name="currentOccupation"
+            <FormSelect register={register} getFieldError={getFieldError} label="עיסוק עיקרי" name="currentOccupation"
               options={['-SELECT ONE-','AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','HOMEMAKER','LEGAL PROFESSION','MEDICAL/HEALTH','MILITARY','NATURAL SCIENCE','NOT EMPLOYED','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','RETIRED','SOCIAL SCIENCE','STUDENT','OTHER']} />
 
             {/* Employed occupations → employer details */}
             {['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER'].includes(w.currentOccupation) && (
               <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
-                <FormInput register={register} getFieldError={getFieldError} label="Present Employer or School Name" name="employerName" />
+                <FormInput register={register} getFieldError={getFieldError} label="שם המעסיק / מוסד הלימודים" name="employerName" />
 
                 {/* Address sub-section */}
                 <div className="bg-white rounded border border-gray-200 p-3 space-y-3">
-                  <p className="text-sm font-semibold text-gray-600">Present employer or school address:</p>
-                  <FormInput register={register} getFieldError={getFieldError} label="Street Address (Line 1)" name="employerStreet" />
-                  <FormInput register={register} getFieldError={getFieldError} label="Street Address (Line 2)" name="employerStreet2" optional />
-                  <FormInput register={register} getFieldError={getFieldError} label="City" name="employerCity" />
+                  <p className="text-sm font-semibold text-gray-600">כתובת המעסיק / מוסד הלימודים:</p>
+                  <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 1)" name="employerStreet" />
+                  <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 2)" name="employerStreet2" optional />
+                  <FormInput register={register} getFieldError={getFieldError} label="עיר" name="employerCity" />
                   <div className="flex flex-col gap-1">
-                    <label className="font-semibold text-sm text-gray-700">State/Province</label>
+                    <label className="font-semibold text-sm text-gray-700">מדינה/מחוז</label>
                     <div className="flex items-center gap-3">
                       <input type="text" {...register('employerState')} disabled={watch('employerStateDoesNotApply')}
                         className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                       <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                         <input type="checkbox" {...register('employerStateDoesNotApply')} className="rounded" />
-                        Does Not Apply
+                        לא רלוונטי
                       </label>
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="font-semibold text-sm text-gray-700">Postal Zone/ZIP Code</label>
+                    <label className="font-semibold text-sm text-gray-700">מיקוד</label>
                     <div className="flex items-center gap-3">
                       <input type="text" {...register('employerZip')} disabled={watch('employerZipDoesNotApply')}
                         className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                       <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                         <input type="checkbox" {...register('employerZipDoesNotApply')} className="rounded" />
-                        Does Not Apply
+                        לא רלוונטי
                       </label>
                     </div>
                   </div>
-                  <FormInput register={register} getFieldError={getFieldError} label="Phone Number" name="employerPhone" />
-                  <FormInput register={register} getFieldError={getFieldError} label="Country/Region" name="employerCountry" hint="לדוגמה: ISRAEL" />
+                  <FormInput register={register} getFieldError={getFieldError} label="טלפון" name="employerPhone" />
+                  <FormInput register={register} getFieldError={getFieldError} label="מדינה" name="employerCountry" hint="לדוגמה: ISRAEL" />
                 </div>
 
-                <DateSelectInput label="Start Date" name="employmentStartDate" register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                <DateSelectInput label="תאריך תחילת עבודה" name="employmentStartDate" register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
 
                 {/* Monthly Income + Does Not Apply */}
                 <div className="flex flex-col gap-1">
-                  <label className="font-semibold text-sm text-gray-700">Monthly Income in Local Currency (if employed)</label>
+                  <label className="font-semibold text-sm text-gray-700">הכנסה חודשית במטבע מקומי</label>
                   <div className="flex items-center gap-3">
                     <input type="text" {...register('monthlySalaryGross')} disabled={watch('monthlySalaryDoesNotApply')}
                       className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                     <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                       <input type="checkbox" {...register('monthlySalaryDoesNotApply')} className="rounded" />
-                      Does Not Apply
+                      לא רלוונטי
                     </label>
                   </div>
                 </div>
 
-                <FormInput register={register} getFieldError={getFieldError} label="Briefly describe your duties:" name="jobDuties" type="textarea" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="תיאור קצר של תפקידיך:" name="jobDuties" type="textarea" optional />
               </div>
             )}
 
@@ -3653,189 +3653,189 @@ export default function DS160IsraelForm({
             )}
 
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Were you previously employed?"
+              label="האם עבדת בעבר?"
               name="workedAnotherJobLast5Years"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
 
             {w.workedAnotherJobLast5Years === 'yes' && (
               <div className="space-y-4">
                 {previousEmploymentFields.map((field, i) => (
                   <div key={field.id} className="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-gray-700">Employer/Employment Information:</p>
+                      <p className="text-sm font-semibold text-gray-700">פרטי מעסיק / תפקיד קודם:</p>
                       {previousEmploymentFields.length > 1 && (
-                        <button type="button" onClick={() => removePreviousEmployment(i)} className="text-red-500 text-sm hover:underline">Remove</button>
+                        <button type="button" onClick={() => removePreviousEmployment(i)} className="text-red-500 text-sm hover:underline">הסר</button>
                       )}
                     </div>
 
-                    <FormInput register={register} getFieldError={getFieldError} label="Employer Name" name={`previousEmployments.${i}.employerName`} />
+                    <FormInput register={register} getFieldError={getFieldError} label="שם המעסיק" name={`previousEmployments.${i}.employerName`} />
 
                     {/* Address */}
                     <div className="bg-white rounded border border-gray-200 p-3 space-y-3">
-                      <FormInput register={register} getFieldError={getFieldError} label="Employer Street Address (Line 1)" name={`previousEmployments.${i}.street`} optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="Employer Street Address (Line 2)" name={`previousEmployments.${i}.street2`} optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="City" name={`previousEmployments.${i}.city`} optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 1)" name={`previousEmployments.${i}.street`} optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 2)" name={`previousEmployments.${i}.street2`} optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="עיר" name={`previousEmployments.${i}.city`} optional />
                       <div className="flex flex-col gap-1">
-                        <label className="font-semibold text-sm text-gray-700">State/Province</label>
+                        <label className="font-semibold text-sm text-gray-700">מדינה/מחוז</label>
                         <div className="flex items-center gap-3">
                           <input type="text" {...register(`previousEmployments.${i}.state`)} disabled={watch(`previousEmployments.${i}.stateDoesNotApply`)}
                             className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                           <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                             <input type="checkbox" {...register(`previousEmployments.${i}.stateDoesNotApply`)} className="rounded" />
-                            Does Not Apply
+                            לא רלוונטי
                           </label>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="font-semibold text-sm text-gray-700">Postal Zone/ZIP Code</label>
+                        <label className="font-semibold text-sm text-gray-700">מיקוד</label>
                         <div className="flex items-center gap-3">
                           <input type="text" {...register(`previousEmployments.${i}.zip`)} disabled={watch(`previousEmployments.${i}.zipDoesNotApply`)}
                             className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                           <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                             <input type="checkbox" {...register(`previousEmployments.${i}.zipDoesNotApply`)} className="rounded" />
-                            Does Not Apply
+                            לא רלוונטי
                           </label>
                         </div>
                       </div>
-                      <FormInput register={register} getFieldError={getFieldError} label="Country/Region" name={`previousEmployments.${i}.country`} hint="לדוגמה: ISRAEL" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="Telephone Number" name={`previousEmployments.${i}.phone`} optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מדינה" name={`previousEmployments.${i}.country`} hint="לדוגמה: ISRAEL" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="טלפון" name={`previousEmployments.${i}.phone`} optional />
                     </div>
 
-                    <FormInput register={register} getFieldError={getFieldError} label="Job Title" name={`previousEmployments.${i}.jobTitle`} />
+                    <FormInput register={register} getFieldError={getFieldError} label="תפקיד" name={`previousEmployments.${i}.jobTitle`} />
 
                     {/* Supervisor Surnames */}
                     <div className="flex flex-col gap-1">
-                      <label className="font-semibold text-sm text-gray-700">Supervisor&apos;s Surname</label>
+                      <label className="font-semibold text-sm text-gray-700">שם משפחה של הממונה</label>
                       <div className="flex items-center gap-3">
                         <input type="text" {...register(`previousEmployments.${i}.supervisorSurnames`)}
                           disabled={watch(`previousEmployments.${i}.supervisorSurnamesDoNotKnow`)}
                           className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                         <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                           <input type="checkbox" {...register(`previousEmployments.${i}.supervisorSurnamesDoNotKnow`)} className="rounded" />
-                          Do Not Know
+                          לא ידוע
                         </label>
                       </div>
                     </div>
 
                     {/* Supervisor Given Names */}
                     <div className="flex flex-col gap-1">
-                      <label className="font-semibold text-sm text-gray-700">Supervisor&apos;s Given Names</label>
+                      <label className="font-semibold text-sm text-gray-700">שם פרטי של הממונה</label>
                       <div className="flex items-center gap-3">
                         <input type="text" {...register(`previousEmployments.${i}.supervisorGivenNames`)}
                           disabled={watch(`previousEmployments.${i}.supervisorGivenNamesDoNotKnow`)}
                           className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                         <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                           <input type="checkbox" {...register(`previousEmployments.${i}.supervisorGivenNamesDoNotKnow`)} className="rounded" />
-                          Do Not Know
+                          לא ידוע
                         </label>
                       </div>
                     </div>
 
-                    <DateSelectInput label="Employment Date From" name={`previousEmployments.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
-                    <DateSelectInput label="Employment Date To" name={`previousEmployments.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
-                    <FormInput register={register} getFieldError={getFieldError} label="Briefly describe your duties:" name={`previousEmployments.${i}.duties`} type="textarea" optional />
+                    <DateSelectInput label="תאריך תחילת העסקה" name={`previousEmployments.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                    <DateSelectInput label="תאריך סיום העסקה" name={`previousEmployments.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                    <FormInput register={register} getFieldError={getFieldError} label="תיאור קצר של תפקידיך:" name={`previousEmployments.${i}.duties`} type="textarea" optional />
                   </div>
                 ))}
                 <button type="button"
                   onClick={() => appendPreviousEmployment({ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: false, zip: '', zipDoesNotApply: false, country: '', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
-                  Add Another
+                  הוסף תפקיד
                 </button>
               </div>
             )}
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Education</h2>
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">השכלה</h2>
 
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Have you attended any educational institutions at a secondary level or above?"
+              label="האם למדת במוסד חינוכי ברמת תיכון ומעלה?"
               name="hasEducation"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
 
             {w.hasEducation === 'yes' && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">Provide the following information on the educational institution(s) you have attended.</p>
+                <p className="text-sm text-gray-600">אנא מסור/י מידע על מוסדות הלימוד בהם למדת.</p>
                 {educationRecordFields.map((field, i) => (
                   <div key={field.id} className="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm text-gray-700">Institution #{i + 1}</span>
+                      <span className="font-semibold text-sm text-gray-700">מוסד #{i + 1}</span>
                       {educationRecordFields.length > 1 && (
-                        <button type="button" onClick={() => removeEducationRecord(i)} className="text-red-500 text-sm hover:underline">Remove</button>
+                        <button type="button" onClick={() => removeEducationRecord(i)} className="text-red-500 text-sm hover:underline">הסר</button>
                       )}
                     </div>
 
-                    <FormInput register={register} getFieldError={getFieldError} label="Name of Institution" name={`educationRecords.${i}.institutionName`} />
+                    <FormInput register={register} getFieldError={getFieldError} label="שם המוסד" name={`educationRecords.${i}.institutionName`} />
 
                     {/* Address */}
                     <div className="bg-white rounded border border-gray-200 p-3 space-y-3">
-                      <FormInput register={register} getFieldError={getFieldError} label="Street Address (Line 1)" name={`educationRecords.${i}.street`} optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="Street Address (Line 2)" name={`educationRecords.${i}.street2`} optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="City" name={`educationRecords.${i}.city`} optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 1)" name={`educationRecords.${i}.street`} optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 2)" name={`educationRecords.${i}.street2`} optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="עיר" name={`educationRecords.${i}.city`} optional />
                       <div className="flex flex-col gap-1">
-                        <label className="font-semibold text-sm text-gray-700">State/Province</label>
+                        <label className="font-semibold text-sm text-gray-700">מדינה/מחוז</label>
                         <div className="flex items-center gap-3">
                           <input type="text" {...register(`educationRecords.${i}.state`)} disabled={watch(`educationRecords.${i}.stateDoesNotApply`)}
                             className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                           <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                             <input type="checkbox" {...register(`educationRecords.${i}.stateDoesNotApply`)} className="rounded" />
-                            Does Not Apply
+                            לא רלוונטי
                           </label>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label className="font-semibold text-sm text-gray-700">Postal Zone/ZIP Code</label>
+                        <label className="font-semibold text-sm text-gray-700">מיקוד</label>
                         <div className="flex items-center gap-3">
                           <input type="text" {...register(`educationRecords.${i}.zip`)} disabled={watch(`educationRecords.${i}.zipDoesNotApply`)}
                             className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                           <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                             <input type="checkbox" {...register(`educationRecords.${i}.zipDoesNotApply`)} className="rounded" />
-                            Does Not Apply
+                            לא רלוונטי
                           </label>
                         </div>
                       </div>
-                      <FormInput register={register} getFieldError={getFieldError} label="Country/Region" name={`educationRecords.${i}.country`} hint="לדוגמה: ISRAEL" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מדינה" name={`educationRecords.${i}.country`} hint="לדוגמה: ISRAEL" optional />
                     </div>
 
-                    <FormInput register={register} getFieldError={getFieldError} label="Course of Study" name={`educationRecords.${i}.courseOfStudy`} />
-                    <DateSelectInput label="Date of Attendance From" name={`educationRecords.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
-                    <DateSelectInput label="Date of Attendance To" name={`educationRecords.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                    <FormInput register={register} getFieldError={getFieldError} label="תחום לימוד" name={`educationRecords.${i}.courseOfStudy`} />
+                    <DateSelectInput label="תאריך תחילת לימודים" name={`educationRecords.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                    <DateSelectInput label="תאריך סיום לימודים" name={`educationRecords.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                   </div>
                 ))}
                 <button type="button"
                   onClick={() => appendEducationRecord({ institutionName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: false, zip: '', zipDoesNotApply: false, country: '', courseOfStudy: '', dateFrom: '', dateTo: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
-                  Add Another
+                  הוסף מוסד
                 </button>
               </div>
             )}
 
             {/* Q: Clan or Tribe */}
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Do you belong to a clan or tribe?"
+              label="האם אתה שייך לשבט או קבוצה אתנית?"
               name="hasClanOrTribe"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
             {w.hasClanOrTribe === 'yes' && (
               <div className="pl-2 border-r-4 border-blue-400 pr-4">
-                <FormInput register={register} getFieldError={getFieldError} label="Clan or Tribe Name" name="clanOrTribeName" />
+                <FormInput register={register} getFieldError={getFieldError} label="שם השבט / הקבוצה" name="clanOrTribeName" />
               </div>
             )}
 
             {/* Languages — repeatable */}
             <div className={`space-y-2 ${translationErrors.has('languagesList.0.name') ? 'rounded-md bg-red-50 p-2' : ''}`}>
-              <p className="font-semibold text-sm text-gray-700">Provide a List of Languages You Speak <span className="text-red-500">*</span></p>
+              <p className="font-semibold text-sm text-gray-700">שפות שאתה דובר <span className="text-red-500">*</span></p>
               {languagesListFields.map((field, i) => (
                 <div key={field.id} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded p-3">
                   <div className="flex flex-col gap-1 flex-1">
-                    <label className="font-semibold text-sm text-gray-700">Language Name</label>
+                    <label className="font-semibold text-sm text-gray-700">שפה</label>
                     <input type="text" {...register(`languagesList.${i}.name`)}
                       className={`rounded-md p-2 border w-full ${translationErrors.has(`languagesList.${i}.name`) || (i === 0 && translationErrors.has('languagesList.0.name')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                       dir="ltr" />
                   </div>
                   {languagesListFields.length > 1 && (
-                    <button type="button" onClick={() => removeLanguage(i)} className="text-red-500 text-sm hover:underline mt-5">Remove</button>
+                    <button type="button" onClick={() => removeLanguage(i)} className="text-red-500 text-sm hover:underline mt-5">הסר</button>
                   )}
                 </div>
               ))}
@@ -3843,120 +3843,120 @@ export default function DS160IsraelForm({
               <button type="button" onClick={() => appendLanguage({ name: '' })}
                 className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                 <span aria-hidden className="text-lg leading-none">+</span>
-                Add Another
+                הוסף שפה
               </button>
             </div>
 
             {/* Q: Countries visited last 5 years — repeatable */}
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Have you traveled to any countries/regions within the last five years?"
+              label="האם ביקרת במדינות אחרות בחמש השנים האחרונות?"
               name="visitedAbroadLast5Years"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
             {w.visitedAbroadLast5Years === 'yes' && (
               <div className="space-y-2 pl-2 border-r-4 border-blue-400 pr-4">
-                <p className="text-sm text-gray-600">Provide a List of Countries/Regions Visited</p>
+                <p className="text-sm text-gray-600">רשימת מדינות שביקרת בהן</p>
                 {countriesVisitedFields.map((field, i) => (
                   <div key={field.id} className="flex items-end gap-3 bg-gray-50 border border-gray-200 rounded p-3">
                     <div className="flex flex-col gap-1 flex-1">
-                      <label className="font-semibold text-sm text-gray-700">Country/Region</label>
+                      <label className="font-semibold text-sm text-gray-700">מדינה</label>
                       <input type="text" {...register(`countriesVisited.${i}.country`)}
                         className={`rounded-md p-2 border w-full ${translationErrors.has(`countriesVisited.${i}.country`) || (i === 0 && translationErrors.has('countriesVisited.0.country')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                         dir="ltr" placeholder="e.g., ISRAEL" />
                     </div>
                     {countriesVisitedFields.length > 1 && (
-                      <button type="button" onClick={() => removeCountryVisited(i)} className="text-red-500 text-sm hover:underline pb-2">Remove</button>
+                      <button type="button" onClick={() => removeCountryVisited(i)} className="text-red-500 text-sm hover:underline pb-2">הסר</button>
                     )}
                   </div>
                 ))}
                 <button type="button" onClick={() => appendCountryVisited({ country: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
-                  Add Another
+                  הוסף מדינה
                 </button>
               </div>
             )}
 
             {/* Q: Organizations — repeatable, name only */}
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Have you belonged to, contributed to, or worked for any professional, social, or charitable organization?"
+              label="האם השתייכת, תרמת או עבדת עבור ארגון מקצועי, חברתי או צדקה?"
               name="hasOrganizations"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
             {w.hasOrganizations === 'yes' && (
               <div className="space-y-2 pl-2 border-r-4 border-blue-400 pr-4">
-                <p className="text-sm text-gray-600">Provide a List of Organizations</p>
+                <p className="text-sm text-gray-600">רשימת ארגונים</p>
                 {organizationFields.map((field, i) => (
                   <div key={field.id} className="flex items-end gap-3 bg-gray-50 border border-gray-200 rounded p-3">
                     <div className="flex flex-col gap-1 flex-1">
-                      <label className="font-semibold text-sm text-gray-700">Organization Name {translationErrors.has(`organizations.${i}.name`) && <span className="text-red-500">*</span>}</label>
+                      <label className="font-semibold text-sm text-gray-700">שם הארגון {translationErrors.has(`organizations.${i}.name`) && <span className="text-red-500">*</span>}</label>
                       <input type="text" {...register(`organizations.${i}.name`)}
                         className={`rounded-md p-2 border w-full ${translationErrors.has(`organizations.${i}.name`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                         dir="ltr" />
                     </div>
                     {organizationFields.length > 1 && (
-                      <button type="button" onClick={() => removeOrganization(i)} className="text-red-500 text-sm hover:underline pb-2">Remove</button>
+                      <button type="button" onClick={() => removeOrganization(i)} className="text-red-500 text-sm hover:underline pb-2">הסר</button>
                     )}
                   </div>
                 ))}
                 <button type="button" onClick={() => appendOrganization({ name: '', type: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
-                  Add Another
+                  הוסף ארגון
                 </button>
               </div>
             )}
 
             {/* Q: Specialized skills */}
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Do you have any specialized skills or training, such as firearms, explosives, nuclear, biological, or chemical experience?"
+              label="האם יש לך כישורים מיוחדים כגון נשק חם, חומרי נפץ, גרעין, ביולוגיה או כימיה?"
               name="hasSpecializedSkills"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
             {w.hasSpecializedSkills === 'yes' && (
               <div className="pl-2 border-r-4 border-blue-400 pr-4">
-                <FormInput register={register} getFieldError={getFieldError} label="Explain" name="specializedSkillsDescription" type="textarea" />
+                <FormInput register={register} getFieldError={getFieldError} label="הסבר" name="specializedSkillsDescription" type="textarea" />
               </div>
             )}
 
             {/* Q: Military service — repeatable */}
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Have you ever served in the military?"
+              label="האם שירתת בצבא?"
               name="servedInMilitary"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
             {w.servedInMilitary === 'yes' && (
               <div className="space-y-4 pl-2 border-r-4 border-blue-400 pr-4">
-                <p className="text-sm text-gray-600">Provide the following information:</p>
+                <p className="text-sm text-gray-600">אנא מסור/י את פרטי השירות:</p>
                 {militaryServiceFields.map((field, i) => (
                   <div key={field.id} className="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm text-gray-700">Service #{i + 1}</span>
+                      <span className="font-semibold text-sm text-gray-700">שירות #{i + 1}</span>
                       {militaryServiceFields.length > 1 && (
-                        <button type="button" onClick={() => removeMilitaryService(i)} className="text-red-500 text-sm hover:underline">Remove</button>
+                        <button type="button" onClick={() => removeMilitaryService(i)} className="text-red-500 text-sm hover:underline">הסר</button>
                       )}
                     </div>
-                    <FormInput register={register} getFieldError={getFieldError} label="Name of Country/Region" name={`militaryService.${i}.country`} hint="e.g., ISRAEL" />
-                    <FormInput register={register} getFieldError={getFieldError} label="Branch of Service" name={`militaryService.${i}.branch`} />
-                    <FormInput register={register} getFieldError={getFieldError} label="Rank/Position" name={`militaryService.${i}.rank`} optional />
-                    <FormInput register={register} getFieldError={getFieldError} label="Military Specialty" name={`militaryService.${i}.specialty`} optional />
-                    <DateSelectInput label="Date of Service From" name={`militaryService.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
-                    <DateSelectInput label="Date of Service To" name={`militaryService.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                    <FormInput register={register} getFieldError={getFieldError} label="מדינה" name={`militaryService.${i}.country`} hint="e.g., ISRAEL" />
+                    <FormInput register={register} getFieldError={getFieldError} label="חיל / זרוע" name={`militaryService.${i}.branch`} />
+                    <FormInput register={register} getFieldError={getFieldError} label="דרגה / תפקיד" name={`militaryService.${i}.rank`} optional />
+                    <FormInput register={register} getFieldError={getFieldError} label="התמחות צבאית" name={`militaryService.${i}.specialty`} optional />
+                    <DateSelectInput label="תאריך תחילת שירות" name={`militaryService.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                    <DateSelectInput label="תאריך סיום שירות" name={`militaryService.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                   </div>
                 ))}
                 <button type="button"
                   onClick={() => appendMilitaryService({ country: '', branch: '', rank: '', specialty: '', dateFrom: '', dateTo: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
-                  Add Another
+                  הוסף שירות
                 </button>
               </div>
             )}
 
             {/* Q: Paramilitary */}
             <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="Q: Have you ever served in, been a member of, or been involved with a paramilitary unit, vigilante unit, rebel group, guerrilla group, or insurgent organization?"
+              label="האם שירתת, היית חבר, או היית מעורב ביחידה פרא-צבאית, קבוצת מורדים, או ארגון חמוש?"
               name="hasParamilitary"
-              options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
             {w.hasParamilitary === 'yes' && (
               <div className="pl-2 border-r-4 border-blue-400 pr-4">
-                <FormInput register={register} getFieldError={getFieldError} label="Explain" name="paramilitaryExplanation" type="textarea" />
+                <FormInput register={register} getFieldError={getFieldError} label="הסבר" name="paramilitaryExplanation" type="textarea" />
               </div>
             )}
           </section>
