@@ -575,18 +575,18 @@ export default function DS160IsraelForm({
       unemploymentReason: '',
       employerStreet2: '',
       employerState: '',
-      employerStateDoesNotApply: false,
+      employerStateDoesNotApply: true,
       employerZip: '',
       employerZipDoesNotApply: false,
       employerCountry: '',
       monthlySalaryDoesNotApply: false,
       workedAnotherJobLast5Years: 'no',
-      previousEmployments: [{ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: false, zip: '', zipDoesNotApply: false, country: '', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' }],
+      previousEmployments: [{ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: false, country: '', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' }],
       attendedHighSchool: 'no',
       hasAcademicDegree: 'no',
       additionalDegrees: [],
       hasEducation: 'no',
-      educationRecords: [{ institutionName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: false, zip: '', zipDoesNotApply: false, country: '', courseOfStudy: '', dateFrom: '', dateTo: '' }],
+      educationRecords: [{ institutionName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: false, country: '', courseOfStudy: '', dateFrom: '', dateTo: '' }],
       additionalExSpouses: [],
       numberOfFormerSpouses: '',
       formerSpouses: [{ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', marriageDate: '', marriageEndDate: '', howEnded: '', terminationCountry: '' }],
@@ -2425,7 +2425,7 @@ export default function DS160IsraelForm({
                     <p className="font-semibold text-gray-700 mb-2">היכן הונפק הדרכון? (Where was it issued?)</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 rounded p-3 border border-blue-100">
                       <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="passportIssuingCity" hint="לדוגמה: Jerusalem" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה/מחוז (State/Province) — אם מצוין" name="passportIssuingState" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מחוז — אם מצוין" name="passportIssuingState" optional />
                       <FormInput register={register} getFieldError={getFieldError} label="מדינה (Country/Region)" name="passportIssuingAuthority" hint="לדוגמה: Israel" optional />
                     </div>
                   </div>
@@ -3571,7 +3571,7 @@ export default function DS160IsraelForm({
                   <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 2)" name="employerStreet2" optional />
                   <FormInput register={register} getFieldError={getFieldError} label="עיר" name="employerCity" />
                   <div className="flex flex-col gap-1">
-                    <label className="font-semibold text-sm text-gray-700">מדינה/מחוז</label>
+                    <label className="font-semibold text-sm text-gray-700">מחוז</label>
                     <div className="flex items-center gap-3">
                       <input type="text" {...register('employerState')} disabled={watch('employerStateDoesNotApply')}
                         className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
@@ -3676,7 +3676,7 @@ export default function DS160IsraelForm({
                       <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 2)" name={`previousEmployments.${i}.street2`} optional />
                       <FormInput register={register} getFieldError={getFieldError} label="עיר" name={`previousEmployments.${i}.city`} optional />
                       <div className="flex flex-col gap-1">
-                        <label className="font-semibold text-sm text-gray-700">מדינה/מחוז</label>
+                        <label className="font-semibold text-sm text-gray-700">מחוז</label>
                         <div className="flex items-center gap-3">
                           <input type="text" {...register(`previousEmployments.${i}.state`)} disabled={watch(`previousEmployments.${i}.stateDoesNotApply`)}
                             className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
@@ -3737,7 +3737,7 @@ export default function DS160IsraelForm({
                   </div>
                 ))}
                 <button type="button"
-                  onClick={() => appendPreviousEmployment({ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: false, zip: '', zipDoesNotApply: false, country: '', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' })}
+                  onClick={() => appendPreviousEmployment({ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: false, country: '', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
                   הוסף תפקיד
@@ -3774,7 +3774,7 @@ export default function DS160IsraelForm({
                       <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 2)" name={`educationRecords.${i}.street2`} optional />
                       <FormInput register={register} getFieldError={getFieldError} label="עיר" name={`educationRecords.${i}.city`} optional />
                       <div className="flex flex-col gap-1">
-                        <label className="font-semibold text-sm text-gray-700">מדינה/מחוז</label>
+                        <label className="font-semibold text-sm text-gray-700">מחוז</label>
                         <div className="flex items-center gap-3">
                           <input type="text" {...register(`educationRecords.${i}.state`)} disabled={watch(`educationRecords.${i}.stateDoesNotApply`)}
                             className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
@@ -3804,7 +3804,7 @@ export default function DS160IsraelForm({
                   </div>
                 ))}
                 <button type="button"
-                  onClick={() => appendEducationRecord({ institutionName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: false, zip: '', zipDoesNotApply: false, country: '', courseOfStudy: '', dateFrom: '', dateTo: '' })}
+                  onClick={() => appendEducationRecord({ institutionName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: false, country: '', courseOfStudy: '', dateFrom: '', dateTo: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
                   הוסף מוסד
