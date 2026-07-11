@@ -860,6 +860,11 @@ export default function DS160IsraelForm({
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
   const [securitySectionOpen, setSecuritySectionOpen] = useState(false)
+  const WORK_OCCUPATIONS = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
+  const [occupationCategory, setOccupationCategory] = useState(() => {
+    const v = watch('currentOccupation')
+    return WORK_OCCUPATIONS.includes(v) ? '__WORKING__' : (v || '')
+  })
   const [usLicenseOcr, setUsLicenseOcr] = useState({ status: 'idle', message: '' })
   const [previousVisaOcr, setPreviousVisaOcr] = useState({ status: 'idle', message: '' })
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
@@ -3518,69 +3523,67 @@ export default function DS160IsraelForm({
             <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
               הערה: אנא מסור/י מידע על תעסוקתך או לימודיך הנוכחיים.
             </p>
-            {(() => {
-              const WORK_OPTS = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
-              const isWorking = WORK_OPTS.includes(w.currentOccupation)
-              const primaryVal = isWorking ? '__WORKING__' : (w.currentOccupation || '')
-              const occError = getFieldError('currentOccupation')
-              return (
-                <div className="space-y-3 mb-4">
-                  {/* Level 1 — primary category */}
-                  <div className="flex flex-col">
-                    <label className="font-semibold mb-1 text-gray-700">עיסוק עיקרי</label>
-                    <select
-                      value={primaryVal}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        if (v === '__WORKING__') setValue('currentOccupation', '')
-                        else setValue('currentOccupation', v, { shouldDirty: true, shouldValidate: true })
-                      }}
-                      className={`rounded-md p-2 border ${occError && !isWorking ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                    >
-                      <option value="">בחר...</option>
-                      <option value="STUDENT">סטודנט/ית</option>
-                      <option value="__WORKING__">עובד/ת</option>
-                      <option value="NOT EMPLOYED">לא מועסק/ת</option>
-                      <option value="RETIRED">פנסיה</option>
-                      <option value="HOMEMAKER">עקר/עקרת בית</option>
-                      <option value="MILITARY">שירות צבאי</option>
-                    </select>
-                  </div>
+            <div className="space-y-3 mb-4">
+              {/* Level 1 — primary category */}
+              <div className="flex flex-col">
+                <label className="font-semibold mb-1 text-gray-700">עיסוק עיקרי</label>
+                <select
+                  value={occupationCategory}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setOccupationCategory(v)
+                    if (v !== '__WORKING__') {
+                      setValue('currentOccupation', v, { shouldDirty: true, shouldValidate: true })
+                    } else {
+                      setValue('currentOccupation', '', { shouldDirty: true })
+                    }
+                  }}
+                  className={`rounded-md p-2 border ${getFieldError('currentOccupation') && occupationCategory !== '__WORKING__' ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                >
+                  <option value="">בחר...</option>
+                  <option value="STUDENT">סטודנט/ית</option>
+                  <option value="__WORKING__">עובד/ת</option>
+                  <option value="NOT EMPLOYED">לא מועסק/ת</option>
+                  <option value="RETIRED">פנסיה</option>
+                  <option value="HOMEMAKER">עקר/עקרת בית</option>
+                  <option value="MILITARY">שירות צבאי</option>
+                </select>
+              </div>
 
-                  {/* Level 2 — specific work field (only when עובד/ת) */}
-                  {primaryVal === '__WORKING__' && (
-                    <div className="flex flex-col pr-4 border-r-4 border-blue-300">
-                      <label className="font-semibold mb-1 text-gray-700 text-sm">תחום עיסוק</label>
-                      <select
-                        {...register('currentOccupation')}
-                        className={`rounded-md p-2 border ${occError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                      >
-                        <option value="">בחר תחום...</option>
-                        <option value="AGRICULTURE">חקלאות</option>
-                        <option value="ARTIST/PERFORMER">אמן / מבצע</option>
-                        <option value="BUSINESS">עסקים</option>
-                        <option value="COMMUNICATIONS">תקשורת</option>
-                        <option value="COMPUTER SCIENCE">מדעי המחשב</option>
-                        <option value="CULINARY/FOOD SERVICES">קולינריה / שירותי מזון</option>
-                        <option value="EDUCATION">חינוך</option>
-                        <option value="ENGINEERING">הנדסה</option>
-                        <option value="GOVERNMENT">ממשלה / שירות ציבורי</option>
-                        <option value="LEGAL PROFESSION">משפטים</option>
-                        <option value="MEDICAL/HEALTH">רפואה / בריאות</option>
-                        <option value="NATURAL SCIENCE">מדעי הטבע</option>
-                        <option value="PHYSICAL SCIENCES">מדעים פיזיקליים</option>
-                        <option value="RELIGIOUS VOCATION">עיסוק דתי</option>
-                        <option value="RESEARCH">מחקר</option>
-                        <option value="SOCIAL SCIENCE">מדעי החברה</option>
-                        <option value="OTHER">אחר</option>
-                      </select>
-                      {occError && <span className="text-red-500 text-sm mt-1">שדה חובה</span>}
-                    </div>
-                  )}
-                  {occError && primaryVal !== '__WORKING__' && <span className="text-red-500 text-sm">שדה חובה</span>}
+              {/* Level 2 — specific work field (only when עובד/ת) */}
+              {occupationCategory === '__WORKING__' && (
+                <div className="flex flex-col pr-4 border-r-4 border-blue-300">
+                  <label className="font-semibold mb-1 text-gray-700 text-sm">תחום עיסוק</label>
+                  <select
+                    {...register('currentOccupation')}
+                    className={`rounded-md p-2 border ${getFieldError('currentOccupation') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                  >
+                    <option value="">בחר תחום...</option>
+                    <option value="AGRICULTURE">חקלאות</option>
+                    <option value="ARTIST/PERFORMER">אמן / מבצע</option>
+                    <option value="BUSINESS">עסקים</option>
+                    <option value="COMMUNICATIONS">תקשורת</option>
+                    <option value="COMPUTER SCIENCE">מדעי המחשב</option>
+                    <option value="CULINARY/FOOD SERVICES">קולינריה / שירותי מזון</option>
+                    <option value="EDUCATION">חינוך</option>
+                    <option value="ENGINEERING">הנדסה</option>
+                    <option value="GOVERNMENT">ממשלה / שירות ציבורי</option>
+                    <option value="LEGAL PROFESSION">משפטים</option>
+                    <option value="MEDICAL/HEALTH">רפואה / בריאות</option>
+                    <option value="NATURAL SCIENCE">מדעי הטבע</option>
+                    <option value="PHYSICAL SCIENCES">מדעים פיזיקליים</option>
+                    <option value="RELIGIOUS VOCATION">עיסוק דתי</option>
+                    <option value="RESEARCH">מחקר</option>
+                    <option value="SOCIAL SCIENCE">מדעי החברה</option>
+                    <option value="OTHER">אחר</option>
+                  </select>
+                  {getFieldError('currentOccupation') && <span className="text-red-500 text-sm mt-1">שדה חובה</span>}
                 </div>
-              )
-            })()}
+              )}
+              {getFieldError('currentOccupation') && occupationCategory !== '__WORKING__' && (
+                <span className="text-red-500 text-sm">שדה חובה</span>
+              )}
+            </div>
 
             {/* Employed occupations → employer details */}
             {['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER'].includes(w.currentOccupation) && (
