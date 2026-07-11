@@ -477,7 +477,7 @@ export default function DS160IsraelForm({
     defaultValues: {
       passportId: '',
       passportType: 'REGULAR',
-      passportBookNumberDoesNotApply: false,
+      passportBookNumberDoesNotApply: true,
       passportIssuingCountry: '',
       passportIssuingState: '',
       mailingAddressSame: 'yes',
@@ -859,6 +859,7 @@ export default function DS160IsraelForm({
   const [asyncFlow, setAsyncFlow] = useState({ phase: 'idle', message: '' })
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
+  const [securitySectionOpen, setSecuritySectionOpen] = useState(false)
   const [usLicenseOcr, setUsLicenseOcr] = useState({ status: 'idle', message: '' })
   const [previousVisaOcr, setPreviousVisaOcr] = useState({ status: 'idle', message: '' })
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
@@ -3960,167 +3961,172 @@ export default function DS160IsraelForm({
             )}
           </section>
 
-          {/* Security and Background: Part 1 */}
+          {/* Security and Background — collapsible */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Security and Background: Part 1</h2>
+            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Security and Background</h2>
             <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
-              NOTE: Provide the following security and background information. Provide complete and accurate information to all questions that require an explanation. A visa may not be issued to persons who are within specific categories defined by law as inadmissible to the United States (except when a waiver is obtained in advance). Are any of the following applicable to you? While a YES answer does not automatically signify ineligibility for a visa, if you answer YES you may be required to personally appear before a consular officer.
+              NOTE: Provide the following security and background information. A visa may not be issued to persons who are within specific categories defined by law as inadmissible to the United States. While a YES answer does not automatically signify ineligibility for a visa, if you answer YES you may be required to personally appear before a consular officer.
             </p>
-            <div className="space-y-6">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                <FormRadioGroup
-                  register={register}
-                  getFieldError={getFieldError}
-                  label="Do you have a communicable disease of public health significance? (Communicable diseases of public significance include chancroid, gonorrhea, granuloma inguinale, infectious leprosy, lymphogranuloma venereum, infectious stage syphilis, active tuberculosis, and other diseases as determined by the Department of Health and Human Services.)"
-                  name="communicableDisease"
-                  options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
+
+            {/* Toggle */}
+            <div className="flex items-center gap-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <span className="font-semibold text-gray-700 text-sm">האם אחת מהשאלות הבאות מתאימה לך?</span>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="securitySectionToggle"
+                  checked={!securitySectionOpen}
+                  onChange={() => setSecuritySectionOpen(false)}
+                  className="accent-green-600 w-4 h-4"
                 />
-                {w.communicableDisease === 'yes' && (
-                  <FormInput register={register} getFieldError={getFieldError} label="Explain" name="communicableDiseaseExplanation" type="textarea" />
-                )}
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                <FormRadioGroup
-                  register={register}
-                  getFieldError={getFieldError}
-                  label="Do you have a mental or physical disorder that poses or is likely to pose a threat to the safety or welfare of yourself or others?"
-                  name="mentalDisorder"
-                  options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
+                לא — תשובתי לכל השאלות היא "No"
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="securitySectionToggle"
+                  checked={securitySectionOpen}
+                  onChange={() => setSecuritySectionOpen(true)}
+                  className="accent-red-600 w-4 h-4"
                 />
-                {w.mentalDisorder === 'yes' && (
-                  <FormInput register={register} getFieldError={getFieldError} label="Explain" name="mentalDisorderExplanation" type="textarea" />
-                )}
+                כן — ברצוני למלא את שאלות האבטחה
+              </label>
+            </div>
+
+            {securitySectionOpen && (
+              <div className="space-y-8">
+                {/* Part 1 */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 1 — Medical & Health</h3>
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                      <FormRadioGroup
+                        register={register}
+                        getFieldError={getFieldError}
+                        label="Do you have a communicable disease of public health significance? (Communicable diseases of public significance include chancroid, gonorrhea, granuloma inguinale, infectious leprosy, lymphogranuloma venereum, infectious stage syphilis, active tuberculosis, and other diseases as determined by the Department of Health and Human Services.)"
+                        name="communicableDisease"
+                        options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
+                      />
+                      {w.communicableDisease === 'yes' && (
+                        <FormInput register={register} getFieldError={getFieldError} label="Explain" name="communicableDiseaseExplanation" type="textarea" />
+                      )}
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                      <FormRadioGroup
+                        register={register}
+                        getFieldError={getFieldError}
+                        label="Do you have a mental or physical disorder that poses or is likely to pose a threat to the safety or welfare of yourself or others?"
+                        name="mentalDisorder"
+                        options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
+                      />
+                      {w.mentalDisorder === 'yes' && (
+                        <FormInput register={register} getFieldError={getFieldError} label="Explain" name="mentalDisorderExplanation" type="textarea" />
+                      )}
+                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                      <FormRadioGroup
+                        register={register}
+                        getFieldError={getFieldError}
+                        label="Are you or have you ever been a drug abuser or addict?"
+                        name="drugAbuser"
+                        options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
+                      />
+                      {w.drugAbuser === 'yes' && (
+                        <FormInput register={register} getFieldError={getFieldError} label="Explain" name="drugAbuserExplanation" type="textarea" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Part 2 */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 2 — Criminal</h3>
+                  <div className="space-y-4">
+                    {[
+                      { name: 'arrestedOrConvicted', expl: 'arrestedOrConvictedExplanation', watch: w.arrestedOrConvicted, label: 'Have you ever been arrested or convicted for any offense or crime, even though subject of a pardon, amnesty, or other similar action?' },
+                      { name: 'violatedControlledSubstances', expl: 'violatedControlledSubstancesExplanation', watch: w.violatedControlledSubstances, label: 'Have you ever violated, or engaged in a conspiracy to violate, any law relating to controlled substances?' },
+                      { name: 'engagedInProstitution', expl: 'engagedInProstitutionExplanation', watch: w.engagedInProstitution, label: 'Are you coming to the United States to engage in prostitution or unlawful commercialized vice or have you been engaged in prostitution or procuring prostitutes within the past 10 years?' },
+                      { name: 'moneyLaundering', expl: 'moneyLaunderingExplanation', watch: w.moneyLaundering, label: 'Have you ever been involved in, or do you seek to engage in, money laundering?' },
+                      { name: 'humanTrafficking', expl: 'humanTraffickingExplanation', watch: w.humanTrafficking, label: 'Have you ever committed or conspired to commit a human trafficking offense in the United States or outside the United States?' },
+                      { name: 'aidedHumanTrafficking', expl: 'aidedHumanTraffickingExplanation', watch: w.aidedHumanTrafficking, label: 'Have you ever knowingly aided, abetted, assisted or colluded with an individual who has committed, or conspired to commit a severe human trafficking offense in the United States or outside the United States?' },
+                      { name: 'spouseOfTrafficker', expl: 'spouseOfTraffickerExplanation', watch: w.spouseOfTrafficker, label: 'Are you the spouse, son, or daughter of an individual who has committed or conspired to commit a human trafficking offense in the United States or outside the United States and have you within the last five years, knowingly benefited from the trafficking activities?' },
+                    ].map(q => (
+                      <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                        {q.watch === 'yes' && (
+                          <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Part 3 */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 3 — Security & Human Rights</h3>
+                  <div className="space-y-4">
+                    {[
+                      { name: 'espionage', expl: 'espionageExplanation', watch: w.espionage, label: 'Do you seek to engage in espionage, sabotage, export control violations, or any other illegal activity while in the United States?' },
+                      { name: 'terroristActivities', expl: 'terroristActivitiesExplanation', watch: w.terroristActivities, label: 'Do you seek to engage in terrorist activities while in the United States or have you ever engaged in terrorist activities?' },
+                      { name: 'supportedTerrorists', expl: 'supportedTerroristsExplanation', watch: w.supportedTerrorists, label: 'Have you ever or do you intend to provide financial assistance or other support to terrorists or terrorist organizations?' },
+                      { name: 'terroristMember', expl: 'terroristMemberExplanation', watch: w.terroristMember, label: 'Are you a member or representative of a terrorist organization?' },
+                      { name: 'spouseOfTerrorist', expl: 'spouseOfTerroristExplanation', watch: w.spouseOfTerrorist, label: 'Are you the spouse, son, or daughter of an individual who has engaged in terrorist activity, including providing financial assistance or other support to terrorists or terrorist organizations, in the last five years?' },
+                      { name: 'genocide', expl: 'genocideExplanation', watch: w.genocide, label: 'Have you ever ordered, incited, committed, assisted, or otherwise participated in genocide?' },
+                      { name: 'torture', expl: 'tortureExplanation', watch: w.torture, label: 'Have you ever committed, ordered, incited, assisted, or otherwise participated in torture?' },
+                      { name: 'extrajudicialKillings', expl: 'extrajudicialKillingsExplanation', watch: w.extrajudicialKillings, label: 'Have you committed, ordered, incited, assisted, or otherwise participated in extrajudicial killings, political killings, or other acts of violence?' },
+                      { name: 'childSoldiers', expl: 'childSoldiersExplanation', watch: w.childSoldiers, label: 'Have you ever engaged in the recruitment or the use of child soldiers?' },
+                      { name: 'religiousFreedomViolations', expl: 'religiousFreedomViolationsExplanation', watch: w.religiousFreedomViolations, label: 'Have you, while serving as a government official, been responsible for or directly carried out, at any time, particularly severe violations of religious freedom?' },
+                      { name: 'populationControls', expl: 'populationControlsExplanation', watch: w.populationControls, label: 'Have you ever been directly involved in the establishment or enforcement of population controls forcing a woman to undergo an abortion against her free choice or a man or a woman to undergo sterilization against his or her free will?' },
+                      { name: 'organTransplantation', expl: 'organTransplantationExplanation', watch: w.organTransplantation, label: 'Have you ever been directly involved in the coercive transplantation of human organs or bodily tissue?' },
+                    ].map(q => (
+                      <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                        {q.watch === 'yes' && (
+                          <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Part 4 */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 4 — Immigration Violations</h3>
+                  <div className="space-y-4">
+                    {[
+                      { name: 'immigrationFraud', expl: 'immigrationFraudExplanation', watch: w.immigrationFraud, label: 'Have you ever sought to obtain or assist others to obtain a visa, entry into the United States, or any other United States immigration benefit by fraud or willful misrepresentation or other unlawful means?' },
+                      { name: 'deportedFromCountry', expl: 'deportedFromCountryExplanation', watch: w.deportedFromCountry, label: 'Have you ever been removed or deported from any country?' },
+                    ].map(q => (
+                      <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                        {q.watch === 'yes' && (
+                          <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Part 5 */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 5 — Other</h3>
+                  <div className="space-y-4">
+                    {[
+                      { name: 'withheldCustody', expl: 'withheldCustodyExplanation', watch: w.withheldCustody, label: 'Have you ever withheld custody of a U.S. citizen child outside the United States from a person granted legal custody by a U.S. court?' },
+                      { name: 'votedIllegally', expl: 'votedIllegallyExplanation', watch: w.votedIllegally, label: 'Have you voted in the United States in violation of any law or regulation?' },
+                      { name: 'renouncedCitizenship', expl: 'renouncedCitizenshipExplanation', watch: w.renouncedCitizenship, label: 'Have you ever renounced United States citizenship for the purposes of avoiding taxation?' },
+                    ].map(q => (
+                      <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                        {q.watch === 'yes' && (
+                          <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                <FormRadioGroup
-                  register={register}
-                  getFieldError={getFieldError}
-                  label="Are you or have you ever been a drug abuser or addict?"
-                  name="drugAbuser"
-                  options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
-                />
-                {w.drugAbuser === 'yes' && (
-                  <FormInput register={register} getFieldError={getFieldError} label="Explain" name="drugAbuserExplanation" type="textarea" />
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* Security and Background: Part 2 */}
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Security and Background: Part 2</h2>
-            <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
-              NOTE: Provide the following security and background information. Provide complete and accurate answers to all questions that require an explanation. A visa may not be issued to persons who are within specific categories defined by law as inadmissible to the United States (except when a waiver is obtained in advance). Are any of the following applicable to you? While a YES answer does not automatically signify ineligibility for a visa, if you answer YES you may be required to personally appear before a consular officer.
-            </p>
-            <div className="space-y-4">
-              {[
-                { name: 'arrestedOrConvicted', expl: 'arrestedOrConvictedExplanation', watch: w.arrestedOrConvicted, label: 'Have you ever been arrested or convicted for any offense or crime, even though subject of a pardon, amnesty, or other similar action?' },
-                { name: 'violatedControlledSubstances', expl: 'violatedControlledSubstancesExplanation', watch: w.violatedControlledSubstances, label: 'Have you ever violated, or engaged in a conspiracy to violate, any law relating to controlled substances?' },
-                { name: 'engagedInProstitution', expl: 'engagedInProstitutionExplanation', watch: w.engagedInProstitution, label: 'Are you coming to the United States to engage in prostitution or unlawful commercialized vice or have you been engaged in prostitution or procuring prostitutes within the past 10 years?' },
-                { name: 'moneyLaundering', expl: 'moneyLaunderingExplanation', watch: w.moneyLaundering, label: 'Have you ever been involved in, or do you seek to engage in, money laundering?' },
-                { name: 'humanTrafficking', expl: 'humanTraffickingExplanation', watch: w.humanTrafficking, label: 'Have you ever committed or conspired to commit a human trafficking offense in the United States or outside the United States?' },
-                { name: 'aidedHumanTrafficking', expl: 'aidedHumanTraffickingExplanation', watch: w.aidedHumanTrafficking, label: 'Have you ever knowingly aided, abetted, assisted or colluded with an individual who has committed, or conspired to commit a severe human trafficking offense in the United States or outside the United States?' },
-                { name: 'spouseOfTrafficker', expl: 'spouseOfTraffickerExplanation', watch: w.spouseOfTrafficker, label: 'Are you the spouse, son, or daughter of an individual who has committed or conspired to commit a human trafficking offense in the United States or outside the United States and have you within the last five years, knowingly benefited from the trafficking activities?' },
-              ].map(q => (
-                <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                  <FormRadioGroup
-                    register={register}
-                    getFieldError={getFieldError}
-                    label={q.label}
-                    name={q.name}
-                    options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
-                  />
-                  {q.watch === 'yes' && (
-                    <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Security and Background: Part 3 */}
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Security and Background: Part 3</h2>
-            <div className="space-y-4">
-              {[
-                { name: 'espionage', expl: 'espionageExplanation', watch: w.espionage, label: 'Do you seek to engage in espionage, sabotage, export control violations, or any other illegal activity while in the United States?' },
-                { name: 'terroristActivities', expl: 'terroristActivitiesExplanation', watch: w.terroristActivities, label: 'Do you seek to engage in terrorist activities while in the United States or have you ever engaged in terrorist activities?' },
-                { name: 'supportedTerrorists', expl: 'supportedTerroristsExplanation', watch: w.supportedTerrorists, label: 'Have you ever or do you intend to provide financial assistance or other support to terrorists or terrorist organizations?' },
-                { name: 'terroristMember', expl: 'terroristMemberExplanation', watch: w.terroristMember, label: 'Are you a member or representative of a terrorist organization?' },
-                { name: 'spouseOfTerrorist', expl: 'spouseOfTerroristExplanation', watch: w.spouseOfTerrorist, label: 'Are you the spouse, son, or daughter of an individual who has engaged in terrorist activity, including providing financial assistance or other support to terrorists or terrorist organizations, in the last five years?' },
-                { name: 'genocide', expl: 'genocideExplanation', watch: w.genocide, label: 'Have you ever ordered, incited, committed, assisted, or otherwise participated in genocide?' },
-                { name: 'torture', expl: 'tortureExplanation', watch: w.torture, label: 'Have you ever committed, ordered, incited, assisted, or otherwise participated in torture?' },
-                { name: 'extrajudicialKillings', expl: 'extrajudicialKillingsExplanation', watch: w.extrajudicialKillings, label: 'Have you committed, ordered, incited, assisted, or otherwise participated in extrajudicial killings, political killings, or other acts of violence?' },
-                { name: 'childSoldiers', expl: 'childSoldiersExplanation', watch: w.childSoldiers, label: 'Have you ever engaged in the recruitment or the use of child soldiers?' },
-                { name: 'religiousFreedomViolations', expl: 'religiousFreedomViolationsExplanation', watch: w.religiousFreedomViolations, label: 'Have you, while serving as a government official, been responsible for or directly carried out, at any time, particularly severe violations of religious freedom?' },
-                { name: 'populationControls', expl: 'populationControlsExplanation', watch: w.populationControls, label: 'Have you ever been directly involved in the establishment or enforcement of population controls forcing a woman to undergo an abortion against her free choice or a man or a woman to undergo sterilization against his or her free will?' },
-                { name: 'organTransplantation', expl: 'organTransplantationExplanation', watch: w.organTransplantation, label: 'Have you ever been directly involved in the coercive transplantation of human organs or bodily tissue?' },
-              ].map(q => (
-                <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                  <FormRadioGroup
-                    register={register}
-                    getFieldError={getFieldError}
-                    label={q.label}
-                    name={q.name}
-                    options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
-                  />
-                  {q.watch === 'yes' && (
-                    <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Security and Background: Part 4 */}
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Security and Background: Part 4</h2>
-            <div className="space-y-4">
-              {[
-                { name: 'immigrationFraud', expl: 'immigrationFraudExplanation', watch: w.immigrationFraud, label: 'Have you ever sought to obtain or assist others to obtain a visa, entry into the United States, or any other United States immigration benefit by fraud or willful misrepresentation or other unlawful means?' },
-                { name: 'deportedFromCountry', expl: 'deportedFromCountryExplanation', watch: w.deportedFromCountry, label: 'Have you ever been removed or deported from any country?' },
-              ].map(q => (
-                <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                  <FormRadioGroup
-                    register={register}
-                    getFieldError={getFieldError}
-                    label={q.label}
-                    name={q.name}
-                    options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
-                  />
-                  {q.watch === 'yes' && (
-                    <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Security and Background: Part 5 */}
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Security and Background: Part 5</h2>
-            <div className="space-y-4">
-              {[
-                { name: 'withheldCustody', expl: 'withheldCustodyExplanation', watch: w.withheldCustody, label: 'Have you ever withheld custody of a U.S. citizen child outside the United States from a person granted legal custody by a U.S. court?' },
-                { name: 'votedIllegally', expl: 'votedIllegallyExplanation', watch: w.votedIllegally, label: 'Have you voted in the United States in violation of any law or regulation?' },
-                { name: 'renouncedCitizenship', expl: 'renouncedCitizenshipExplanation', watch: w.renouncedCitizenship, label: 'Have you ever renounced United States citizenship for the purposes of avoiding taxation?' },
-              ].map(q => (
-                <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                  <FormRadioGroup
-                    register={register}
-                    getFieldError={getFieldError}
-                    label={q.label}
-                    name={q.name}
-                    options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
-                  />
-                  {q.watch === 'yes' && (
-                    <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
-                  )}
-                </div>
-              ))}
-            </div>
+            )}
           </section>
 
           <section className="space-y-4">

@@ -21,7 +21,7 @@ Your task is to analyze:
 1. A JSON object containing internal intake form data (may contain Hebrew or English values)
 2. Uploaded documents and attachments (passport scans, IDs, PDFs, screenshots, forms, visas, licenses, Social Security cards, military records, education certificates, etc.)
 
-Then generate a COMPLETE DS-160-ready English document that mirrors the structure and logical ordering of the official DS-160 application.
+Then generate a COMPLETE DS-160-ready bilingual review document that mirrors the structure and logical ordering of the official DS-160 application.
 
 The output must behave like a fully prepared DS-160 review sheet ready for human verification before submission.
 
@@ -29,22 +29,28 @@ The output must behave like a fully prepared DS-160 review sheet ready for human
 OUTPUT LANGUAGE RULE — CRITICAL
 ━━━━━━━━━━━━━━━━━━━━
 
-THE ENTIRE OUTPUT MUST BE IN ENGLISH — NO EXCEPTIONS.
+SECTION HEADERS AND FIELD LABELS must always be in English.
 
-* Every field value in the DS-160 output MUST be written in English.
-* If any intake field value is in Hebrew, translate or transliterate it to English before outputting it.
-* The ONE AND ONLY exception is the "Full Name in Native Alphabet" entry, which must contain the applicant's name in Hebrew script (taken from the firstName + lastName Hebrew fields).
-* No other field in the output may contain Hebrew characters.
-* NEVER append Hebrew in parentheses after an English value. The value must be pure English — no mixed text.
-* NEVER output any Hebrew character (א–ת) outside of the "Full Name in Native Alphabet" field.
+FIELD VALUES follow these rules:
+
+* If the field value was entered in Hebrew → output it in Hebrew as-is. Do NOT translate it to English.
+* If the field value was entered in English → keep it in English.
+* For fields that the actual DS-160 form requires in English (names, place names, nationalities, passport data, addresses in the U.S., employer/school names, job titles):
+  — Show the English version first (transliterated or official English form), then the Hebrew original in parentheses.
+  — Example: "Surname: Cohen (כהן)"  |  "City of Birth: Jerusalem (ירושלים)"
+* The "Full Name in Native Alphabet" field must always contain the Hebrew script name only (no English).
+* YES/NO answers are always in English.
+* ❗ MISSING and N/A are always in English.
+* Dates are always written in English (DD/MM/YYYY or Month DD, YYYY).
+* NEVER invent or add Hebrew characters that were not in the intake data.
+* NEVER translate free-text Hebrew explanations (e.g. job duties, criminal record explanation) — keep them in Hebrew.
 
 
 ━━━━━━━━━━━━━━━━━━━━
 CORE REQUIREMENTS
 ━━━━━━━━━━━━━━━━━━━━
 
-* Translate ALL Hebrew content to professional English — except the Native Alphabet entry.
-* Preserve ALL information.
+* Preserve ALL information exactly as entered.
 * Do NOT omit any detail.
 * Extract missing information from uploaded files whenever possible.
 * Use passport/government-issued documents as the primary source of truth.
@@ -154,29 +160,28 @@ Native Name: דוד אורי מימון
 TRANSLITERATION RULES
 ━━━━━━━━━━━━━━━━━━━━
 
-When translating Hebrew names:
+For name fields that require English on the DS-160 (Surname, Given Name, Place of Birth, etc.):
 
-* prefer passport transliteration
-* preserve official MRZ spelling when available
-* do NOT invent spellings
-* do NOT phoneticize manually
+* Show English first, then Hebrew original in parentheses
+* Prefer passport transliteration for the English form
+* Preserve official MRZ spelling when available
+* Do NOT invent spellings
+* Do NOT phoneticize manually
+* Example: "Given Name: DAVID ORI (דוד אורי)"
 
 ━━━━━━━━━━━━━━━━━━━━
 PLACE NAME RULES
 ━━━━━━━━━━━━━━━━━━━━
 
-Always use the official internationally recognized English place/institution name.
-
-NEVER translate Hebrew word-by-word.
-
-Examples:
-
-ירושלים → Jerusalem
-תל אביב → Tel Aviv
-חיפה → Haifa
-צה"ל → Israel Defense Forces (IDF)
-
-Universities and institutions must use official English naming.
+For place name fields that appear on the DS-160:
+* Use the official internationally recognized English name followed by the Hebrew original in parentheses.
+* NEVER translate Hebrew word-by-word for place names.
+* Examples:
+  City of Birth: Jerusalem (ירושלים)
+  Employer City: Tel Aviv (תל אביב)
+  Employer City: Haifa (חיפה)
+  Military Branch: Israel Defense Forces (IDF) (צה"ל)
+* Universities and institutions must use official English naming in the same pattern.
 
 ━━━━━━━━━━━━━━━━━━━━
 ADDRESS FORMAT RULES
@@ -1062,7 +1067,11 @@ Never:
 
 FINAL GOAL:
 
-Generate a COMPLETE DS-160-style English review document that mirrors the structure of the real DS-160 form, fully populated from intake data and uploaded documents, ready for direct human verification before submission.
+Generate a COMPLETE DS-160-style bilingual review document that mirrors the structure of the real DS-160 form.
+Section headers and field labels are in English.
+Field values remain in Hebrew when they were entered in Hebrew.
+Fields that the DS-160 requires in English (names, places, nationality, etc.) show English first, then Hebrew original in parentheses.
+The document is fully populated from intake data and uploaded documents, ready for direct human verification before submission.
 `
 const USER_PREAMBLE =
   `Analyze the intake form data and all uploaded attachments below and generate a COMPLETE DS-160-style English review document following all system instructions exactly.
