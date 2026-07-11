@@ -3186,44 +3186,6 @@ export default function DS160IsraelForm({
                 )}
               </div>
 
-              {/* ── Social Security ── */}
-              <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
-                <div className="flex flex-col xl:flex-row gap-4 xl:items-start xl:gap-6">
-                  <div className="shrink-0 xl:min-w-[300px]">
-                    <FormRadioGroup register={register} getFieldError={getFieldError} label="U.S. Social Security Number (במידה וביקר בעבר)" name="hasSocialSecurityNumber" options={[{ label: 'לא', value: 'no' }, { label: 'מספר סושיאל', value: 'yes' }]} />
-                  </div>
-                  {w.hasSocialSecurityNumber === 'yes' && (
-                    <div className="flex-1 min-w-0 space-y-4 rounded-lg border-r-4 border-blue-500 bg-gray-50 p-4">
-                      <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
-                        <p className="text-xs text-gray-600">
-                          העלאת צילום — זיהוי אוטומטי (GPT-4o): מספר סושיאל בלבד, בלי ניחוש ספרות.
-                        </p>
-                        {socialSecurityOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה מספר מהקובץ…</p>}
-                        {socialSecurityOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{socialSecurityOcr.message}</p>}
-                        {socialSecurityOcr.status === 'idle' && socialSecurityOcr.message && <p className="text-sm text-green-700">{socialSecurityOcr.message}</p>}
-                        <DocumentFileSlot
-                          label="צילום Social Security Card (ארה״ב)"
-                          name="socialSecurityScan"
-                          register={register}
-                          setValue={setValue}
-                          getFieldError={getFieldError}
-                          watchedValue={socialSecurityScanWatch}
-                          accept="image/*,application/pdf"
-                          onFilePicked={(f) => {
-                            void runSocialSecurityOcrFromFile(f)
-                            void uploadDocumentImmediately('socialSecurityScan', f)
-                          }}
-                        />
-                      </div>
-                      <FormInput register={register} getFieldError={getFieldError} label="מספר סושיאל סקוריטי" name="socialSecurityNumber" />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="U.S. Taxpayer ID Number (במידה וביקר בעבר)" name="hasTaxpayerID" options={[{ label: 'לא', value: 'no' }, { label: 'מה הוא המספר משלם מיסים?', value: 'yes' }]} />
-              {w.hasTaxpayerID === 'yes' && <FormInput register={register} getFieldError={getFieldError} label="מספר משלם מיסים אמריקאי" name="taxpayerIDNumber" />}
-
               {/* ── Passport lost/stolen ── */}
               <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אי פעם אבד או נגנב לך דרכון?" name="passportLostOrStolen" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
               {w.passportLostOrStolen === 'yes' && (
