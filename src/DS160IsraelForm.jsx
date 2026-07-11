@@ -2102,7 +2102,93 @@ export default function DS160IsraelForm({
                   )}
                 </div>
                 <FormRadioGroup register={register} getFieldError={getFieldError} label="מין" name="sex" options={[{ label: 'זכר', value: 'male' }, { label: 'נקבה', value: 'female' }]} />
-                <FormSelect register={register} getFieldError={getFieldError} label="סטטוס משפחתי" name="maritalStatus" options={['רווק', 'נשוי', 'גרוש', 'אלמן', 'נשוי אזרחית', 'פרוד', 'חיים משותפים']} />
+
+                <DateSelectInput
+                  label="תאריך לידה"
+                  nameDay="birthDateDay" nameMonth="birthDateMonth" nameYear="birthDateYear"
+                  register={register} getFieldError={getFieldError} translationErrors={translationErrors}
+                />
+                <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" />
+                <FormInput register={register} getFieldError={getFieldError} label="מדינת לידה (באנגלית, מהדרכון)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
+              </div>
+
+              {/* ── כרטיס 2: אזרחות ולאום ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 className="col-span-full font-bold text-lg">אזרחות ולאום</h3>
+
+                <FormInput register={register} getFieldError={getFieldError} label="לאום / אזרחות עיקרית (באנגלית, מהדרכון)" name="nationality" hint="ממולא אוטומטית מצילום הדרכון; לדוגמה: Israel" />
+                <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת זהות" name="idNumber" hint="ממולא אוטומטית מצילום הדרכון אם מופיע" />
+
+                {/* Extra nationality */}
+                <div className="col-span-full mb-0">
+                  <div className="-mb-4">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך אזרחות נוספת?" name="hasForeignCitizenship" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  </div>
+                  {w.hasForeignCitizenship === 'yes' && (
+                    <div className="mt-2 space-y-4">
+                      {foreignNationalityFields.map((field, i) => (
+                        <div key={field.id} className="pr-3 border-r-2 border-blue-200 space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <FormInput register={register} getFieldError={getFieldError} label={`מדינה ${i + 1}`} name={`foreignNationalities.${i}.country`} />
+                            <FormInput register={register} getFieldError={getFieldError} label="מספר זיהות / דרכון במדינה זו" name={`foreignNationalities.${i}.id`} optional />
+                          </div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <DocumentFileSlot
+                                label="צילום תעודה (לא חובה)"
+                                name={`foreignNationalities.${i}.scan`}
+                                register={register}
+                                setValue={setValue}
+                                getFieldError={getFieldError}
+                                watchedValue={w.foreignNationalities?.[i]?.scan}
+                                accept="image/*,application/pdf"
+                              />
+                            </div>
+                            {foreignNationalityFields.length > 1 && (
+                              <button type="button" onClick={() => removeForeignNationality(i)} className="mt-1 text-sm text-red-500 hover:text-red-700 font-medium whitespace-nowrap">הסר ✕</button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => appendForeignNationality({ country: '', id: '' })}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
+                        <span aria-hidden className="text-lg leading-none">+</span>
+                        הוסף אזרחות נוספת
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Permanent residency elsewhere */}
+                <div className="col-span-full mb-0">
+                  <div className="-mb-4">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אתה תושב קבע במדינה שאינה מדינת לאומך?" name="isPermanentResidentElsewhere" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  </div>
+                  {w.isPermanentResidentElsewhere === 'yes' && (
+                    <div className="mt-2 space-y-2">
+                      {permanentResidencyFields.map((field, i) => (
+                        <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end pr-2 border-r-2 border-blue-200">
+                          <FormInput register={register} getFieldError={getFieldError} label={`מדינת מגורי קבע ${i + 1}`} name={`permanentResidencies.${i}.country`} />
+                          {permanentResidencyFields.length > 1 && (
+                            <button type="button" onClick={() => removePermanentResidency(i)} className="pb-1 text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
+                          )}
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => appendPermanentResidency({ country: '' })}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
+                        <span aria-hidden className="text-lg leading-none">+</span>
+                        הוסף מדינה
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <FormInput register={register} getFieldError={getFieldError} label="מספר ביטוח לאומי אמריקאי (SSN)" name="usSocialSecurityNumber" hint="לדוגמה: 123-45-6789" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="מספר זיהוי משלם מס אמריקאי (ITIN)" name="usTaxpayerId" hint="לדוגמה: 912-34-5678" optional />
+
+                <div className="col-span-full">
+                  <FormSelect register={register} getFieldError={getFieldError} label="סטטוס משפחתי" name="maritalStatus" options={['רווק', 'נשוי', 'גרוש', 'אלמן', 'נשוי אזרחית', 'פרוד', 'חיים משותפים']} />
+                </div>
 
                 {(w.maritalStatus === 'גרוש' || w.maritalStatus === 'פרוד') && (
                   <div className="col-span-full space-y-4">
@@ -2270,89 +2356,6 @@ export default function DS160IsraelForm({
                     )}
                   </div>
                 )}
-
-                <DateSelectInput
-                  label="תאריך לידה"
-                  nameDay="birthDateDay" nameMonth="birthDateMonth" nameYear="birthDateYear"
-                  register={register} getFieldError={getFieldError} translationErrors={translationErrors}
-                />
-                <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" />
-                <FormInput register={register} getFieldError={getFieldError} label="מדינת לידה (באנגלית, מהדרכון)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
-              </div>
-
-              {/* ── כרטיס 2: אזרחות ולאום ── */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
-                <h3 className="col-span-full font-bold text-lg">אזרחות ולאום</h3>
-
-                <FormInput register={register} getFieldError={getFieldError} label="לאום / אזרחות עיקרית (באנגלית, מהדרכון)" name="nationality" hint="ממולא אוטומטית מצילום הדרכון; לדוגמה: Israel" />
-                <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת זהות" name="idNumber" hint="ממולא אוטומטית מצילום הדרכון אם מופיע" />
-
-                {/* Extra nationality */}
-                <div className="col-span-full mb-0">
-                  <div className="-mb-4">
-                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך אזרחות נוספת?" name="hasForeignCitizenship" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
-                  </div>
-                  {w.hasForeignCitizenship === 'yes' && (
-                    <div className="mt-2 space-y-4">
-                      {foreignNationalityFields.map((field, i) => (
-                        <div key={field.id} className="pr-3 border-r-2 border-blue-200 space-y-3">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <FormInput register={register} getFieldError={getFieldError} label={`מדינה ${i + 1}`} name={`foreignNationalities.${i}.country`} />
-                            <FormInput register={register} getFieldError={getFieldError} label="מספר זיהות / דרכון במדינה זו" name={`foreignNationalities.${i}.id`} optional />
-                          </div>
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <DocumentFileSlot
-                                label="צילום תעודה (לא חובה)"
-                                name={`foreignNationalities.${i}.scan`}
-                                register={register}
-                                setValue={setValue}
-                                getFieldError={getFieldError}
-                                watchedValue={w.foreignNationalities?.[i]?.scan}
-                                accept="image/*,application/pdf"
-                              />
-                            </div>
-                            {foreignNationalityFields.length > 1 && (
-                              <button type="button" onClick={() => removeForeignNationality(i)} className="mt-1 text-sm text-red-500 hover:text-red-700 font-medium whitespace-nowrap">הסר ✕</button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      <button type="button" onClick={() => appendForeignNationality({ country: '', id: '' })}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
-                        <span aria-hidden className="text-lg leading-none">+</span>
-                        הוסף אזרחות נוספת
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Permanent residency elsewhere */}
-                <div className="col-span-full mb-0">
-                  <div className="-mb-4">
-                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אתה תושב קבע במדינה שאינה מדינת לאומך?" name="isPermanentResidentElsewhere" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
-                  </div>
-                  {w.isPermanentResidentElsewhere === 'yes' && (
-                    <div className="mt-2 space-y-2">
-                      {permanentResidencyFields.map((field, i) => (
-                        <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end pr-2 border-r-2 border-blue-200">
-                          <FormInput register={register} getFieldError={getFieldError} label={`מדינת מגורי קבע ${i + 1}`} name={`permanentResidencies.${i}.country`} />
-                          {permanentResidencyFields.length > 1 && (
-                            <button type="button" onClick={() => removePermanentResidency(i)} className="pb-1 text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
-                          )}
-                        </div>
-                      ))}
-                      <button type="button" onClick={() => appendPermanentResidency({ country: '' })}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
-                        <span aria-hidden className="text-lg leading-none">+</span>
-                        הוסף מדינה
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <FormInput register={register} getFieldError={getFieldError} label="מספר ביטוח לאומי אמריקאי (SSN)" name="usSocialSecurityNumber" hint="לדוגמה: 123-45-6789" optional />
-                <FormInput register={register} getFieldError={getFieldError} label="מספר זיהוי משלם מס אמריקאי (ITIN)" name="usTaxpayerId" hint="לדוגמה: 912-34-5678" optional />
               </div>
 
               {/* ── כרטיס 3: דרכון ── */}
