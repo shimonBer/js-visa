@@ -573,6 +573,7 @@ export default function DS160IsraelForm({
       hasOtherRelativesInUS: 'no',
       usRelatives: [{ surnames: '', givenNames: '', relationship: '', status: '' }],
       unemploymentReason: '',
+      jobTitle: '',
       employerStreet2: '',
       employerState: '',
       employerStateDoesNotApply: true,
@@ -3621,6 +3622,8 @@ export default function DS160IsraelForm({
                   <FormInput register={register} getFieldError={getFieldError} label="טלפון" name="employerPhone" />
                   <FormInput register={register} getFieldError={getFieldError} label="מדינה" name="employerCountry" hint="לדוגמה: ISRAEL" />
                 </div>
+
+                <FormInput register={register} getFieldError={getFieldError} label="תפקיד / כותרת משרה" name="jobTitle" />
 
                 <DateSelectInput label="תאריך תחילת עבודה" name="employmentStartDate" register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
 

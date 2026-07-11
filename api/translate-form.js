@@ -378,14 +378,25 @@ PERSONAL INFORMATION 2
 PERSON/ENTITY PAYING FOR TRIP
 
 * Who is paying for the trip?
-  Rule: if selfPaying is "yes" (or absent) →
+  Rule: use tripPayerType field:
+
+  - If tripPayerType is "SELF" (or absent) →
     output: Who is paying for the trip? Self
-    (omit Name / Relationship / Phone Number / Email Address / Address lines entirely)
-  If selfPaying is "no" → output all fields below using tripPayerFullName, tripPayerEmail, tripPayerPhone, tripPayerStreet/tripPayerCity/tripPayerCountry:
-* Name → tripPayerFullName
-* Phone Number → tripPayerPhone
-* Email Address → tripPayerEmail
-* Address: combine tripPayerStreet + tripPayerCity + tripPayerCountry (e.g. "25 HaRishonim St, Hadar Am, Israel")
+    (omit all sub-fields entirely)
+
+  - If tripPayerType is "OTHER_PERSON" →
+    * Name → tripPayerSurname + " " + tripPayerGivenName; if absent → ❗ MISSING
+    * Phone Number → tripPayerPhone; if absent → ❗ MISSING
+    * Email Address → tripPayerEmail; if absent → N/A
+    * Relationship → tripPayerRelationship; if absent → ❗ MISSING
+    * Address: if tripPayerSameAddress is "yes" → Same as home address
+               if tripPayerSameAddress is "no" → tripPayerAddressStreet1 + tripPayerAddressCity + tripPayerAddressCountry; if absent → ❗ MISSING
+
+  - If tripPayerType is "OTHER_COMPANY_ORGANIZATION" →
+    * Organization Name → tripPayerOrgName; if absent → ❗ MISSING
+    * Phone Number → tripPayerPhone; if absent → ❗ MISSING
+    * Relationship → tripPayerOrgRelationship; if absent → ❗ MISSING
+    * Address → tripPayerAddressStreet1 + tripPayerAddressCity + tripPayerAddressCountry; if absent → ❗ MISSING
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -513,11 +524,13 @@ SOCIAL MEDIA
   Rule: answer YES if hasSocialMedia is "yes", otherwise NO.
 
   * IF YES:
-    Rule: copy the social media data EXACTLY as provided in the JSON field (socialMediaLinks or socialNetworks or equivalent).
-    Do NOT parse, reformat, split, or interpret the value. Output it verbatim, one entry per line if multiple.
-    Rule: use ❗ MISSING only if hasSocialMedia is "yes" AND the socialMediaLinks field is empty or absent.
+    Rule: read the socialMediaAccounts array. Each entry has:
+      - platform: the platform name (e.g. FACEBOOK, INSTAGRAM, LINKEDIN, TWITTER, YOUTUBE, etc.)
+      - identifier: the username, handle, or URL
+    Output each entry as: "[platform]: [identifier]"
+    If socialMediaAccounts is empty or all entries have blank platform/identifier → ❗ MISSING
 
-    Rule: when filling the real DS-160 form, you will need to parse the name of the social media, and then the identifier (link mostly)
+    Note: when filling the real DS-160 form, select the platform from the DS-160 dropdown and enter the identifier separately.
   
   * if NO:
     None
@@ -676,40 +689,39 @@ RELATIVES IN THE U.S.
     * Spouse City of Birth
     * Spouse Country of Birth
     * Spouse Address
-      Rule: if spouseAddressSame is true or spouseAddress is empty → output: Same address
-      Otherwise → use spouseAddress value
+      Rule: use spouseAddressType field:
+      - "SAME AS HOME ADDRESS" → output: Same as home address
+      - "SAME AS MAILING ADDRESS" → output: Same as mailing address
+      - "SAME AS U.S. CONTACT ADDRESS" → output: Same as U.S. contact address
+      - "DO NOT KNOW" → output: Unknown
+      - "OTHER (SPECIFY ADDRESS)" → output the explicit address:
+          Street: spouseAddressStreet (+ spouseAddressStreet2 if present)
+          City: spouseAddressCity
+          State: spouseAddressState (if spouseAddressStateDoesNotApply is true → N/A)
+          ZIP: spouseAddressZip (if spouseAddressZipDoesNotApply is true or absent → N/A)
+          Country: spouseAddressCountry
+      - If absent or empty → ❗ MISSING
 
 ━━━━━━━━━━━━━━━━━━━━
 
 🟦 PREVIOUS SPOUSES
 
 * Have you ever been married before? YES/NO
-  Rule: if maritalStatus is 'נשוי', 'נשוי אזרחית', or 'חיים משותפים'
-    AND no exSpouse fields (exSpouseName, exSpouseBirthCityCountry, etc.) are present in JSON
-    → NO
-  Otherwise derive from presence of exSpouse fields or maritalStatus values 'גרוש'/'פרוד'/'אלמן'.
+  Rule: if the formerSpouses array is non-empty AND at least one entry has a non-empty surnames field → YES
+  Otherwise → NO
 
-  * IF YES:
+  * IF YES: iterate over the formerSpouses array. For each entry output:
 
-    First ex-spouse — use fields: exSpouseName, exSpouseBirthCityCountry, exSpouseBirthDateDay/Month/Year, exSpouseMarriageDate, exSpouseDivorceDate, exSpouseDivorcedInIsrael.
-
-    * Former Spouse Surname
-    * Former Spouse Given Name
-    * Date of Birth
-    * Nationality
-    * Place of Birth
-    * Date of Marriage
-    * Date Marriage Ended
-    * How Marriage Ended
-    * Country Where Marriage Was Terminated
-
-    Additional ex-spouses — if additionalExSpouses array is present and non-empty, output one entry per item using:
-      name → additionalExSpouses[i].name
-      birthCityCountry → additionalExSpouses[i].birthCityCountry
-      birthDate → additionalExSpouses[i].birthDateDay/Month/Year
-      marriageDate → additionalExSpouses[i].marriageDate
-      divorceDate → additionalExSpouses[i].divorceDate
-      divorcedInIsrael → additionalExSpouses[i].divorcedInIsrael
+    * Former Spouse Surname → formerSpouses[i].surnames; if absent → ❗ MISSING
+    * Former Spouse Given Name → formerSpouses[i].givenNames; if absent → N/A
+    * Date of Birth → formerSpouses[i].birthDate; if absent → N/A
+    * Nationality → formerSpouses[i].nationality; if absent → ❗ MISSING
+    * City of Birth → formerSpouses[i].birthCity; if formerSpouses[i].birthCityDoNotKnow is true → DO NOT KNOW; if absent → N/A
+    * Country of Birth → formerSpouses[i].birthCountry; if absent → N/A
+    * Date of Marriage → formerSpouses[i].marriageDate; if absent → ❗ MISSING
+    * Date Marriage Ended → formerSpouses[i].marriageEndDate; if absent → ❗ MISSING
+    * How Marriage Ended → formerSpouses[i].howEnded; if absent → ❗ MISSING
+    * Country Where Marriage Was Terminated → formerSpouses[i].terminationCountry; if absent → ❗ MISSING
 
 (REPEATABLE GROUP)
 
@@ -718,8 +730,7 @@ RELATIVES IN THE U.S.
 🟦 WORK / EDUCATION / TRAINING
 
 * Primary Occupation
-  Rule: translate currentOccupation from Hebrew to the closest DS-160 occupation category in English.
-  Examples: עובד → Employed, סטודנט → Student, חייל → Military, פנסיה → Retired, מובטל → Unemployed, עקר/ת בית → Homemaker
+  Rule: use the currentOccupation value directly — it is already stored in English. Map it to the DS-160 output label as-is.
   All the possibilities are:
   AGRICULTURE
   ARTIST/PERFORMER
@@ -746,9 +757,19 @@ RELATIVES IN THE U.S.
 
   IF the answer is NOT EMPLOYED:
   * Reason for Unemployment
-    Rule: include ONLY if currentOccupation is 'מובטל' (Unemployed) AND unemploymentReason is present and non-empty.
-    Translate unemploymentReason from Hebrew to English and output it here.
+    Rule: include ONLY if currentOccupation is 'NOT EMPLOYED' AND unemploymentReason is present and non-empty.
+    Output unemploymentReason in Hebrew as entered — do NOT translate it.
 
+  IF the answer is MILITARY:
+  * Present Employer / Unit → militaryBranch; if absent → ❗ MISSING
+  * Job Title / Role → militaryRole; if absent → ❗ MISSING
+  * Country of Service → militaryCountry; if absent → ❗ MISSING
+  * Rank → militaryRank; if absent → N/A
+  * Unit Address → militaryBaseAddress; if absent → N/A
+  * Unit Phone → militaryUnitPhone; if absent → N/A
+  * Monthly Salary → militarySalary; if absent → N/A
+  * Employment Start Date → militaryDraftDate; if absent → ❗ MISSING
+  ⛔ STOP — do NOT output the standard employer fields below for MILITARY.
 
   IF the answer is RETIRED OR HOMEMAKER:
   ⛔ STOP — do NOT output any of the fields below (Employer Name, Job Title, Employer Address, Employer City, Country of Employment, Employer Phone, Employment Start Date). They are intentionally omitted for Retired/Homemaker applicants. This overrides the general "never omit" rule.
@@ -757,23 +778,23 @@ RELATIVES IN THE U.S.
 
 * Present Employer or School Name
   Rule:
-  - If currentOccupation is 'סטודנט' → use studentInstitutionName; if absent → ❗ MISSING
+  - If currentOccupation is 'STUDENT' → use studentInstitutionName; if absent → ❗ MISSING
   - Otherwise → use employerName; if absent → ❗ MISSING
 
 * Job Title / Position
   Rule:
-  - If currentOccupation is 'סטודנט' → use studentDegree (course/degree being studied); if absent → ❗ MISSING
-  - Otherwise → use jobTitle; if absent → ❗ MISSING
+  - If currentOccupation is 'STUDENT' → use studentDegree (course/degree being studied); if absent → ❗ MISSING
+  - Otherwise → use jobTitle; if absent → N/A
 
 * Employer Address
   Rule:
-  - If currentOccupation is 'סטודנט' →  studentInstitutionAddress ; if absent → ❗ MISSING
-  - Otherwise → combine employerAddress; if absent → ❗ MISSING
+  - If currentOccupation is 'STUDENT' → use studentInstitutionStreet; if absent → N/A
+  - Otherwise → combine employerStreet + employerStreet2; if absent → N/A
 
 * Employer City
   Rule:
-  - If currentOccupation is 'סטודנט' → studentInstitutionCity
-  - Otherwise → combine employerStreet + employerCity; if absent → ❗ MISSING
+  - If currentOccupation is 'STUDENT' → studentInstitutionCity; if absent → ❗ MISSING
+  - Otherwise → use employerCity; if absent → ❗ MISSING
 
 * Country / Regions of Employment
   Rule:
@@ -781,17 +802,18 @@ RELATIVES IN THE U.S.
 
 * Employer Phone Number
   Rule:
-  - If currentOccupation is 'סטודנט' → use studentInstitutionPhone; if absent → ❗ MISSING
+  - If currentOccupation is 'STUDENT' → use studentInstitutionPhone; if absent → ❗ MISSING
   - Otherwise → use employerPhone; if absent → ❗ MISSING
 
 * Employment Start Date
   Rule:
-  - If currentOccupation is 'סטודנט' → use studentStartDate; if absent → ❗ MISSING
+  - If currentOccupation is 'STUDENT' → use studentStartDate; if absent → ❗ MISSING
   - Otherwise → use employmentStartDate; if absent → ❗ MISSING
 
 * Monthly Salary
   Rule:
-  - If currentOccupation is 'סטודנט' → use studentMonthlyIncome; if absent → N/A
+  - If currentOccupation is 'STUDENT' → use studentMonthlyIncome; if absent → N/A
+  - If monthlySalaryDoesNotApply is true → N/A
   - Otherwise → use monthlySalaryGross; if absent → N/A
 
 * Describe Your Duties
@@ -802,24 +824,23 @@ RELATIVES IN THE U.S.
 🟦 PREVIOUS EMPLOYMENT
 
 * Have you previously been employed? YES/NO
+  Rule: use workedAnotherJobLast5Years field (yes → YES, no → NO); default NO if absent
 
-  * IF YES:
+  * IF YES: iterate over the previousEmployments array. For each entry output:
 
-    * Employer Name
-    * Job Title
-    * Employer Address
-    * Employer City
-    * State / Province (can check Does not apply)
-    * ZIP Code (if known) 
-    * Country / Region
-    * Employer Phone Number
-    * Supervisor surname
-    * Supervisor given name
-    * Start Date
-    * End Date
-    * Job Duties
-      Rule: use prevJobDuties field if present; otherwise → N/A
-
+    * Employer Name → previousEmployments[i].employerName; if absent → ❗ MISSING
+    * Job Title → previousEmployments[i].jobTitle; if absent → ❗ MISSING
+    * Employer Address → previousEmployments[i].street + previousEmployments[i].street2; if absent → N/A
+    * Employer City → previousEmployments[i].city; if absent → N/A
+    * State / Province → previousEmployments[i].state; if previousEmployments[i].stateDoesNotApply is true → N/A
+    * ZIP Code → previousEmployments[i].zip; if previousEmployments[i].zipDoesNotApply is true or absent → N/A
+    * Country / Region → previousEmployments[i].country; if absent → N/A
+    * Employer Phone Number → previousEmployments[i].phone; if absent → N/A
+    * Supervisor Surname → previousEmployments[i].supervisorSurnames; if supervisorSurnamesDoNotKnow is true → DO NOT KNOW; if absent → N/A
+    * Supervisor Given Name → previousEmployments[i].supervisorGivenNames; if supervisorGivenNamesDoNotKnow is true → DO NOT KNOW; if absent → N/A
+    * Start Date → previousEmployments[i].dateFrom; if absent → ❗ MISSING
+    * End Date → previousEmployments[i].dateTo; if absent → N/A
+    * Job Duties → previousEmployments[i].duties; if absent → N/A
 
 (REPEATABLE GROUP)
 
@@ -827,31 +848,22 @@ RELATIVES IN THE U.S.
 
 🟦 EDUCATION
 
-* Have you attended any educational institutions at a secondary level or above? 
-  * IF YES:
+* Have you attended any educational institutions at a secondary level or above?
+  Rule: use hasEducation field (yes → YES, no → NO); default NO if absent
 
-* School / Institution Name
-* Address
-* City
-* State / Province (can check Does not apply)
-* ZIP Code (if known) 
-* Country / Region
-* Course of Study
-  Rule: for high school entries use highSchoolFieldOfStudy; for academic degree entries use fieldOfStudy.
-  If the relevant field is empty or absent → ❗ MISSING
-* Attendance From
-* Attendance To
+  * IF YES: iterate over the educationRecords array. For each entry output:
+
+    * School / Institution Name → educationRecords[i].institutionName; if absent → ❗ MISSING
+    * Address → educationRecords[i].street + educationRecords[i].street2; if absent → N/A
+    * City → educationRecords[i].city; if absent → N/A
+    * State / Province → educationRecords[i].state; if educationRecords[i].stateDoesNotApply is true → N/A
+    * ZIP Code → educationRecords[i].zip; if educationRecords[i].zipDoesNotApply is true or absent → N/A
+    * Country / Region → educationRecords[i].country; if absent → N/A
+    * Course of Study → educationRecords[i].courseOfStudy; if absent → ❗ MISSING
+    * Attendance From → educationRecords[i].dateFrom; if absent → ❗ MISSING
+    * Attendance To → educationRecords[i].dateTo; if absent → ❗ MISSING
 
 (REPEATABLE GROUP)
-
-Rule for additional academic degrees:
-  If additionalDegrees array is present and non-empty, output one education entry per item using:
-    institutionName → additionalDegrees[i].institutionName
-    address → additionalDegrees[i].institutionStreet
-    city → additionalDegrees[i].institutionCity
-    fieldOfStudy → additionalDegrees[i].fieldOfStudy
-    attendanceFrom → additionalDegrees[i].studyStartYearMonth
-    attendanceTo → additionalDegrees[i].studyEndYearMonth
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -882,8 +894,7 @@ ORGANIZATIONS
 
   * IF YES:
     Rule: iterate over the organizations array; for each entry output:
-    * Organization Name: organizations[i].name
-    * Organization Type: organizations[i].type
+    * Organization Name: organizations[i].name; if absent → ❗ MISSING
 
 (REPEATABLE GROUP)
 
