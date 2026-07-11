@@ -2100,9 +2100,9 @@ export default function DS160IsraelForm({
 
                 {(w.maritalStatus === 'גרוש' || w.maritalStatus === 'פרוד') && (
                   <div className="col-span-full space-y-4">
-                    <h3 className="font-bold text-gray-800 text-base">Family Information: Former Spouse</h3>
+                    <h3 className="font-bold text-gray-800 text-base">מידע משפחתי: בן/בת זוג לשעבר</h3>
                     <div className="flex items-center gap-3">
-                      <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Number of Former Spouses:</label>
+                      <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">מספר בני/בנות זוג לשעבר:</label>
                       <input type="number" min="1" {...register('numberOfFormerSpouses')}
                         className={`rounded-md p-2 border w-20 ${translationErrors.has('numberOfFormerSpouses') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
                       {translationErrors.has('numberOfFormerSpouses') && <span className="text-red-500 text-xs">שדה חובה</span>}
@@ -2111,24 +2111,24 @@ export default function DS160IsraelForm({
                     {formerSpouseFields.map((field, i) => (
                       <div key={field.id} className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-sm text-gray-700">Former Spouse Information #{i + 1}</p>
+                          <p className="font-semibold text-sm text-gray-700">בן/בת זוג לשעבר #{i + 1}</p>
                           {formerSpouseFields.length > 1 && (
-                            <button type="button" onClick={() => removeFormerSpouse(i)} className="text-sm text-red-500 hover:underline">Remove</button>
+                            <button type="button" onClick={() => removeFormerSpouse(i)} className="text-sm text-red-500 hover:underline">הסר</button>
                           )}
                         </div>
 
-                        <FormInput register={register} getFieldError={getFieldError} label="Surnames" name={`formerSpouses.${i}.surnames`} />
-                        <FormInput register={register} getFieldError={getFieldError} label="Given Names" name={`formerSpouses.${i}.givenNames`} optional />
+                        <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name={`formerSpouses.${i}.surnames`} />
+                        <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name={`formerSpouses.${i}.givenNames`} optional />
 
-                        <DateSelectInput label="Date of Birth" name={`formerSpouses.${i}.birthDate`} optional register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                        <DateSelectInput label="תאריך לידה" name={`formerSpouses.${i}.birthDate`} optional register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
 
-                        <FormInput register={register} getFieldError={getFieldError} label="Country/Region of Origin (Nationality)" name={`formerSpouses.${i}.nationality`} hint="לדוגמה: ISRAEL" />
+                        <FormInput register={register} getFieldError={getFieldError} label="אזרחות / לאום" name={`formerSpouses.${i}.nationality`} hint="לדוגמה: ISRAEL" />
 
                         {/* Place of Birth */}
                         <div className="bg-white rounded border border-gray-200 p-3 space-y-2">
-                          <p className="font-semibold text-xs text-gray-600 uppercase tracking-wide">Former Spouse&apos;s Place of Birth</p>
+                          <p className="font-semibold text-xs text-gray-600 uppercase tracking-wide">עיר ומדינת לידה</p>
                           <div className="flex flex-col gap-1">
-                            <label className="font-semibold text-sm text-gray-700">City</label>
+                            <label className="font-semibold text-sm text-gray-700">עיר</label>
                             <div className="flex items-center gap-3">
                               <input type="text" {...register(`formerSpouses.${i}.birthCity`)}
                                 disabled={watch(`formerSpouses.${i}.birthCityDoNotKnow`)}
@@ -2136,23 +2136,23 @@ export default function DS160IsraelForm({
                                 dir="ltr" />
                               <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                                 <input type="checkbox" {...register(`formerSpouses.${i}.birthCityDoNotKnow`)} className="rounded" />
-                                Do Not Know
+                                לא ידוע
                               </label>
                             </div>
                           </div>
-                          <FormInput register={register} getFieldError={getFieldError} label="Country/Region" name={`formerSpouses.${i}.birthCountry`} hint="לדוגמה: ISRAEL" optional />
+                          <FormInput register={register} getFieldError={getFieldError} label="מדינה" name={`formerSpouses.${i}.birthCountry`} hint="לדוגמה: ISRAEL" optional />
                         </div>
 
-                        <DateSelectInput label="Date of Marriage" name={`formerSpouses.${i}.marriageDate`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
-                        <DateSelectInput label="Date Marriage Ended" name={`formerSpouses.${i}.marriageEndDate`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                        <DateSelectInput label="תאריך נישואין" name={`formerSpouses.${i}.marriageDate`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                        <DateSelectInput label="תאריך סיום הנישואין" name={`formerSpouses.${i}.marriageEndDate`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
 
                         <div className="flex flex-col gap-1">
-                          <label className="font-semibold text-sm text-gray-700">How the Marriage Ended {translationErrors.has(`formerSpouses.${i}.howEnded`) && <span className="text-red-500">*</span>}</label>
+                          <label className="font-semibold text-sm text-gray-700">כיצד הסתיימו הנישואין {translationErrors.has(`formerSpouses.${i}.howEnded`) && <span className="text-red-500">*</span>}</label>
                           <textarea {...register(`formerSpouses.${i}.howEnded`)} rows={3}
                             className={`rounded-md p-2 border w-full ${translationErrors.has(`formerSpouses.${i}.howEnded`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
                         </div>
 
-                        <FormInput register={register} getFieldError={getFieldError} label="Country/Region Marriage was Terminated" name={`formerSpouses.${i}.terminationCountry`} hint="לדוגמה: ISRAEL" />
+                        <FormInput register={register} getFieldError={getFieldError} label="מדינה שבה הסתיימו הנישואין" name={`formerSpouses.${i}.terminationCountry`} hint="לדוגמה: ISRAEL" />
                       </div>
                     ))}
 
@@ -2160,7 +2160,7 @@ export default function DS160IsraelForm({
                       onClick={() => appendFormerSpouse({ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', marriageDate: '', marriageEndDate: '', howEnded: '', terminationCountry: '' })}
                       className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                       <span aria-hidden className="text-lg leading-none">+</span>
-                      Add Another
+                      הוסף בן/בת זוג לשעבר
                     </button>
                   </div>
                 )}
@@ -2177,56 +2177,56 @@ export default function DS160IsraelForm({
 
                 {w.maritalStatus && w.maritalStatus !== 'רווק' && w.maritalStatus !== 'גרוש' && w.maritalStatus !== 'פרוד' && w.maritalStatus !== 'אלמן' && (
                   <div className="col-span-full border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-4">
-                    <h3 className="font-bold text-gray-800 text-base">Family Information: Spouse</h3>
-                    <p className="text-xs text-gray-500">NOTE: Enter current spouse information.</p>
+                    <h3 className="font-bold text-gray-800 text-base">מידע משפחתי: בן/בת זוג נוכחי/ת</h3>
+                    <p className="text-xs text-gray-500">הערה: הזן/י מידע על בן/בת הזוג הנוכחי/ת.</p>
 
                     {/* Spouse's Full Name */}
                     <div className="space-y-3">
-                      <p className="font-semibold text-sm text-gray-700">Spouse&apos;s Full Name (include Maiden Name)</p>
-                      <FormInput register={register} getFieldError={getFieldError} label="Spouse's Surnames" name="spouseSurnames" />
-                      <FormInput register={register} getFieldError={getFieldError} label="Spouse's Given Names" name="spouseGivenNames" optional />
+                      <p className="font-semibold text-sm text-gray-700">שם מלא של בן/בת הזוג (כולל שם נעורים)</p>
+                      <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name="spouseSurnames" />
+                      <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="spouseGivenNames" optional />
                     </div>
 
                     {/* Date of Birth */}
                     <DateSelectInput
-                      label="Spouse's Date of Birth"
+                      label="תאריך לידה"
                       nameDay="spouseBirthDateDay" nameMonth="spouseBirthDateMonth" nameYear="spouseBirthDateYear"
                       register={register} getFieldError={getFieldError}
                     />
 
                     {/* Nationality */}
-                    <FormInput register={register} getFieldError={getFieldError} label="Spouse's Country/Region of Origin (Nationality)" name="spouseNationality" hint="לדוגמה: ISRAEL" />
+                    <FormInput register={register} getFieldError={getFieldError} label="אזרחות / לאום" name="spouseNationality" hint="לדוגמה: ISRAEL" />
 
                     {/* Place of Birth */}
                     <div className="bg-white rounded border border-gray-200 p-3 space-y-3">
-                      <p className="font-semibold text-sm text-gray-700">Spouse&apos;s Place of Birth</p>
+                      <p className="font-semibold text-sm text-gray-700">עיר ומדינת לידה</p>
                       <div className="flex flex-col gap-1">
-                        <label className="font-semibold text-sm text-gray-700">City</label>
+                        <label className="font-semibold text-sm text-gray-700">עיר</label>
                         <div className="flex items-center gap-3">
                           <input type="text" {...register('spouseBirthCity')} disabled={watch('spouseBirthCityDoNotKnow')}
                             className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                           <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                             <input type="checkbox" {...register('spouseBirthCityDoNotKnow')} className="rounded" />
-                            Do Not Know
+                            לא ידוע
                           </label>
                         </div>
                       </div>
-                      <FormInput register={register} getFieldError={getFieldError} label="Country/Region" name="spouseBirthCountry" hint="לדוגמה: ISRAEL" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מדינה" name="spouseBirthCountry" hint="לדוגמה: ISRAEL" optional />
                     </div>
 
                     {/* Spouse's Address */}
                     <div className="flex flex-col gap-1">
-                      <label className="font-semibold text-sm text-gray-700">Spouse&apos;s Address <span className="text-red-500">*</span></label>
+                      <label className="font-semibold text-sm text-gray-700">כתובת בן/בת הזוג <span className="text-red-500">*</span></label>
                       <select
                         {...register('spouseAddressType')}
                         className={`rounded-md p-2 border w-full ${translationErrors.has('spouseAddressType') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                       >
-                        <option value="">- SELECT ONE -</option>
-                        <option value="SAME AS HOME ADDRESS">SAME AS HOME ADDRESS</option>
-                        <option value="SAME AS MAILING ADDRESS">SAME AS MAILING ADDRESS</option>
-                        <option value="SAME AS U.S. CONTACT ADDRESS">SAME AS U.S. CONTACT ADDRESS</option>
-                        <option value="DO NOT KNOW">DO NOT KNOW</option>
-                        <option value="OTHER (SPECIFY ADDRESS)">OTHER (SPECIFY ADDRESS)</option>
+                        <option value="">- בחר/י -</option>
+                        <option value="SAME AS HOME ADDRESS">כתובת הבית</option>
+                        <option value="SAME AS MAILING ADDRESS">כתובת הדואר</option>
+                        <option value="SAME AS U.S. CONTACT ADDRESS">כתובת איש הקשר בארה״ב</option>
+                        <option value="DO NOT KNOW">לא ידוע</option>
+                        <option value="OTHER (SPECIFY ADDRESS)">כתובת אחרת (פרט/י)</option>
                       </select>
                       {translationErrors.has('spouseAddressType') && <span className="text-red-500 text-xs">שדה חובה</span>}
                     </div>
@@ -2234,32 +2234,32 @@ export default function DS160IsraelForm({
                     {/* Other address fields — only when OTHER selected */}
                     {w.spouseAddressType === 'OTHER (SPECIFY ADDRESS)' && (
                       <div className="bg-white rounded border border-gray-200 p-3 space-y-3">
-                        <FormInput register={register} getFieldError={getFieldError} label="Street Address (Line 1)" name="spouseAddressStreet" hint="postal box numbers are not allowed" />
-                        <FormInput register={register} getFieldError={getFieldError} label="Street Address (Line 2)" name="spouseAddressStreet2" optional />
-                        <FormInput register={register} getFieldError={getFieldError} label="City" name="spouseAddressCity" />
+                        <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 1)" name="spouseAddressStreet" hint="ללא תיבת דואר" />
+                        <FormInput register={register} getFieldError={getFieldError} label="רחוב (שורה 2)" name="spouseAddressStreet2" optional />
+                        <FormInput register={register} getFieldError={getFieldError} label="עיר" name="spouseAddressCity" />
                         <div className="flex flex-col gap-1">
-                          <label className="font-semibold text-sm text-gray-700">State/Province</label>
+                          <label className="font-semibold text-sm text-gray-700">מחוז</label>
                           <div className="flex items-center gap-3">
                             <input type="text" {...register('spouseAddressState')} disabled={watch('spouseAddressStateDoesNotApply')}
                               className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                             <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                               <input type="checkbox" {...register('spouseAddressStateDoesNotApply')} className="rounded" />
-                              Does Not Apply
+                              לא רלוונטי
                             </label>
                           </div>
                         </div>
                         <div className="flex flex-col gap-1">
-                          <label className="font-semibold text-sm text-gray-700">Postal Zone/ZIP Code</label>
+                          <label className="font-semibold text-sm text-gray-700">מיקוד</label>
                           <div className="flex items-center gap-3">
                             <input type="text" {...register('spouseAddressZip')} disabled={watch('spouseAddressZipDoesNotApply')}
                               className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
                             <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                               <input type="checkbox" {...register('spouseAddressZipDoesNotApply')} className="rounded" />
-                              Does Not Apply
+                              לא רלוונטי
                             </label>
                           </div>
                         </div>
-                        <FormInput register={register} getFieldError={getFieldError} label="Country/Region" name="spouseAddressCountry" hint="לדוגמה: ISRAEL" />
+                        <FormInput register={register} getFieldError={getFieldError} label="מדינה" name="spouseAddressCountry" hint="לדוגמה: ISRAEL" />
                       </div>
                     )}
                   </div>
