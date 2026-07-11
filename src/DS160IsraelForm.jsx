@@ -564,7 +564,7 @@ export default function DS160IsraelForm({
       spouseAddressStreet2: '',
       spouseAddressCity: '',
       spouseAddressState: '',
-      spouseAddressStateDoesNotApply: false,
+      spouseAddressStateDoesNotApply: true,
       spouseAddressZip: '',
       spouseAddressZipDoesNotApply: false,
       spouseAddressCountry: '',
