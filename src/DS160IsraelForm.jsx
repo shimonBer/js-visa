@@ -3518,8 +3518,36 @@ export default function DS160IsraelForm({
             <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
               הערה: אנא מסור/י מידע על תעסוקתך או לימודיך הנוכחיים.
             </p>
-            <FormSelect register={register} getFieldError={getFieldError} label="עיסוק עיקרי" name="currentOccupation"
-              options={['-SELECT ONE-','AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','HOMEMAKER','LEGAL PROFESSION','MEDICAL/HEALTH','MILITARY','NATURAL SCIENCE','NOT EMPLOYED','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','RETIRED','SOCIAL SCIENCE','STUDENT','OTHER']} />
+            <div className="flex flex-col mb-4">
+              <label className="font-semibold mb-1 text-gray-700">עיסוק עיקרי</label>
+              <select {...register('currentOccupation')}
+                className={`rounded-md p-2 border ${getFieldError('currentOccupation') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}>
+                <option value="">בחר...</option>
+                <option value="AGRICULTURE">חקלאות</option>
+                <option value="ARTIST/PERFORMER">אמן / מבצע</option>
+                <option value="BUSINESS">עסקים</option>
+                <option value="COMMUNICATIONS">תקשורת</option>
+                <option value="COMPUTER SCIENCE">מדעי המחשב</option>
+                <option value="CULINARY/FOOD SERVICES">קולינריה / שירותי מזון</option>
+                <option value="EDUCATION">חינוך</option>
+                <option value="ENGINEERING">הנדסה</option>
+                <option value="GOVERNMENT">ממשלה / שירות ציבורי</option>
+                <option value="HOMEMAKER">עקר/עקרת בית</option>
+                <option value="LEGAL PROFESSION">משפטים</option>
+                <option value="MEDICAL/HEALTH">רפואה / בריאות</option>
+                <option value="MILITARY">צבא</option>
+                <option value="NATURAL SCIENCE">מדעי הטבע</option>
+                <option value="NOT EMPLOYED">לא מועסק/ת</option>
+                <option value="PHYSICAL SCIENCES">מדעים פיזיקליים</option>
+                <option value="RELIGIOUS VOCATION">עיסוק דתי</option>
+                <option value="RESEARCH">מחקר</option>
+                <option value="RETIRED">פנסיה</option>
+                <option value="SOCIAL SCIENCE">מדעי החברה</option>
+                <option value="STUDENT">סטודנט/ית</option>
+                <option value="OTHER">אחר</option>
+              </select>
+              {getFieldError('currentOccupation') && <span className="text-red-500 text-sm mt-1">שדה חובה</span>}
+            </div>
 
             {/* Employed occupations → employer details */}
             {['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER'].includes(w.currentOccupation) && (
