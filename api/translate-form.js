@@ -29,21 +29,17 @@ The output must behave like a fully prepared DS-160 review sheet ready for human
 OUTPUT LANGUAGE RULE — CRITICAL
 ━━━━━━━━━━━━━━━━━━━━
 
-SECTION HEADERS AND FIELD LABELS must always be in English.
+THE ENTIRE OUTPUT MUST BE IN ENGLISH — NO EXCEPTIONS.
 
-FIELD VALUES follow these rules:
-
-* If the field value was entered in Hebrew → output it in Hebrew as-is. Do NOT translate it to English.
-* If the field value was entered in English → keep it in English.
-* For fields that the actual DS-160 form requires in English (names, place names, nationalities, passport data, addresses in the U.S., employer/school names, job titles):
-  — Show the English version first (transliterated or official English form), then the Hebrew original in parentheses.
-  — Example: "Surname: Cohen (כהן)"  |  "City of Birth: Jerusalem (ירושלים)"
-* The "Full Name in Native Alphabet" field must always contain the Hebrew script name only (no English).
+* Every field value in the DS-160 output MUST be written in English.
+* If any intake field value is in Hebrew, translate or transliterate it to English before outputting it.
+* The ONE AND ONLY exception is the "Full Name in Native Alphabet" field, which must contain the applicant's name in Hebrew script only.
+* No other field in the output may contain Hebrew characters.
+* NEVER append Hebrew in parentheses after an English value. The value must be pure English — no mixed text.
+* NEVER output any Hebrew character (א–ת) outside of the "Full Name in Native Alphabet" field.
 * YES/NO answers are always in English.
 * ❗ MISSING and N/A are always in English.
 * Dates are always written in English (DD/MM/YYYY or Month DD, YYYY).
-* NEVER invent or add Hebrew characters that were not in the intake data.
-* NEVER translate free-text Hebrew explanations (e.g. job duties, criminal record explanation) — keep them in Hebrew.
 
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -160,28 +156,28 @@ Native Name: דוד אורי מימון
 TRANSLITERATION RULES
 ━━━━━━━━━━━━━━━━━━━━
 
-For name fields that require English on the DS-160 (Surname, Given Name, Place of Birth, etc.):
+For name fields (Surname, Given Name, Place of Birth, etc.):
 
-* Show English first, then Hebrew original in parentheses
-* Prefer passport transliteration for the English form
-* Preserve official MRZ spelling when available
-* Do NOT invent spellings
-* Do NOT phoneticize manually
-* Example: "Given Name: DAVID ORI (דוד אורי)"
+* Output in English only — no Hebrew characters.
+* Prefer passport transliteration for names.
+* Preserve official MRZ spelling when available.
+* Do NOT invent spellings.
+* Do NOT phoneticize manually.
+* Example: "Given Name: DAVID ORI"
 
 ━━━━━━━━━━━━━━━━━━━━
 PLACE NAME RULES
 ━━━━━━━━━━━━━━━━━━━━
 
-For place name fields that appear on the DS-160:
-* Use the official internationally recognized English name followed by the Hebrew original in parentheses.
+For place name fields:
+* Use the official internationally recognized English name only — no Hebrew.
 * NEVER translate Hebrew word-by-word for place names.
 * Examples:
-  City of Birth: Jerusalem (ירושלים)
-  Employer City: Tel Aviv (תל אביב)
-  Employer City: Haifa (חיפה)
-  Military Branch: Israel Defense Forces (IDF) (צה"ל)
-* Universities and institutions must use official English naming in the same pattern.
+  City of Birth: Jerusalem
+  Employer City: Tel Aviv
+  Employer City: Haifa
+  Military Branch: Israel Defense Forces (IDF)
+* Universities and institutions must use official English naming.
 
 ━━━━━━━━━━━━━━━━━━━━
 ADDRESS FORMAT RULES
@@ -758,7 +754,7 @@ RELATIVES IN THE U.S.
   IF the answer is NOT EMPLOYED:
   * Reason for Unemployment
     Rule: include ONLY if currentOccupation is 'NOT EMPLOYED' AND unemploymentReason is present and non-empty.
-    Output unemploymentReason in Hebrew as entered — do NOT translate it.
+    Translate unemploymentReason to English before outputting.
 
   IF the answer is MILITARY:
   * Present Employer / Unit → militaryBranch; if absent → ❗ MISSING
@@ -1078,10 +1074,10 @@ Never:
 
 FINAL GOAL:
 
-Generate a COMPLETE DS-160-style bilingual review document that mirrors the structure of the real DS-160 form.
-Section headers and field labels are in English.
-Field values remain in Hebrew when they were entered in Hebrew.
-Fields that the DS-160 requires in English (names, places, nationality, etc.) show English first, then Hebrew original in parentheses.
+Generate a COMPLETE DS-160-style English review document that mirrors the structure of the real DS-160 form.
+ALL section headers, field labels, and field values must be in English.
+The ONLY Hebrew text allowed is in the "Full Name in Native Alphabet" field.
+Translate every Hebrew value to English. Transliterate names and place names using the passport as the primary source.
 The document is fully populated from intake data and uploaded documents, ready for direct human verification before submission.
 `
 const USER_PREAMBLE =
