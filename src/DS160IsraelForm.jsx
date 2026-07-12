@@ -887,8 +887,10 @@ export default function DS160IsraelForm({
       passportBookNumberDoesNotApply: true,
       passportIssuingCountry: 'Israel',
       passportIssuingState: '',
+      passportIssuingStateNA: true,
       passportIssuingCity: '',
       passportIssuingAuthority: '',
+      passportIssuingAuthorityNA: true,
       mailingAddressSame: 'yes',
       travelingAsGroup: 'no',
       otherPhonesLastFiveYears: 'no',
@@ -2573,8 +2575,42 @@ export default function DS160IsraelForm({
                     <p className="font-semibold text-gray-700 mb-2">היכן הונפק הדרכון? (Where was it issued?)</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 rounded p-3 border border-blue-100">
                       <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="passportIssuingCity" hint="לדוגמה: Jerusalem" />
-                      <FormInput register={register} getFieldError={getFieldError} label="מחוז (Province) — אם מצוין" name="passportIssuingState" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="רשות מנפיקה (Issuing Authority)" name="passportIssuingAuthority" hint="לדוגמה: Ministry of Interior" optional />
+                      <div className="flex flex-col mb-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-700">מחוז (Province)<OptionalBadge /></label>
+                          <label className="flex items-center gap-1 text-sm text-gray-500 cursor-pointer">
+                            <input type="checkbox" {...register('passportIssuingStateNA')} className="rounded"
+                              onChange={e => { register('passportIssuingStateNA').onChange(e); if (e.target.checked) setValue('passportIssuingState', '') }} />
+                            לא רלוונטי
+                          </label>
+                        </div>
+                        <input
+                          type="text"
+                          {...register('passportIssuingState')}
+                          disabled={watch('passportIssuingStateNA')}
+                          className="rounded-md p-2 border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
+                          placeholder="Province"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="flex flex-col mb-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-semibold text-gray-700">רשות מנפיקה (Issuing Authority)<OptionalBadge /></label>
+                          <label className="flex items-center gap-1 text-sm text-gray-500 cursor-pointer">
+                            <input type="checkbox" {...register('passportIssuingAuthorityNA')} className="rounded"
+                              onChange={e => { register('passportIssuingAuthorityNA').onChange(e); if (e.target.checked) setValue('passportIssuingAuthority', '') }} />
+                            לא רלוונטי
+                          </label>
+                        </div>
+                        <input
+                          type="text"
+                          {...register('passportIssuingAuthority')}
+                          disabled={watch('passportIssuingAuthorityNA')}
+                          className="rounded-md p-2 border border-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
+                          placeholder="Ministry of Interior"
+                          dir="ltr"
+                        />
+                      </div>
                     </div>
                   </div>
 
