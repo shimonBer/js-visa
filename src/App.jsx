@@ -3,6 +3,7 @@ import DS160IsraelForm from './DS160IsraelForm.jsx'
 import FormLanding from './FormLanding.jsx'
 import LoginPage from './LoginPage.jsx'
 import MiniFormGuest from './MiniFormGuest.jsx'
+import SessionExpiryGuard from './SessionExpiryGuard.jsx'
 import { generateFormUUID } from './lib/formId.js'
 import { listFormBlobsFromApi, fetchFormBlobPayload } from './lib/formBlob.js'
 import { isAuthenticated, clearToken } from './lib/auth.js'
@@ -192,21 +193,27 @@ export default function App() {
 
   if (screen === 'landing') {
     return (
-      <FormLanding
-        onNewForm={openNewForm}
-        onOpenForm={openFormFromBlob}
-        onLogout={handleLogout}
-      />
+      <>
+        <SessionExpiryGuard onExpiredLogout={handleLogout} />
+        <FormLanding
+          onNewForm={openNewForm}
+          onOpenForm={openFormFromBlob}
+          onLogout={handleLogout}
+        />
+      </>
     )
   }
 
   return (
-    <DS160IsraelForm
-      key={formMountKey}
-      initialBlob={loadedBlob}
-      initialBlobKey={loadedBlobKey}
-      formUUID={formUUID}
-      onExitToHome={goLanding}
-    />
+    <>
+      <SessionExpiryGuard onExpiredLogout={handleLogout} />
+      <DS160IsraelForm
+        key={formMountKey}
+        initialBlob={loadedBlob}
+        initialBlobKey={loadedBlobKey}
+        formUUID={formUUID}
+        onExitToHome={goLanding}
+      />
+    </>
   )
 }

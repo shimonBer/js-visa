@@ -163,6 +163,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ token: sessionToken, isAdmin: user.is_admin })
     }
 
+    // ── POST ?action=refresh ──────────────────────────────────────────────
+    // Extends session: validates current Bearer token → issues fresh 8h token.
+    if (req.method === 'POST' && action === 'refresh') {
+      const auth = verifyRequest(req)
+      if (!auth.ok) return res.status(auth.status).json({ error: auth.error })
+      const newToken = buildToken(auth.userId, auth.isAdmin)
+      return res.status(200).json({ token: newToken })
+    }
+
     // ── POST ?action=generate ─────────────────────────────────────────────
     if (req.method === 'POST' && action === 'generate') {
       const auth = verifyRequest(req)
