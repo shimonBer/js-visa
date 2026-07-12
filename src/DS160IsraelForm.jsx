@@ -126,16 +126,28 @@ function OptionalBadge() {
   return <span className="mr-1.5 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-normal text-gray-400 align-middle">אופציונלי</span>
 }
 
-function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError, optional }) {
+function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError, optional, naGate, watch: watchFn, setValue: setVal }) {
   const fieldError = getFieldError(name)
+  const naName = `${name}NA`
+  const isDisabled = naGate && !!watchFn?.(naName)
   return (
     <div id={`field-${name}`} className="flex flex-col mb-4">
-      <label className="font-semibold mb-1 text-gray-700">{label}{optional && <OptionalBadge />}</label>
+      <div className="flex items-center justify-between mb-1">
+        <label className="font-semibold text-gray-700">{label}{optional && <OptionalBadge />}</label>
+        {naGate && (
+          <label className="flex items-center gap-1 text-sm text-gray-500 cursor-pointer">
+            <input type="checkbox" {...register(naName)} className="rounded"
+              onChange={e => { register(naName).onChange(e); if (e.target.checked) setVal?.(name, '') }} />
+            לא רלוונטי
+          </label>
+        )}
+      </div>
       {note && <span className="text-sm text-gray-500 mb-1">{note}</span>}
       {type === 'textarea' ? (
         <textarea
           {...register(name)}
-          className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+          disabled={isDisabled}
+          className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border disabled:bg-gray-100 disabled:text-gray-400 ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
           placeholder={placeholder}
           rows={3}
           dir={dir}
@@ -144,7 +156,8 @@ function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, r
         <input
           type={type}
           {...register(name)}
-          className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+          disabled={isDisabled}
+          className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border disabled:bg-gray-100 disabled:text-gray-400 ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
           placeholder={placeholder}
           dir={dir}
         />
@@ -549,8 +562,8 @@ function AccommodationBlock({ register, watch, setValue, getFieldError, translat
           <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="accommodationStreet1" hint="לדוגמה: 9080 Sunrise Blvd" />
           <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="accommodationStreet2" hint="לדוגמה: Apt 4B" optional />
           <FormInput register={register} getFieldError={getFieldError} label="עיר" name="accommodationCity" />
-          <FormInput register={register} getFieldError={getFieldError} label="מדינה (State)" name="accommodationState" hint="לדוגמה: FL" optional />
-          <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP, אם ידוע)" name="accommodationZip" optional />
+          <FormInput register={register} getFieldError={getFieldError} label="מדינה (State)" name="accommodationState" hint="לדוגמה: FL" optional naGate watch={watch} setValue={setValue} />
+          <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP, אם ידוע)" name="accommodationZip" optional naGate watch={watch} setValue={setValue} />
         </div>
       )}
 
@@ -907,7 +920,7 @@ export default function DS160IsraelForm({
 
       nationality: '',
       hasForeignCitizenship: 'no',
-      foreignNationalities: [{ country: '', hasForeignPassport: 'no', id: '' }],
+      foreignNationalities: [{ country: '', hasForeignPassport: 'no', id: '', idNA: true }],
       isPermanentResidentElsewhere: 'no',
       permanentResidencies: [{ country: '' }],
       usSocialSecurityNumber: '',
@@ -971,6 +984,7 @@ export default function DS160IsraelForm({
       spouseBirthCity: '',
       spouseBirthCityDoNotKnow: false,
       spouseBirthCountry: '',
+      spouseBirthCountryNA: true,
       spouseAddressType: '',
       spouseAddressStreet: '',
       spouseAddressStreet2: '',
@@ -985,6 +999,7 @@ export default function DS160IsraelForm({
       hasOtherRelativesInUS: 'no',
       usRelatives: [{ surnames: '', givenNames: '', relationship: '', status: '' }],
       unemploymentReason: '',
+      unemploymentReasonNA: true,
       jobTitle: '',
       employerStreet2: '',
       employerState: '',
@@ -1002,14 +1017,14 @@ export default function DS160IsraelForm({
       educationRecords: [{ institutionName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: true, country: 'Israel', courseOfStudy: '', dateFrom: '', dateTo: '' }],
       additionalExSpouses: [],
       numberOfFormerSpouses: '',
-      formerSpouses: [{ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', marriageDate: '', marriageEndDate: '', howEnded: 'Divorce Settlement', terminationCountry: 'Israel' }],
+      formerSpouses: [{ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', birthCountryNA: true, marriageDate: '', marriageEndDate: '', howEnded: 'Divorce Settlement', terminationCountry: 'Israel' }],
       hasClanOrTribe: 'no',
       clanOrTribeName: '',
       languagesList: [{ name: '' }],
       visitedAbroadLast5Years: 'no',
       countriesVisited: [{ country: '' }],
       servedInMilitary: 'no',
-      militaryService: [{ country: 'Israel', branch: '', rank: '', specialty: '', dateFrom: '', dateTo: '' }],
+      militaryService: [{ country: 'Israel', branch: '', rank: '', specialty: '', specialtyNA: true, dateFrom: '', dateTo: '' }],
       militaryCountry: 'Israel',
       hasParamilitary: 'no',
       paramilitaryExplanation: '',
@@ -1095,7 +1110,9 @@ export default function DS160IsraelForm({
       accommodationStreet2: '',
       accommodationCity: '',
       accommodationState: '',
+      accommodationStateNA: true,
       accommodationZip: '',
+      accommodationZipNA: true,
       locationsToVisit: [{ location: '' }],
       plannedStayValue: '',
       plannedStayUnit: '',
@@ -1105,13 +1122,16 @@ export default function DS160IsraelForm({
       tripPayerGivenName: '',
       tripPayerPhone: '',
       tripPayerEmail: '',
+      tripPayerEmailNA: true,
       tripPayerRelationship: '',
       tripPayerSameAddress: 'yes',
       tripPayerAddressStreet1: '',
       tripPayerAddressStreet2: '',
       tripPayerAddressCity: '',
       tripPayerAddressState: '',
+      tripPayerAddressStateNA: true,
       tripPayerAddressZip: '',
+      tripPayerAddressZipNA: true,
       tripPayerAddressCountry: '',
       // OTHER_COMPANY_ORGANIZATION fields
       tripPayerOrgName: '',
@@ -1132,7 +1152,16 @@ export default function DS160IsraelForm({
       contactCity: '',
       contactState: '',
       contactZip: '',
+      contactZipNA: true,
       contactEmailDoesNotApply: false,
+      arrivalFlight: '',
+      arrivalFlightNA: true,
+      departureFlight: '',
+      departureFlightNA: true,
+      jobDuties: '',
+      studentDegree: '',
+      studentMonthlyIncome: '',
+      studentMonthlyIncomeNA: true,
     },
   })
 
@@ -1909,6 +1938,7 @@ export default function DS160IsraelForm({
     }
     if (ms && ms !== 'רווק' && ms !== 'גרוש' && ms !== 'פרוד' && ms !== 'אלמן') {
       req('spouseSurnames')
+      req('spouseGivenNames')
       req('spouseNationality')
       req('spouseBirthDateDay')
       req('spouseBirthDateMonth')
@@ -2138,6 +2168,7 @@ export default function DS160IsraelForm({
       req('jobTitle')
       req('employerPhone')
       req('employmentStartDate')
+      req('jobDuties')
     }
     if (values.currentOccupation === 'STUDENT') {
       req('studentInstitutionName')
@@ -2159,6 +2190,7 @@ export default function DS160IsraelForm({
         if (!String(job?.jobTitle ?? '').trim()) missing.add(`previousEmployments.${i}.jobTitle`)
         if (!String(job?.dateFrom ?? '').trim()) missing.add(`previousEmployments.${i}.dateFrom`)
         if (!String(job?.dateTo ?? '').trim()) missing.add(`previousEmployments.${i}.dateTo`)
+        if (!String(job?.duties ?? '').trim()) missing.add(`previousEmployments.${i}.duties`)
       })
     }
     if (values.hasEducation === 'yes') {
@@ -2757,7 +2789,7 @@ export default function DS160IsraelForm({
                             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך דרכון זר לאזרחות זו?" name={`foreignNationalities.${i}.hasForeignPassport`} options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                           </div>
                           {watch(`foreignNationalities.${i}.hasForeignPassport`) === 'yes' && (
-                            <FormInput register={register} getFieldError={getFieldError} label="מספר זיהות / דרכון במדינה זו" name={`foreignNationalities.${i}.id`} optional />
+                            <FormInput register={register} getFieldError={getFieldError} label="מספר זיהות / דרכון במדינה זו" name={`foreignNationalities.${i}.id`} optional naGate watch={watch} setValue={setValue} />
                           )}
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1">
@@ -2777,7 +2809,7 @@ export default function DS160IsraelForm({
                           </div>
                         </div>
                       ))}
-                      <button type="button" onClick={() => appendForeignNationality({ country: '', hasForeignPassport: 'no', id: '' })}
+                      <button type="button" onClick={() => appendForeignNationality({ country: '', hasForeignPassport: 'no', id: '', idNA: true })}
                         className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                         <span aria-hidden className="text-lg leading-none">+</span>
                         הוסף אזרחות נוספת
@@ -2873,7 +2905,22 @@ export default function DS160IsraelForm({
                               </label>
                             </div>
                           </div>
-                          <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name={`formerSpouses.${i}.birthCountry`} optional />
+                          <div className="flex flex-col mb-4">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-gray-700">מדינה<OptionalBadge /></span>
+                              <label className="flex items-center gap-1 text-sm text-gray-500 cursor-pointer">
+                                <input type="checkbox" {...register(`formerSpouses.${i}.birthCountryNA`)} className="rounded"
+                                  onChange={e => { register(`formerSpouses.${i}.birthCountryNA`).onChange(e); if (e.target.checked) setValue(`formerSpouses.${i}.birthCountry`, '') }} />
+                                לא רלוונטי
+                              </label>
+                            </div>
+                            {!watch(`formerSpouses.${i}.birthCountryNA`) && (
+                              <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} name={`formerSpouses.${i}.birthCountry`} />
+                            )}
+                            {watch(`formerSpouses.${i}.birthCountryNA`) && (
+                              <input type="text" disabled className="rounded-md p-2 border border-gray-300 bg-gray-100 text-gray-400" placeholder="לא רלוונטי" />
+                            )}
+                          </div>
                         </div>
 
                         <DateSelectInput label="תאריך נישואין" name={`formerSpouses.${i}.marriageDate`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
@@ -2890,7 +2937,7 @@ export default function DS160IsraelForm({
                     ))}
 
                     <button type="button"
-                      onClick={() => appendFormerSpouse({ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', marriageDate: '', marriageEndDate: '', howEnded: 'Divorce Settlement', terminationCountry: 'Israel' })}
+                      onClick={() => appendFormerSpouse({ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', birthCountryNA: true, marriageDate: '', marriageEndDate: '', howEnded: 'Divorce Settlement', terminationCountry: 'Israel' })}
                       className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                       <span aria-hidden className="text-lg leading-none">+</span>
                       הוסף בן/בת זוג לשעבר
@@ -2917,7 +2964,7 @@ export default function DS160IsraelForm({
                     <div className="space-y-3">
                       <p className="font-semibold text-sm text-gray-700">שם מלא של בן/בת הזוג (כולל שם נעורים)</p>
                       <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name="spouseSurnames" />
-                      <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="spouseGivenNames" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="spouseGivenNames" />
                     </div>
 
                     {/* Date of Birth */}
@@ -2944,7 +2991,22 @@ export default function DS160IsraelForm({
                           </label>
                         </div>
                       </div>
-                      <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name="spouseBirthCountry" optional />
+                      <div className="flex flex-col mb-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-semibold text-gray-700">מדינה<OptionalBadge /></span>
+                          <label className="flex items-center gap-1 text-sm text-gray-500 cursor-pointer">
+                            <input type="checkbox" {...register('spouseBirthCountryNA')} className="rounded"
+                              onChange={e => { register('spouseBirthCountryNA').onChange(e); if (e.target.checked) setValue('spouseBirthCountry', '') }} />
+                            לא רלוונטי
+                          </label>
+                        </div>
+                        {!watch('spouseBirthCountryNA') && (
+                          <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} name="spouseBirthCountry" />
+                        )}
+                        {watch('spouseBirthCountryNA') && (
+                          <input type="text" disabled className="rounded-md p-2 border border-gray-300 bg-gray-100 text-gray-400" placeholder="לא רלוונטי" />
+                        )}
+                      </div>
                     </div>
 
                     {/* Spouse's Address */}
@@ -3198,10 +3260,10 @@ export default function DS160IsraelForm({
                 <div className="space-y-4 pr-3 border-r-2 border-blue-200">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <DateSelectInput label="תאריך הגעה לארה״ב" name="plannedArrivalDate" register={register} getFieldError={getFieldError} translationErrors={translationErrors} setValue={setValue} watch={watch} />
-                    <FormInput register={register} getFieldError={getFieldError} label="טיסת הגעה (אם ידוע)" name="arrivalFlight" hint="לדוגמה: LY007" optional />
+                    <FormInput register={register} getFieldError={getFieldError} label="טיסת הגעה (אם ידוע)" name="arrivalFlight" hint="לדוגמה: LY007" optional naGate watch={watch} setValue={setValue} />
                     <FormInput register={register} getFieldError={getFieldError} label="עיר הגעה בארה״ב" name="arrivalCity" hint="לדוגמה: New York" />
                     <DateSelectInput label="תאריך עזיבה מארה״ב" name="departureDateUS" register={register} getFieldError={getFieldError} translationErrors={translationErrors} setValue={setValue} watch={watch} />
-                    <FormInput register={register} getFieldError={getFieldError} label="טיסת יציאה (אם ידוע)" name="departureFlight" hint="לדוגמה: LY008" optional />
+                    <FormInput register={register} getFieldError={getFieldError} label="טיסת יציאה (אם ידוע)" name="departureFlight" hint="לדוגמה: LY008" optional naGate watch={watch} setValue={setValue} />
                     <FormInput register={register} getFieldError={getFieldError} label="עיר יציאה מארה״ב" name="departureCity" hint="לדוגמה: New York" />
                   </div>
 
@@ -3299,7 +3361,7 @@ export default function DS160IsraelForm({
                       <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name="tripPayerSurname" />
                       <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="tripPayerGivenName" />
                       <FormInput register={register} getFieldError={getFieldError} label="מספר טלפון" name="tripPayerPhone" type="tel" />
-                      <FormInput register={register} getFieldError={getFieldError} label="דואר אלקטרוני" name="tripPayerEmail" type="email" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="דואר אלקטרוני" name="tripPayerEmail" type="email" optional naGate watch={watch} setValue={setValue} />
                       <div className="flex flex-col gap-1">
                         <label className="font-semibold text-sm text-gray-700">קרבה למבקש</label>
                         <select {...register('tripPayerRelationship')} className="rounded-md p-2 border border-gray-300 bg-white">
@@ -3319,8 +3381,8 @@ export default function DS160IsraelForm({
                         <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="tripPayerAddressStreet1" />
                         <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="tripPayerAddressStreet2" optional />
                         <FormInput register={register} getFieldError={getFieldError} label="עיר" name="tripPayerAddressCity" />
-                        <FormInput register={register} getFieldError={getFieldError} label="מדינה / פרובינציה" name="tripPayerAddressState" optional />
-                        <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="tripPayerAddressZip" optional />
+                        <FormInput register={register} getFieldError={getFieldError} label="מדינה / פרובינציה" name="tripPayerAddressState" optional naGate watch={watch} setValue={setValue} />
+                        <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="tripPayerAddressZip" optional naGate watch={watch} setValue={setValue} />
                         <FormInput register={register} getFieldError={getFieldError} label="מדינה (ארץ)" name="tripPayerAddressCountry" hint="לדוגמה: Israel" />
                       </div>
                     )}
@@ -3340,8 +3402,8 @@ export default function DS160IsraelForm({
                       <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="tripPayerAddressStreet1" />
                       <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="tripPayerAddressStreet2" optional />
                       <FormInput register={register} getFieldError={getFieldError} label="עיר" name="tripPayerAddressCity" />
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה / פרובינציה" name="tripPayerAddressState" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="tripPayerAddressZip" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מדינה / פרובינציה" name="tripPayerAddressState" optional naGate watch={watch} setValue={setValue} />
+                      <FormInput register={register} getFieldError={getFieldError} label="מיקוד" name="tripPayerAddressZip" optional naGate watch={watch} setValue={setValue} />
                       <FormInput register={register} getFieldError={getFieldError} label="מדינה (ארץ)" name="tripPayerAddressCountry" hint="לדוגמה: Israel" />
                     </div>
                   </div>
@@ -3844,7 +3906,7 @@ export default function DS160IsraelForm({
                       <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="contactCity" hint="לדוגמה: Miami" />
                       <FormSelect register={register} getFieldError={getFieldError} label="מדינה (State)" name="contactState" options={['- SELECT ONE -','AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC','AS','GU','MP','PR','VI']} />
                     </div>
-                    <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP Code — if known)" name="contactZip" hint="לדוגמה: 33101 או 33101-5678" optional />
+                    <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP Code — if known)" name="contactZip" hint="לדוגמה: 33101 או 33101-5678" optional naGate watch={watch} setValue={setValue} />
                     <FormInput register={register} getFieldError={getFieldError} label="טלפון (Phone Number)" name="contactPhone" hint="לדוגמה: 5555555555" />
                     {/* Email + Does Not Apply */}
                     <div className="flex flex-col gap-1">
@@ -4178,7 +4240,7 @@ export default function DS160IsraelForm({
                   </div>
                 </div>
 
-                <FormInput register={register} getFieldError={getFieldError} label="תיאור קצר של תפקידיך:" name="jobDuties" type="textarea" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="תיאור קצר של תפקידיך:" name="jobDuties" type="textarea" />
               </div>
             )}
 
@@ -4187,19 +4249,19 @@ export default function DS160IsraelForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
                 <h3 className="col-span-full font-bold text-lg">פרטי לימודים נוכחיים</h3>
                 <FormInput register={register} getFieldError={getFieldError} label="שם מוסד הלימודים" name="studentInstitutionName" />
-                <FormInput register={register} getFieldError={getFieldError} label="תחום לימוד / תואר" name="studentDegree" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="תחום לימוד / תואר" name="studentDegree" />
                 <DateSelectInput label="תאריך תחילת לימודים" name="studentStartDate" register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                 <FormInput register={register} getFieldError={getFieldError} label="טלפון המוסד" name="studentInstitutionPhone" />
                 <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב המוסד" name="studentInstitutionStreet" />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר" name="studentInstitutionCity" />
-                <FormInput register={register} getFieldError={getFieldError} label="הכנסה חודשית" name="studentMonthlyIncome" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="הכנסה חודשית" name="studentMonthlyIncome" optional naGate watch={watch} setValue={setValue} />
               </div>
             )}
 
             {/* NOT EMPLOYED */}
             {w.currentOccupation === 'NOT EMPLOYED' && (
               <div className="bg-gray-50 p-4 rounded border border-gray-200">
-                <FormInput register={register} getFieldError={getFieldError} label="סיבת אי-העסקה" name="unemploymentReason" type="textarea" optional />
+                <FormInput register={register} getFieldError={getFieldError} label="סיבת אי-העסקה" name="unemploymentReason" type="textarea" optional naGate watch={watch} setValue={setValue} />
               </div>
             )}
 
@@ -4284,7 +4346,7 @@ export default function DS160IsraelForm({
 
                     <DateSelectInput label="תאריך תחילת העסקה" name={`previousEmployments.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                     <DateSelectInput label="תאריך סיום העסקה" name={`previousEmployments.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
-                    <FormInput register={register} getFieldError={getFieldError} label="תיאור קצר של תפקידיך:" name={`previousEmployments.${i}.duties`} type="textarea" optional />
+                    <FormInput register={register} getFieldError={getFieldError} label="תיאור קצר של תפקידיך:" name={`previousEmployments.${i}.duties`} type="textarea" />
                   </div>
                 ))}
                 <button type="button"
@@ -4498,13 +4560,13 @@ export default function DS160IsraelForm({
                         ))}
                       </select>
                     </div>
-                    <FormInput register={register} getFieldError={getFieldError} label="התמחות צבאית" name={`militaryService.${i}.specialty`} optional />
+                    <FormInput register={register} getFieldError={getFieldError} label="התמחות צבאית" name={`militaryService.${i}.specialty`} optional naGate watch={watch} setValue={setValue} />
                     <DateSelectInput label="תאריך תחילת שירות" name={`militaryService.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                     <DateSelectInput label="תאריך סיום שירות" name={`militaryService.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                   </div>
                 ))}
                 <button type="button"
-                  onClick={() => appendMilitaryService({ country: '', branch: '', rank: '', specialty: '', dateFrom: '', dateTo: '' })}
+                  onClick={() => appendMilitaryService({ country: '', branch: '', rank: '', specialty: '', specialtyNA: true, dateFrom: '', dateTo: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
                   הוסף שירות
