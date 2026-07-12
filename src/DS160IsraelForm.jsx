@@ -2337,8 +2337,14 @@ export default function DS160IsraelForm({
 
                         <div className="flex flex-col gap-1">
                           <label className="font-semibold text-sm text-gray-700">כיצד הסתיימו הנישואין {translationErrors.has(`formerSpouses.${i}.howEnded`) && <span className="text-red-500">*</span>}</label>
-                          <textarea {...register(`formerSpouses.${i}.howEnded`)} rows={3}
-                            className={`rounded-md p-2 border w-full ${translationErrors.has(`formerSpouses.${i}.howEnded`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                          <select {...register(`formerSpouses.${i}.howEnded`)}
+                            className={`rounded-md p-2 border w-full ${translationErrors.has(`formerSpouses.${i}.howEnded`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}>
+                            <option value="">-- בחר --</option>
+                            <option value="Divorce">גירושין (Divorce)</option>
+                            <option value="Death">מוות (Death)</option>
+                            <option value="Annulment">ביטול נישואין (Annulment)</option>
+                            <option value="Other">אחר (Other)</option>
+                          </select>
                         </div>
 
                         <FormInput register={register} getFieldError={getFieldError} label="מדינה שבה הסתיימו הנישואין" name={`formerSpouses.${i}.terminationCountry`} hint="לדוגמה: ISRAEL" />

@@ -716,7 +716,7 @@ RELATIVES IN THE U.S.
     * Country of Birth → formerSpouses[i].birthCountry; if absent → N/A
     * Date of Marriage → formerSpouses[i].marriageDate; if absent → ❗ MISSING
     * Date Marriage Ended → formerSpouses[i].marriageEndDate; if absent → ❗ MISSING
-    * How Marriage Ended → formerSpouses[i].howEnded; if absent → ❗ MISSING
+    * How Marriage Ended → formerSpouses[i].howEnded; value is already in English — output as-is; if absent → ❗ MISSING
     * Country Where Marriage Was Terminated → formerSpouses[i].terminationCountry; if absent → ❗ MISSING
 
 (REPEATABLE GROUP)
