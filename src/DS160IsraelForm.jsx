@@ -197,55 +197,289 @@ function FormSelect({ label, name, options, register, getFieldError, optional })
 const _DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
 const _MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
-const COUNTRIES_LIST = [
-  'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan',
-  'Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria','Burkina Faso','Burundi',
-  'Cabo Verde','Cambodia','Cameroon','Canada','Central African Republic','Chad','Chile','China','Colombia','Comoros','Congo','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic',
-  'Denmark','Djibouti','Dominica','Dominican Republic',
-  'Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia',
-  'Fiji','Finland','France',
-  'Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana',
-  'Haiti','Honduras','Hungary',
-  'Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Ivory Coast',
-  'Jamaica','Japan','Jordan',
-  'Kazakhstan','Kenya','Kiribati','Kuwait','Kyrgyzstan',
-  'Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg',
-  'Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar',
-  'Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway',
-  'Oman',
-  'Pakistan','Palau','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal',
-  'Qatar',
-  'Romania','Russia','Rwanda',
-  'Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Samoa','San Marino','Sao Tome and Principe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria',
-  'Taiwan','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu',
-  'Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan',
-  'Vanuatu','Vatican City','Venezuela','Vietnam',
-  'Yemen',
-  'Zambia','Zimbabwe',
+const COUNTRIES_BILINGUAL = [
+  { he: 'אפגניסטן', en: 'Afghanistan' },
+  { he: 'אלבניה', en: 'Albania' },
+  { he: 'אלג\'יריה', en: 'Algeria' },
+  { he: 'אנדורה', en: 'Andorra' },
+  { he: 'אנגולה', en: 'Angola' },
+  { he: 'אנטיגואה וברבודה', en: 'Antigua and Barbuda' },
+  { he: 'ארגנטינה', en: 'Argentina' },
+  { he: 'ארמניה', en: 'Armenia' },
+  { he: 'אוסטרליה', en: 'Australia' },
+  { he: 'אוסטריה', en: 'Austria' },
+  { he: 'אזרבייג\'ן', en: 'Azerbaijan' },
+  { he: 'איי בהאמה', en: 'Bahamas' },
+  { he: 'בחריין', en: 'Bahrain' },
+  { he: 'בנגלדש', en: 'Bangladesh' },
+  { he: 'ברבדוס', en: 'Barbados' },
+  { he: 'בלארוס', en: 'Belarus' },
+  { he: 'בלגיה', en: 'Belgium' },
+  { he: 'בליז', en: 'Belize' },
+  { he: 'בנין', en: 'Benin' },
+  { he: 'בהוטן', en: 'Bhutan' },
+  { he: 'בוליביה', en: 'Bolivia' },
+  { he: 'בוסניה והרצגובינה', en: 'Bosnia and Herzegovina' },
+  { he: 'בוטסואנה', en: 'Botswana' },
+  { he: 'ברזיל', en: 'Brazil' },
+  { he: 'ברוניי', en: 'Brunei' },
+  { he: 'בולגריה', en: 'Bulgaria' },
+  { he: 'בורקינה פאסו', en: 'Burkina Faso' },
+  { he: 'בורונדי', en: 'Burundi' },
+  { he: 'קאבו ורדה', en: 'Cabo Verde' },
+  { he: 'קמבודיה', en: 'Cambodia' },
+  { he: 'קמרון', en: 'Cameroon' },
+  { he: 'קנדה', en: 'Canada' },
+  { he: 'הרפובליקה המרכז-אפריקאית', en: 'Central African Republic' },
+  { he: 'צ\'אד', en: 'Chad' },
+  { he: 'צ\'ילה', en: 'Chile' },
+  { he: 'סין', en: 'China' },
+  { he: 'קולומביה', en: 'Colombia' },
+  { he: 'קומורוס', en: 'Comoros' },
+  { he: 'קונגו', en: 'Congo' },
+  { he: 'קוסטה ריקה', en: 'Costa Rica' },
+  { he: 'קרואטיה', en: 'Croatia' },
+  { he: 'קובה', en: 'Cuba' },
+  { he: 'קפריסין', en: 'Cyprus' },
+  { he: 'צ\'כיה', en: 'Czech Republic' },
+  { he: 'דנמרק', en: 'Denmark' },
+  { he: 'ג\'יבוטי', en: 'Djibouti' },
+  { he: 'דומיניקה', en: 'Dominica' },
+  { he: 'הרפובליקה הדומיניקנית', en: 'Dominican Republic' },
+  { he: 'אקוודור', en: 'Ecuador' },
+  { he: 'מצרים', en: 'Egypt' },
+  { he: 'אל סלבדור', en: 'El Salvador' },
+  { he: 'גינאה המשוונית', en: 'Equatorial Guinea' },
+  { he: 'אריתריאה', en: 'Eritrea' },
+  { he: 'אסטוניה', en: 'Estonia' },
+  { he: 'אסוואטיני', en: 'Eswatini' },
+  { he: 'אתיופיה', en: 'Ethiopia' },
+  { he: 'פיג\'י', en: 'Fiji' },
+  { he: 'פינלנד', en: 'Finland' },
+  { he: 'צרפת', en: 'France' },
+  { he: 'גאבון', en: 'Gabon' },
+  { he: 'גמביה', en: 'Gambia' },
+  { he: 'גאורגיה', en: 'Georgia' },
+  { he: 'גרמניה', en: 'Germany' },
+  { he: 'גאנה', en: 'Ghana' },
+  { he: 'יוון', en: 'Greece' },
+  { he: 'גרנדה', en: 'Grenada' },
+  { he: 'גואטמלה', en: 'Guatemala' },
+  { he: 'גינאה', en: 'Guinea' },
+  { he: 'גינאה-ביסאו', en: 'Guinea-Bissau' },
+  { he: 'גיאנה', en: 'Guyana' },
+  { he: 'האיטי', en: 'Haiti' },
+  { he: 'הונדורס', en: 'Honduras' },
+  { he: 'הונגריה', en: 'Hungary' },
+  { he: 'איסלנד', en: 'Iceland' },
+  { he: 'הודו', en: 'India' },
+  { he: 'אינדונזיה', en: 'Indonesia' },
+  { he: 'איראן', en: 'Iran' },
+  { he: 'עיראק', en: 'Iraq' },
+  { he: 'אירלנד', en: 'Ireland' },
+  { he: 'ישראל', en: 'Israel' },
+  { he: 'איטליה', en: 'Italy' },
+  { he: 'חוף השנהב', en: 'Ivory Coast' },
+  { he: 'ג\'מייקה', en: 'Jamaica' },
+  { he: 'יפן', en: 'Japan' },
+  { he: 'ירדן', en: 'Jordan' },
+  { he: 'קזחסטן', en: 'Kazakhstan' },
+  { he: 'קניה', en: 'Kenya' },
+  { he: 'קיריבאטי', en: 'Kiribati' },
+  { he: 'כווית', en: 'Kuwait' },
+  { he: 'קירגיזסטן', en: 'Kyrgyzstan' },
+  { he: 'לאוס', en: 'Laos' },
+  { he: 'לטביה', en: 'Latvia' },
+  { he: 'לבנון', en: 'Lebanon' },
+  { he: 'לסוטו', en: 'Lesotho' },
+  { he: 'ליבריה', en: 'Liberia' },
+  { he: 'לוב', en: 'Libya' },
+  { he: 'ליכטנשטיין', en: 'Liechtenstein' },
+  { he: 'ליטא', en: 'Lithuania' },
+  { he: 'לוקסמבורג', en: 'Luxembourg' },
+  { he: 'מדגסקר', en: 'Madagascar' },
+  { he: 'מלאווי', en: 'Malawi' },
+  { he: 'מלזיה', en: 'Malaysia' },
+  { he: 'מלדיביים', en: 'Maldives' },
+  { he: 'מאלי', en: 'Mali' },
+  { he: 'מלטה', en: 'Malta' },
+  { he: 'איי מרשל', en: 'Marshall Islands' },
+  { he: 'מאוריטניה', en: 'Mauritania' },
+  { he: 'מאוריציוס', en: 'Mauritius' },
+  { he: 'מקסיקו', en: 'Mexico' },
+  { he: 'מיקרונזיה', en: 'Micronesia' },
+  { he: 'מולדובה', en: 'Moldova' },
+  { he: 'מונקו', en: 'Monaco' },
+  { he: 'מונגוליה', en: 'Mongolia' },
+  { he: 'מונטנגרו', en: 'Montenegro' },
+  { he: 'מרוקו', en: 'Morocco' },
+  { he: 'מוזמביק', en: 'Mozambique' },
+  { he: 'מיאנמר', en: 'Myanmar' },
+  { he: 'נמיביה', en: 'Namibia' },
+  { he: 'נאורו', en: 'Nauru' },
+  { he: 'נפאל', en: 'Nepal' },
+  { he: 'הולנד', en: 'Netherlands' },
+  { he: 'ניו זילנד', en: 'New Zealand' },
+  { he: 'ניקרגואה', en: 'Nicaragua' },
+  { he: 'ניז\'ר', en: 'Niger' },
+  { he: 'ניגריה', en: 'Nigeria' },
+  { he: 'קוריאה הצפונית', en: 'North Korea' },
+  { he: 'מקדוניה הצפונית', en: 'North Macedonia' },
+  { he: 'נורווגיה', en: 'Norway' },
+  { he: 'עומאן', en: 'Oman' },
+  { he: 'פקיסטן', en: 'Pakistan' },
+  { he: 'פלאו', en: 'Palau' },
+  { he: 'פנמה', en: 'Panama' },
+  { he: 'פפואה גינאה החדשה', en: 'Papua New Guinea' },
+  { he: 'פרגוואי', en: 'Paraguay' },
+  { he: 'פרו', en: 'Peru' },
+  { he: 'פיליפינים', en: 'Philippines' },
+  { he: 'פולין', en: 'Poland' },
+  { he: 'פורטוגל', en: 'Portugal' },
+  { he: 'קטר', en: 'Qatar' },
+  { he: 'רומניה', en: 'Romania' },
+  { he: 'רוסיה', en: 'Russia' },
+  { he: 'רואנדה', en: 'Rwanda' },
+  { he: 'סנט קיטס ונוויס', en: 'Saint Kitts and Nevis' },
+  { he: 'סנט לוסיה', en: 'Saint Lucia' },
+  { he: 'סנט וינסנט והגרנדינים', en: 'Saint Vincent and the Grenadines' },
+  { he: 'סמואה', en: 'Samoa' },
+  { he: 'סן מרינו', en: 'San Marino' },
+  { he: 'סאו טומה ופרינסיפה', en: 'Sao Tome and Principe' },
+  { he: 'ערב הסעודית', en: 'Saudi Arabia' },
+  { he: 'סנגל', en: 'Senegal' },
+  { he: 'סרביה', en: 'Serbia' },
+  { he: 'סיישל', en: 'Seychelles' },
+  { he: 'סיירה לאון', en: 'Sierra Leone' },
+  { he: 'סינגפור', en: 'Singapore' },
+  { he: 'סלובקיה', en: 'Slovakia' },
+  { he: 'סלובניה', en: 'Slovenia' },
+  { he: 'איי שלמה', en: 'Solomon Islands' },
+  { he: 'סומליה', en: 'Somalia' },
+  { he: 'דרום אפריקה', en: 'South Africa' },
+  { he: 'קוריאה הדרומית', en: 'South Korea' },
+  { he: 'דרום סודן', en: 'South Sudan' },
+  { he: 'ספרד', en: 'Spain' },
+  { he: 'סרי לנקה', en: 'Sri Lanka' },
+  { he: 'סודן', en: 'Sudan' },
+  { he: 'סורינם', en: 'Suriname' },
+  { he: 'שוודיה', en: 'Sweden' },
+  { he: 'שוויץ', en: 'Switzerland' },
+  { he: 'סוריה', en: 'Syria' },
+  { he: 'טייוואן', en: 'Taiwan' },
+  { he: 'טג\'יקיסטן', en: 'Tajikistan' },
+  { he: 'טנזניה', en: 'Tanzania' },
+  { he: 'תאילנד', en: 'Thailand' },
+  { he: 'טימור לסטה', en: 'Timor-Leste' },
+  { he: 'טוגו', en: 'Togo' },
+  { he: 'טונגה', en: 'Tonga' },
+  { he: 'טרינידד וטובגו', en: 'Trinidad and Tobago' },
+  { he: 'תוניסיה', en: 'Tunisia' },
+  { he: 'טורקיה', en: 'Turkey' },
+  { he: 'טורקמניסטן', en: 'Turkmenistan' },
+  { he: 'טובאלו', en: 'Tuvalu' },
+  { he: 'אוגנדה', en: 'Uganda' },
+  { he: 'אוקראינה', en: 'Ukraine' },
+  { he: 'איחוד האמירויות', en: 'United Arab Emirates' },
+  { he: 'בריטניה', en: 'United Kingdom' },
+  { he: 'ארצות הברית', en: 'United States' },
+  { he: 'אורוגוואי', en: 'Uruguay' },
+  { he: 'אוזבקיסטן', en: 'Uzbekistan' },
+  { he: 'ונואטו', en: 'Vanuatu' },
+  { he: 'הוותיקן', en: 'Vatican City' },
+  { he: 'ונצואלה', en: 'Venezuela' },
+  { he: 'וייטנאם', en: 'Vietnam' },
+  { he: 'תימן', en: 'Yemen' },
+  { he: 'זמביה', en: 'Zambia' },
+  { he: 'זימבבואה', en: 'Zimbabwe' },
 ]
 
-function CountrySelect({ label, name, register, getFieldError, optional, hint }) {
+const LANGUAGES_BILINGUAL = [
+  { he: 'עברית', en: 'HEBREW' },
+  { he: 'אנגלית', en: 'ENGLISH' },
+  { he: 'ערבית', en: 'ARABIC' },
+  { he: 'רוסית', en: 'RUSSIAN' },
+  { he: 'צרפתית', en: 'FRENCH' },
+  { he: 'ספרדית', en: 'SPANISH' },
+  { he: 'גרמנית', en: 'GERMAN' },
+  { he: 'יידיש', en: 'YIDDISH' },
+  { he: 'אמהרית', en: 'AMHARIC' },
+  { he: 'פורטוגזית', en: 'PORTUGUESE' },
+  { he: 'איטלקית', en: 'ITALIAN' },
+  { he: 'טורקית', en: 'TURKISH' },
+  { he: 'פרסית', en: 'PERSIAN' },
+  { he: 'רומנית', en: 'ROMANIAN' },
+  { he: 'הונגרית', en: 'HUNGARIAN' },
+  { he: 'אחר', en: 'OTHER' },
+]
+
+function SearchableSelect({ label, name, options, register, setValue, watch: watchFn, getFieldError, optional, hint, placeholder }) {
+  const currentValue = watchFn(name)
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+
+  const selectedOption = options.find(o => o.en === currentValue)
+  const displayValue = open ? query : (selectedOption?.he || currentValue || '')
+
+  const filtered = useMemo(() => {
+    if (!query) return options
+    const q = query.toLowerCase()
+    return options.filter(o => o.he.includes(query) || o.en.toLowerCase().includes(q))
+  }, [query, options])
+
+  function handleSelect(opt) {
+    setValue(name, opt.en, { shouldDirty: true })
+    setQuery('')
+    setOpen(false)
+  }
+
   const fieldError = getFieldError(name)
-  const listId = `dl-country-${name.replace(/[^a-zA-Z0-9]/g, '-')}`
+
   return (
-    <div id={`field-${name}`} className="flex flex-col mb-4">
+    <div id={`field-${name}`} className="flex flex-col mb-4 relative">
       <label className="font-semibold mb-1 text-gray-700">{label}{optional && <OptionalBadge />}</label>
       {hint && <span className="text-xs text-gray-400 mb-1">{hint}</span>}
+      <input type="hidden" {...register(name)} />
       <input
         type="text"
-        list={listId}
-        {...register(name)}
-        dir="ltr"
-        placeholder="הקלד לחיפוש מדינה..."
+        value={displayValue}
+        dir="rtl"
+        placeholder={placeholder || 'חפש...'}
+        autoComplete="off"
+        onChange={e => { setQuery(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => { setOpen(false); setQuery('') }, 150)}
         className={`rounded-md p-2 border bg-white ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
       />
-      <datalist id={listId}>
-        {COUNTRIES_LIST.map((c) => (
-          <option key={c} value={c.toUpperCase()} />
-        ))}
-      </datalist>
+      {open && (
+        <ul className="absolute z-50 left-0 right-0 max-h-52 overflow-y-auto bg-white border border-gray-300 rounded-b shadow-lg" style={{ top: '100%' }}>
+          {filtered.length === 0
+            ? <li className="px-3 py-2 text-gray-400 text-sm text-right">לא נמצאו תוצאות</li>
+            : filtered.map(o => (
+              <li
+                key={o.en}
+                onMouseDown={e => { e.preventDefault(); handleSelect(o) }}
+                className={`px-3 py-2 cursor-pointer text-right text-sm hover:bg-blue-50 ${o.en === currentValue ? 'bg-blue-100 font-semibold' : ''}`}
+              >
+                {o.he}
+              </li>
+            ))
+          }
+        </ul>
+      )}
       {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שדה חובה'}</span>}
     </div>
+  )
+}
+
+function CountrySelect({ label, name, register, setValue, watch: watchFn, getFieldError, optional, hint }) {
+  return (
+    <SearchableSelect
+      label={label} name={name} options={COUNTRIES_BILINGUAL}
+      register={register} setValue={setValue} watch={watchFn}
+      getFieldError={getFieldError} optional={optional} hint={hint}
+      placeholder="חפש מדינה בעברית..."
+    />
   )
 }
 
@@ -2330,7 +2564,7 @@ export default function DS160IsraelForm({
                   </div>
 
                   {/* Country/Authority that Issued */}
-                  <CountrySelect register={register} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה את הדרכון" name="passportIssuingCountry" hint="ממולא אוטומטית מצילום הדרכון" />
+                  <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה את הדרכון" name="passportIssuingCountry" hint="ממולא אוטומטית מצילום הדרכון" />
 
                   {/* Where was it issued — sub-section */}
                   <div className="md:col-span-2">
@@ -2381,7 +2615,7 @@ export default function DS160IsraelForm({
                               </div>
                               {translationErrors.has(`lostPassports.${i}.number`) && <span className="text-red-500 text-xs">שדה חובה</span>}
                             </div>
-                            <CountrySelect register={register} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה" name={`lostPassports.${i}.country`} />
+                            <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה" name={`lostPassports.${i}.country`} />
                             <FormInput register={register} getFieldError={getFieldError} label="הסבר (Explain)" name={`lostPassports.${i}.explain`} type="textarea" />
                           </div>
                         ))}
@@ -2457,14 +2691,14 @@ export default function DS160IsraelForm({
                   register={register} getFieldError={getFieldError} translationErrors={translationErrors}
                 />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" />
-                <CountrySelect register={register} getFieldError={getFieldError} label="מדינת לידה (מהדרכון)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון" />
+                <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינת לידה (מהדרכון)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון" />
               </div>
 
               {/* ── כרטיס 2: אזרחות ולאום ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
                 <h3 className="col-span-full font-bold text-lg">אזרחות ולאום</h3>
 
-                <CountrySelect register={register} getFieldError={getFieldError} label="לאום / אזרחות עיקרית (מהדרכון)" name="nationality" hint="ממולא אוטומטית מצילום הדרכון" />
+                <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="לאום / אזרחות עיקרית (מהדרכון)" name="nationality" hint="ממולא אוטומטית מצילום הדרכון" />
                 <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת זהות" name="idNumber" hint="ממולא אוטומטית מצילום הדרכון אם מופיע" />
 
                 {/* Extra nationality */}
@@ -2477,7 +2711,7 @@ export default function DS160IsraelForm({
                       {foreignNationalityFields.map((field, i) => (
                         <div key={field.id} className="pr-3 border-r-2 border-blue-200 space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <CountrySelect register={register} getFieldError={getFieldError} label={`מדינה ${i + 1}`} name={`foreignNationalities.${i}.country`} />
+                            <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label={`מדינה ${i + 1}`} name={`foreignNationalities.${i}.country`} />
                           </div>
                           <div className="-mb-2">
                             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך דרכון זר לאזרחות זו?" name={`foreignNationalities.${i}.hasForeignPassport`} options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
@@ -2521,7 +2755,7 @@ export default function DS160IsraelForm({
                     <div className="mt-2 space-y-2">
                       {permanentResidencyFields.map((field, i) => (
                         <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end pr-2 border-r-2 border-blue-200">
-                          <CountrySelect register={register} getFieldError={getFieldError} label={`מדינת מגורי קבע ${i + 1}`} name={`permanentResidencies.${i}.country`} />
+                          <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label={`מדינת מגורי קבע ${i + 1}`} name={`permanentResidencies.${i}.country`} />
                           {permanentResidencyFields.length > 1 && (
                             <button type="button" onClick={() => removePermanentResidency(i)} className="pb-1 text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
                           )}
@@ -2599,7 +2833,7 @@ export default function DS160IsraelForm({
                               </label>
                             </div>
                           </div>
-                          <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name={`formerSpouses.${i}.birthCountry`} optional />
+                          <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name={`formerSpouses.${i}.birthCountry`} optional />
                         </div>
 
                         <DateSelectInput label="תאריך נישואין" name={`formerSpouses.${i}.marriageDate`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
@@ -2611,7 +2845,7 @@ export default function DS160IsraelForm({
                             className={`rounded-md p-2 border w-full ${translationErrors.has(`formerSpouses.${i}.howEnded`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
                         </div>
 
-                        <CountrySelect register={register} getFieldError={getFieldError} label="מדינה שבה הסתיימו הנישואין" name={`formerSpouses.${i}.terminationCountry`} />
+                        <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה שבה הסתיימו הנישואין" name={`formerSpouses.${i}.terminationCountry`} />
                       </div>
                     ))}
 
@@ -2670,7 +2904,7 @@ export default function DS160IsraelForm({
                           </label>
                         </div>
                       </div>
-                      <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name="spouseBirthCountry" optional />
+                      <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name="spouseBirthCountry" optional />
                     </div>
 
                     {/* Spouse's Address */}
@@ -3874,7 +4108,7 @@ export default function DS160IsraelForm({
                     </div>
                   </div>
                   <FormInput register={register} getFieldError={getFieldError} label="טלפון" name="employerPhone" />
-                  <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name="employerCountry" />
+                  <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name="employerCountry" />
                 </div>
 
                 <FormInput register={register} getFieldError={getFieldError} label="תפקיד / כותרת משרה" name="jobTitle" />
@@ -3964,7 +4198,7 @@ export default function DS160IsraelForm({
                           </label>
                         </div>
                       </div>
-                      <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name={`previousEmployments.${i}.country`} optional />
+                      <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name={`previousEmployments.${i}.country`} optional />
                       <FormInput register={register} getFieldError={getFieldError} label="טלפון" name={`previousEmployments.${i}.phone`} optional />
                     </div>
 
@@ -4062,7 +4296,7 @@ export default function DS160IsraelForm({
                           </label>
                         </div>
                       </div>
-                      <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name={`educationRecords.${i}.country`} optional />
+                      <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name={`educationRecords.${i}.country`} optional />
                     </div>
 
                     <FormInput register={register} getFieldError={getFieldError} label="תחום לימוד" name={`educationRecords.${i}.courseOfStudy`} />
@@ -4096,28 +4330,12 @@ export default function DS160IsraelForm({
               {languagesListFields.map((field, i) => (
                 <div key={field.id} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded p-3">
                   <div className="flex flex-col gap-1 flex-1">
-                    <label className="font-semibold text-sm text-gray-700">שפה</label>
-                    <input type="text" list={`dl-lang-${i}`} {...register(`languagesList.${i}.name`)} dir="ltr"
-                      placeholder="הקלד לחיפוש שפה..."
-                      className={`rounded-md p-2 border w-full bg-white ${translationErrors.has(`languagesList.${i}.name`) || (i === 0 && translationErrors.has('languagesList.0.name')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
-                    <datalist id={`dl-lang-${i}`}>
-                      <option value="HEBREW">עברית (Hebrew)</option>
-                      <option value="ENGLISH">אנגלית (English)</option>
-                      <option value="ARABIC">ערבית (Arabic)</option>
-                      <option value="RUSSIAN">רוסית (Russian)</option>
-                      <option value="FRENCH">צרפתית (French)</option>
-                      <option value="SPANISH">ספרדית (Spanish)</option>
-                      <option value="GERMAN">גרמנית (German)</option>
-                      <option value="YIDDISH">יידיש (Yiddish)</option>
-                      <option value="AMHARIC">אמהרית (Amharic)</option>
-                      <option value="PORTUGUESE">פורטוגזית (Portuguese)</option>
-                      <option value="ITALIAN">איטלקית (Italian)</option>
-                      <option value="TURKISH">טורקית (Turkish)</option>
-                      <option value="PERSIAN">פרסית (Persian)</option>
-                      <option value="ROMANIAN">רומנית (Romanian)</option>
-                      <option value="HUNGARIAN">הונגרית (Hungarian)</option>
-                      <option value="OTHER">אחר (Other)</option>
-                    </datalist>
+                    <SearchableSelect
+                      label="שפה" name={`languagesList.${i}.name`} options={LANGUAGES_BILINGUAL}
+                      register={register} setValue={setValue} watch={watch}
+                      getFieldError={() => translationErrors.has(`languagesList.${i}.name`) || (i === 0 && translationErrors.has('languagesList.0.name')) ? { message: '' } : null}
+                      placeholder="חפש שפה..."
+                    />
                   </div>
                   {languagesListFields.length > 1 && (
                     <button type="button" onClick={() => removeLanguage(i)} className="text-red-500 text-sm hover:underline mt-5">הסר</button>
@@ -4143,13 +4361,12 @@ export default function DS160IsraelForm({
                 {countriesVisitedFields.map((field, i) => (
                   <div key={field.id} className="flex items-end gap-3 bg-gray-50 border border-gray-200 rounded p-3">
                     <div className="flex flex-col gap-1 flex-1">
-                      <label className="font-semibold text-sm text-gray-700">מדינה</label>
-                      <input type="text" list={`dl-cv-${i}`} {...register(`countriesVisited.${i}.country`)} dir="ltr"
-                        placeholder="הקלד לחיפוש מדינה..."
-                        className={`rounded-md p-2 border w-full bg-white ${translationErrors.has(`countriesVisited.${i}.country`) || (i === 0 && translationErrors.has('countriesVisited.0.country')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
-                      <datalist id={`dl-cv-${i}`}>
-                        {COUNTRIES_LIST.map((c) => <option key={c} value={c.toUpperCase()} />)}
-                      </datalist>
+                      <SearchableSelect
+                        label="מדינה" name={`countriesVisited.${i}.country`} options={COUNTRIES_BILINGUAL}
+                        register={register} setValue={setValue} watch={watch}
+                        getFieldError={() => translationErrors.has(`countriesVisited.${i}.country`) || (i === 0 && translationErrors.has('countriesVisited.0.country')) ? { message: '' } : null}
+                        placeholder="חפש מדינה בעברית..."
+                      />
                     </div>
                     {countriesVisitedFields.length > 1 && (
                       <button type="button" onClick={() => removeCountryVisited(i)} className="text-red-500 text-sm hover:underline pb-2">הסר</button>
@@ -4220,7 +4437,7 @@ export default function DS160IsraelForm({
                         <button type="button" onClick={() => removeMilitaryService(i)} className="text-red-500 text-sm hover:underline">הסר</button>
                       )}
                     </div>
-                    <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name={`militaryService.${i}.country`} />
+                    <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name={`militaryService.${i}.country`} />
                     <FormInput register={register} getFieldError={getFieldError} label="חיל / זרוע" name={`militaryService.${i}.branch`} />
                     <div className="flex flex-col gap-1">
                       <label className="font-semibold text-sm text-gray-700">דרגה</label>
