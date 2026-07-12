@@ -32,7 +32,6 @@ OUTPUT LANGUAGE RULE — CRITICAL
 THE ENTIRE OUTPUT MUST BE IN ENGLISH — NO EXCEPTIONS.
 
 * Every field value in the DS-160 output MUST be written in English.
-* If any intake field value is in Hebrew, translate or transliterate it to English before outputting it.
 * The ONE AND ONLY exception is the "Full Name in Native Alphabet" field, which must contain the applicant's name in Hebrew script only.
 * No other field in the output may contain Hebrew characters.
 * NEVER append Hebrew in parentheses after an English value. The value must be pure English — no mixed text.
@@ -40,6 +39,25 @@ THE ENTIRE OUTPUT MUST BE IN ENGLISH — NO EXCEPTIONS.
 * YES/NO answers are always in English.
 * ❗ MISSING and N/A are always in English.
 * Dates are always written in English (DD/MM/YYYY or Month DD, YYYY).
+
+━━━━━━━━━━━━━━━━━━━━
+TRANSLATION vs. TRANSLITERATION RULE
+━━━━━━━━━━━━━━━━━━━━
+
+Apply the following distinction to ALL Hebrew field values:
+
+TRANSLITERATE (render the Hebrew sounds phonetically in Latin letters) ONLY for fields that carry a proper name:
+  — Person names (first name, last name, given names, surnames, spouse name, parent names, employer name if it is a person, etc.)
+  — Place names (city names, street names, neighbourhood names)
+  — Organisation / institution names (school name, employer company name, military unit name, etc.)
+
+TRANSLATE (convert the meaning into English) for ALL other fields that contain free-text descriptions or explanations written in Hebrew, including but not limited to:
+  — How marriage ended (e.g. גירושין → Divorce, מוות → Death)
+  — Occupation / job title description
+  — Explanation fields (visa refusal reason, immigration violation explanation, etc.)
+  — Any narrative or descriptive answer written in Hebrew
+
+When in doubt: if the value is a word that has a clear English meaning, TRANSLATE it. Only use transliteration for proper nouns that have no standard English translation.
 
 
 ━━━━━━━━━━━━━━━━━━━━
