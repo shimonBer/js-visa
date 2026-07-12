@@ -135,6 +135,8 @@ Extract the following printed fields:
 • Date of Issue
 • Date of Expiry
 • Israeli ID Number
+• Issuance City — the city where the passport was issued (look for labels such as "Authority", "Passport at", "Place of issue", or similar near the Date of Issue field).
+• Issuance Country — the country that issued the passport. Prefer an explicit issuing-country label (e.g. "State of Israel") if present; otherwise infer from the issuing authority or the passport's country field.
 
 Dates must use: YYYY-MM-DD
 
@@ -160,6 +162,8 @@ Sex:               Same row as Date of Birth.
 Place of Birth:    Same row as Date of Birth.
 Date of Issue:     Lower-center.
 Date of Expiry:    Lower-right, paired with Date of Issue.
+Issuance City:     Adjacent to Date of Issue — typically labeled "Authority" or "Passport at".
+Issuance Country:  The country printed as the issuer; on Israeli passports this is "State of Israel" or "Israel".
 
 If this second reading differs from PASS 1, prefer the spatial reading and record a warning.
 
@@ -207,7 +211,7 @@ If values disagree, prefer in this order:
 For passportNumber, surname, givenNames, nationality, sex, dateOfBirth, dateOfExpiry:
   → Prefer MRZ. If MRZ is null, use spatial. Record every disagreement in warnings.
 
-For placeOfBirth, dateOfIssue:
+For placeOfBirth, dateOfIssue, issuanceCity, issuanceCountry:
   → Use spatial printed value (not in MRZ).
 
 For israeliIdNumber:
@@ -240,8 +244,10 @@ fullName = givenNames + " " + surname (null if either is null).`
                 dateOfIssue:    { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
                 dateOfExpiry:   { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
                 israeliIdNumber:{ type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                issuanceCity:   { type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
+                issuanceCountry:{ type: 'object', properties: { value: { type: ['string', 'null'] }, confidence: { type: 'string', enum: ['high', 'medium', 'low'] } }, required: ['value', 'confidence'], additionalProperties: false },
               },
-              required: ['passportNumber','surname','givenNames','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber'],
+              required: ['passportNumber','surname','givenNames','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber','issuanceCity','issuanceCountry'],
               additionalProperties: false,
             },
             spatial: {
@@ -257,8 +263,10 @@ fullName = givenNames + " " + surname (null if either is null).`
                 dateOfIssue:     { type: ['string', 'null'] },
                 dateOfExpiry:    { type: ['string', 'null'] },
                 israeliIdNumber: { type: ['string', 'null'] },
+                issuanceCity:    { type: ['string', 'null'] },
+                issuanceCountry: { type: ['string', 'null'] },
               },
-              required: ['passportNumber','surname','givenNames','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber'],
+              required: ['passportNumber','surname','givenNames','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber','issuanceCity','issuanceCountry'],
               additionalProperties: false,
             },
             mrz: {
@@ -292,8 +300,10 @@ fullName = givenNames + " " + surname (null if either is null).`
                 dateOfIssue:     { type: ['string', 'null'] },
                 dateOfExpiry:    { type: ['string', 'null'] },
                 israeliIdNumber: { type: ['string', 'null'] },
+                issuanceCity:    { type: ['string', 'null'] },
+                issuanceCountry: { type: ['string', 'null'] },
               },
-              required: ['passportNumber','surname','givenNames','fullName','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber'],
+              required: ['passportNumber','surname','givenNames','fullName','nationality','sex','dateOfBirth','placeOfBirth','dateOfIssue','dateOfExpiry','israeliIdNumber','issuanceCity','issuanceCountry'],
               additionalProperties: false,
             },
             ambiguities: {
@@ -407,6 +417,8 @@ fullName = givenNames + " " + surname (null if either is null).`
       placeOfBirth:       String(f.placeOfBirth ?? '').trim() || undefined,
       dateOfIssue:        String(f.dateOfIssue ?? '').trim() || undefined,
       dateOfExpiry:       String(f.dateOfExpiry ?? '').trim() || undefined,
+      issuanceCity:       String(f.issuanceCity ?? '').trim() || undefined,
+      issuanceCountry:    String(f.issuanceCountry ?? '').trim() || undefined,
       warnings:           Array.isArray(extracted.warnings) ? extracted.warnings : [],
       ambiguities:        Array.isArray(extracted.ambiguities) ? extracted.ambiguities : [],
     }
