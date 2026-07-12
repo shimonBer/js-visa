@@ -140,7 +140,7 @@ Extract the following printed fields:
 
 Dates must use: YYYY-MM-DD
 
-Israeli ID numbers: remove spaces and hyphens, return digits only. If unreadable return null.
+Israeli ID Number: Extract the complete identifier exactly as printed, ensuring no digits are omitted. Remove hyphens and all other separators from the returned value — return digits only. If unreadable return null.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SPATIAL VERIFICATION PASS (PASS 2)
@@ -155,7 +155,9 @@ Surname:           Upper-right, row 1 below header.
 Given Names:       Upper-right, row 2.
 Nationality:       Upper-right, row 3.
 Israeli ID Number: Middle-right — labeled "I.D. No. / מס' זהות".
-                   Format: D-DDDDDDD-D (9 digits with hyphens). Strip hyphens.
+                   Format on document: D-DDDDDDD-D (9 digits with hyphens).
+                   Extract the complete identifier exactly as printed, ensuring no digits are omitted.
+                   Remove hyphens and all other separators — return digits only.
                    Do NOT confuse with Passport No. (top-right) or MRZ digit runs.
 Date of Birth:     Center-left, below the photo.
 Sex:               Same row as Date of Birth.
