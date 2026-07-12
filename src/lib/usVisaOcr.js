@@ -1,7 +1,7 @@
 /**
  * POST U.S. visa image to /api/extract-us-visa.
  * @param {File} file
- * @returns {Promise<{ issueDate: string, expirationDate: string }>}
+ * @returns {Promise<{ issueDate: string, expirationDate: string, visaNumber: string }>}
  */
 export async function extractUsVisaDatesFromFile(file) {
   if (!(file instanceof File)) {
@@ -31,5 +31,6 @@ export async function extractUsVisaDatesFromFile(file) {
   return {
     issueDate: String(json.issueDate ?? '').trim(),
     expirationDate: String(json.expirationDate ?? '').trim(),
+    visaNumber: String(json.visaNumber ?? '').trim(),
   }
 }

@@ -66,20 +66,22 @@ export default async function handler(req, res) {
 
     const promptText =
       'You are a U.S. visa document extraction assistant.\n\n' +
-      'Your task is to analyze a U.S. visa image and extract ONLY the following fields:\n\n' +
-      '1. Visa issuance date\n' +
-      '2. Visa expiration date\n\n' +
-      'Extraction rules:\n\n' +
-      '* Use OCR and visual inspection\n' +
-      '* Preserve the exact date values shown on the visa\n' +
-      '* Normalize dates into YYYY-MM-DD format if possible\n' +
+      'Extract the following fields from the visa:\n\n' +
+      '- issue_date\n' +
+      '- expiration_date\n' +
+      '- visa_number\n\n' +
+      'Use the MRZ to validate any fields that are encoded in it (e.g., expiration_date). ' +
+      'Verify MRZ check digits when possible. ' +
+      'Do not use the MRZ for visa_number or issue_date, as they are not encoded there.\n\n' +
+      'Additional rules:\n' +
+      '* Normalize dates into YYYY-MM-DD format\n' +
       '* Do NOT guess unclear values\n' +
-      '* If a value cannot be confidently extracted, return null\n' +
-      '* Ignore all unrelated text\n\n' +
+      '* If a field cannot be confidently extracted or fails validation, return null\n\n' +
       'Return ONLY valid JSON in this exact format (no markdown):\n\n' +
       '{\n' +
       '"issueDate": "",\n' +
-      '"expirationDate": ""\n' +
+      '"expirationDate": "",\n' +
+      '"visaNumber": ""\n' +
       '}\n\n' +
       'Use JSON null for any field that is missing or unclear.'
 
@@ -139,8 +141,9 @@ export default async function handler(req, res) {
 
     const issueDate = strOrEmpty(extracted.issueDate)
     const expirationDate = strOrEmpty(extracted.expirationDate)
+    const visaNumber = strOrEmpty(extracted.visaNumber)
 
-    return jsonResponse(res, 200, { issueDate, expirationDate })
+    return jsonResponse(res, 200, { issueDate, expirationDate, visaNumber })
   } catch (e) {
     const msg = e?.name === 'AbortError' ? 'OpenAI request timed out' : e?.message || 'extract-us-visa error'
     console.error('[extract-us-visa]', e)

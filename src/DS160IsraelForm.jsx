@@ -1273,18 +1273,20 @@ export default function DS160IsraelForm({
         setValue('lastVisaExpirationDate', r.expirationDate, { shouldDirty: true })
         filled += 1
       }
+      if (r.visaNumber) {
+        setValue('visaNumber', r.visaNumber, { shouldDirty: true })
+        setValue('visaNumberDoNotKnow', false, { shouldDirty: true })
+        filled += 1
+      }
       if (filled > 0) {
         setPreviousVisaOcr({
           status: 'idle',
-          message:
-            filled === 2
-              ? 'תאריכי הנפקה ותפוגה עודכנו מהצילום.'
-              : 'חלק מהתאריכים עודכן מהצילום (שדה אחד לא זוהה בבירור).',
+          message: 'פרטי הויזה עודכנו מהצילום.',
         })
       } else {
         setPreviousVisaOcr({
           status: 'idle',
-          message: 'לא זוהו תאריכי ויזה בבירור מהתמונה.',
+          message: 'לא זוהו פרטי ויזה בבירור מהתמונה.',
         })
       }
     } catch (e) {
