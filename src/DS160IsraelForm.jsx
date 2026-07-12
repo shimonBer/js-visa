@@ -185,9 +185,11 @@ function FormSelect({ label, name, options, register, getFieldError, optional })
         className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
       >
         <option value="">בחר...</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
+        {options.map((opt) => {
+          const val = typeof opt === 'object' ? opt.value : opt
+          const lbl = typeof opt === 'object' ? opt.label : opt
+          return <option key={val} value={val}>{lbl}</option>
+        })}
       </select>
       {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שדה חובה'}</span>}
     </div>
@@ -3448,10 +3450,10 @@ export default function DS160IsraelForm({
                             dir="ltr"
                           >
                             <option value="">-- יחידה --</option>
-                            <option value="DAYS">Days</option>
-                            <option value="WEEKS">Weeks</option>
-                            <option value="MONTHS">Months</option>
-                            <option value="YEARS">Years</option>
+                            <option value="DAYS">ימים</option>
+                            <option value="WEEKS">שבועות</option>
+                            <option value="MONTHS">חודשים</option>
+                            <option value="YEARS">שנים</option>
                           </select>
                         </div>
                         {previousVisitFields.length > 1 && (
@@ -3885,7 +3887,12 @@ export default function DS160IsraelForm({
               {w.fatherInUS === 'yes' && (
                 <div className="pr-4 border-r-4 border-blue-400">
                   <FormSelect register={register} getFieldError={getFieldError} label="מעמד האב" name="fatherUSStatus"
-                    options={['- SELECT ONE -', 'U.S. CITIZEN', 'U.S. LEGAL PERMANENT RESIDENT (LPR)', 'NONIMMIGRANT', 'OTHER/I DON\'T KNOW']} />
+                    options={[
+                      { value: 'U.S. CITIZEN', label: 'אזרח אמריקאי' },
+                      { value: 'U.S. LEGAL PERMANENT RESIDENT (LPR)', label: 'תושב קבע חוקי' },
+                      { value: 'NONIMMIGRANT', label: 'שאינו מהגר' },
+                      { value: 'OTHER/I DON\'T KNOW', label: 'אחר / לא יודע' },
+                    ]} />
                 </div>
               )}
             </div>
@@ -3939,7 +3946,12 @@ export default function DS160IsraelForm({
               {w.motherInUS === 'yes' && (
                 <div className="pr-4 border-r-4 border-blue-400">
                   <FormSelect register={register} getFieldError={getFieldError} label="מעמד האם" name="motherUSStatus"
-                    options={['- SELECT ONE -', 'U.S. CITIZEN', 'U.S. LEGAL PERMANENT RESIDENT (LPR)', 'NONIMMIGRANT', 'OTHER/I DON\'T KNOW']} />
+                    options={[
+                      { value: 'U.S. CITIZEN', label: 'אזרח אמריקאי' },
+                      { value: 'U.S. LEGAL PERMANENT RESIDENT (LPR)', label: 'תושב קבע חוקי' },
+                      { value: 'NONIMMIGRANT', label: 'שאינו מהגר' },
+                      { value: 'OTHER/I DON\'T KNOW', label: 'אחר / לא יודע' },
+                    ]} />
                 </div>
               )}
             </div>
