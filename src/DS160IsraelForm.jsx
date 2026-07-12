@@ -1891,6 +1891,8 @@ export default function DS160IsraelForm({
       const formerSpouses = values.formerSpouses || []
       formerSpouses.forEach((fs, i) => {
         if (!String(fs?.surnames ?? '').trim()) missing.add(`formerSpouses.${i}.surnames`)
+        if (!String(fs?.givenNames ?? '').trim()) missing.add(`formerSpouses.${i}.givenNames`)
+        if (!String(fs?.birthDate ?? '').trim()) missing.add(`formerSpouses.${i}.birthDate`)
         if (!String(fs?.nationality ?? '').trim()) missing.add(`formerSpouses.${i}.nationality`)
         if (!fs?.birthCityDoNotKnow && !String(fs?.birthCity ?? '').trim()) missing.add(`formerSpouses.${i}.birthCity`)
         if (!String(fs?.marriageDate ?? '').trim()) missing.add(`formerSpouses.${i}.marriageDate`)
@@ -2849,9 +2851,9 @@ export default function DS160IsraelForm({
                         </div>
 
                         <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name={`formerSpouses.${i}.surnames`} />
-                        <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name={`formerSpouses.${i}.givenNames`} optional />
+                        <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name={`formerSpouses.${i}.givenNames`} />
 
-                        <DateSelectInput label="תאריך לידה" name={`formerSpouses.${i}.birthDate`} optional register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
+                        <DateSelectInput label="תאריך לידה" name={`formerSpouses.${i}.birthDate`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
 
                         <FormInput register={register} getFieldError={getFieldError} label="אזרחות / לאום" name={`formerSpouses.${i}.nationality`} hint="לדוגמה: ISRAEL" />
 
