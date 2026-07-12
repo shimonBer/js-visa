@@ -280,7 +280,7 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                       </span>
                       {isCompleted && f.completedAt && (
                         <span className="text-xs text-green-700 font-medium mt-0.5">
-                          ✓ הועבר ל-Monday:{' '}
+                          ✓ טופס הושלם:{' '}
                           <span dir="ltr">{new Date(f.completedAt).toLocaleString('he-IL')}</span>
                         </span>
                       )}
