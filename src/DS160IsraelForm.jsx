@@ -2050,7 +2050,102 @@ export default function DS160IsraelForm({
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שם הלקוח ומידע אישי</h2>
             <div className="space-y-6">
 
-              {/* ── כרטיס 1: פרטים אישיים ── */}
+              {/* ── כרטיס 1: דרכון ── */}
+              <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
+                <h3 className="font-bold text-lg">פרטי דרכון / מסמך נסיעה</h3>
+
+                {/* OCR slot */}
+                <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
+                  <p className="font-semibold text-gray-800">צילום דרכון</p>
+                  <p className="text-xs text-gray-600">
+                    גרירה או בחירת קובץ — זיהוי אוטומטי (GPT-4o): שם באנגלית, תאריך לידה, מספר דרכון, מדינת הנפקה, מין (MRZ), תעודת זהות אם מופיעה במסמך.
+                  </p>
+                  {passportOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>}
+                  {passportOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{passportOcr.message}</p>}
+                  {passportOcr.status === 'idle' && passportOcr.message && <p className="text-sm text-green-700">{passportOcr.message}</p>}
+                  <DocumentFileSlot
+                    label="העלאת צילום דרכון"
+                    name="passportScan"
+                    register={register}
+                    setValue={setValue}
+                    getFieldError={getFieldError}
+                    watchedValue={passportScanWatch}
+                    accept="image/*,application/pdf"
+                    onFilePicked={(f) => {
+                      void runPassportOcrFromFile(f)
+                      void uploadDocumentImmediately('passportScan', f)
+                    }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Passport/Travel Document Type */}
+                  <FormSelect register={register} getFieldError={getFieldError} label="סוג דרכון / מסמך נסיעה" name="passportType" options={['REGULAR', 'OFFICIAL', 'DIPLOMATIC', 'LAISSEZ-PASSER', 'OTHER']} />
+
+                  {/* Passport/Travel Document Number */}
+                  <div id="field-passportId" className="flex flex-col">
+                    <label className="font-semibold mb-1 text-gray-700">מספר דרכון / מסמך נסיעה <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      {...register('passportId')}
+                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 font-mono w-full border ${translationErrors.has('passportId') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                      dir="ltr"
+                      placeholder="למשל 201381722"
+                    />
+                    {translationErrors.has('passportId') && <span className="text-red-500 text-sm mt-1">שדה חובה</span>}
+                    <span className="text-xs text-gray-500 mt-1">
+                      מזהה טיוטה: <span className="font-mono" dir="ltr">מספר_YYYY-MM-DD</span> — התאריך ({formStartedDateRef.current}) נקבע אוטומטית.
+                    </span>
+                  </div>
+
+                  {/* Passport Book Number (optional) */}
+                  <div className="flex flex-col">
+                    <label className="font-semibold mb-1 text-gray-700">מספר ספר דרכון (Passport Book Number)</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        autoComplete="off"
+                        {...register('passportBookNumber')}
+                        disabled={watch('passportBookNumberDoesNotApply')}
+                        className="rounded-md p-2 border border-gray-300 font-mono flex-1 disabled:bg-gray-100 disabled:text-gray-400"
+                        dir="ltr"
+                      />
+                      <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
+                        <input type="checkbox" {...register('passportBookNumberDoesNotApply')} className="rounded" />
+                        לא רלוונטי
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Country/Authority that Issued */}
+                  <FormInput register={register} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה את הדרכון" name="passportIssuingCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
+
+                  {/* Where was it issued — sub-section */}
+                  <div className="md:col-span-2">
+                    <p className="font-semibold text-gray-700 mb-2">היכן הונפק הדרכון? (Where was it issued?)</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 rounded p-3 border border-blue-100">
+                      <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="passportIssuingCity" hint="לדוגמה: Jerusalem" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מחוז — אם מצוין" name="passportIssuingState" optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="מדינה (Country/Region)" name="passportIssuingAuthority" hint="לדוגמה: Israel" optional />
+                    </div>
+                  </div>
+
+                  {/* Issuance Date */}
+                  <DateSelectInput label="תאריך הנפקת דרכון" name="passportIssueDate" hint="ממולא אוטומטית מצילום הדרכון" register={register} getFieldError={getFieldError} translationErrors={translationErrors} setValue={setValue} watch={watch} />
+
+                  {/* Expiration Date + No Expiration checkbox */}
+                  <div className="flex flex-col gap-1">
+                    <DateSelectInput label="תאריך פקיעת דרכון" name="passportExpirationDate" hint="ממולא אוטומטית מצילום הדרכון" register={register} getFieldError={getFieldError} translationErrors={translationErrors} setValue={setValue} watch={watch} />
+                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer mt-1">
+                      <input type="checkbox" {...register('passportExpirationNoExpiry')} className="rounded" />
+                      ללא תפוגה (No Expiration)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── כרטיס 2: פרטים אישיים ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
                 <h3 className="col-span-full font-bold text-lg">פרטים אישיים</h3>
                 <FormInput register={register} getFieldError={getFieldError} label="שם פרטי (עברית)" name="firstName" dir="auto" />
@@ -2358,101 +2453,6 @@ export default function DS160IsraelForm({
                     )}
                   </div>
                 )}
-              </div>
-
-              {/* ── כרטיס 3: דרכון ── */}
-              <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
-                <h3 className="font-bold text-lg">פרטי דרכון / מסמך נסיעה</h3>
-
-                {/* OCR slot */}
-                <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
-                  <p className="font-semibold text-gray-800">צילום דרכון</p>
-                  <p className="text-xs text-gray-600">
-                    גרירה או בחירת קובץ — זיהוי אוטומטי (GPT-4o): שם באנגלית, תאריך לידה, מספר דרכון, מדינת הנפקה, מין (MRZ), תעודת זהות אם מופיעה במסמך.
-                  </p>
-                  {passportOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>}
-                  {passportOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{passportOcr.message}</p>}
-                  {passportOcr.status === 'idle' && passportOcr.message && <p className="text-sm text-green-700">{passportOcr.message}</p>}
-                  <DocumentFileSlot
-                    label="העלאת צילום דרכון"
-                    name="passportScan"
-                    register={register}
-                    setValue={setValue}
-                    getFieldError={getFieldError}
-                    watchedValue={passportScanWatch}
-                    accept="image/*,application/pdf"
-                    onFilePicked={(f) => {
-                      void runPassportOcrFromFile(f)
-                      void uploadDocumentImmediately('passportScan', f)
-                    }}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Passport/Travel Document Type */}
-                  <FormSelect register={register} getFieldError={getFieldError} label="סוג דרכון / מסמך נסיעה" name="passportType" options={['REGULAR', 'OFFICIAL', 'DIPLOMATIC', 'LAISSEZ-PASSER', 'OTHER']} />
-
-                  {/* Passport/Travel Document Number */}
-                  <div id="field-passportId" className="flex flex-col">
-                    <label className="font-semibold mb-1 text-gray-700">מספר דרכון / מסמך נסיעה <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      autoComplete="off"
-                      {...register('passportId')}
-                      className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 font-mono w-full border ${translationErrors.has('passportId') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                      dir="ltr"
-                      placeholder="למשל 201381722"
-                    />
-                    {translationErrors.has('passportId') && <span className="text-red-500 text-sm mt-1">שדה חובה</span>}
-                    <span className="text-xs text-gray-500 mt-1">
-                      מזהה טיוטה: <span className="font-mono" dir="ltr">מספר_YYYY-MM-DD</span> — התאריך ({formStartedDateRef.current}) נקבע אוטומטית.
-                    </span>
-                  </div>
-
-                  {/* Passport Book Number (optional) */}
-                  <div className="flex flex-col">
-                    <label className="font-semibold mb-1 text-gray-700">מספר ספר דרכון (Passport Book Number)</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        {...register('passportBookNumber')}
-                        disabled={watch('passportBookNumberDoesNotApply')}
-                        className="rounded-md p-2 border border-gray-300 font-mono flex-1 disabled:bg-gray-100 disabled:text-gray-400"
-                        dir="ltr"
-                      />
-                      <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
-                        <input type="checkbox" {...register('passportBookNumberDoesNotApply')} className="rounded" />
-                        לא רלוונטי
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Country/Authority that Issued */}
-                  <FormInput register={register} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה את הדרכון" name="passportIssuingCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
-
-                  {/* Where was it issued — sub-section */}
-                  <div className="md:col-span-2">
-                    <p className="font-semibold text-gray-700 mb-2">היכן הונפק הדרכון? (Where was it issued?)</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 rounded p-3 border border-blue-100">
-                      <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="passportIssuingCity" hint="לדוגמה: Jerusalem" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="מחוז — אם מצוין" name="passportIssuingState" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה (Country/Region)" name="passportIssuingAuthority" hint="לדוגמה: Israel" optional />
-                    </div>
-                  </div>
-
-                  {/* Issuance Date */}
-                  <DateSelectInput label="תאריך הנפקת דרכון" name="passportIssueDate" hint="ממולא אוטומטית מצילום הדרכון" register={register} getFieldError={getFieldError} translationErrors={translationErrors} setValue={setValue} watch={watch} />
-
-                  {/* Expiration Date + No Expiration checkbox */}
-                  <div className="flex flex-col gap-1">
-                    <DateSelectInput label="תאריך פקיעת דרכון" name="passportExpirationDate" hint="ממולא אוטומטית מצילום הדרכון" register={register} getFieldError={getFieldError} translationErrors={translationErrors} setValue={setValue} watch={watch} />
-                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer mt-1">
-                      <input type="checkbox" {...register('passportExpirationNoExpiry')} className="rounded" />
-                      ללא תפוגה (No Expiration)
-                    </label>
-                  </div>
-                </div>
               </div>
 
               {/* ── כרטיס 3: כתובת מגורים ── */}
