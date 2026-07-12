@@ -7,6 +7,7 @@ export const FIELD_META = {
   // Personal
   passportId:               { label: 'מספר דרכון' },
   passportIssuingCountry:   { label: 'מדינת הנפקת דרכון' },
+  passportIssuingCity:      { label: 'עיר הנפקת דרכון' },
   passportType:             { label: 'סוג דרכון' },
   passportIssueDate:        { label: 'תאריך הנפקת דרכון' },
   passportExpirationDate:   { label: 'תאריך פקיעת דרכון' },
@@ -161,6 +162,7 @@ export function calculateCompleteness(data) {
 
   // ── Passport ──
   req('passportIssuingCountry')
+  req('passportIssuingCity')
   req('passportType')
   req('passportIssueDate')
   req('passportExpirationDate')

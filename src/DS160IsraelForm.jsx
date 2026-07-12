@@ -197,6 +197,12 @@ function FormSelect({ label, name, options, register, getFieldError, optional })
 const _DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
 const _MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
+/** Strip formal prefixes like "State of", "Republic of", "Kingdom of" from country names. */
+function normalizeCountryName(name) {
+  if (!name) return name
+  return name.trim().replace(/^(state|republic|kingdom|sultanate|principality|democratic republic|people's republic)\s+of\s+/i, '')
+}
+
 function _parseIso(str) {
   const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(str ?? '').trim())
   return m
@@ -1208,10 +1214,9 @@ export default function DS160IsraelForm({
         setValue('birthDateDay', String(parseInt(m[3], 10)), { shouldDirty: true })
       }
       if (r.passportNumber) setValue('passportId', r.passportNumber, { shouldDirty: true })
-      const effectiveIssuingCountry = r.issuanceCountry || r.issuingCountry
+      const effectiveIssuingCountry = normalizeCountryName(r.issuanceCountry || r.issuingCountry)
       if (effectiveIssuingCountry) setValue('passportIssuingCountry', effectiveIssuingCountry, { shouldDirty: true })
       if (r.issuanceCity) setValue('passportIssuingCity', r.issuanceCity, { shouldDirty: true })
-      if (r.issuanceCountry) setValue('passportIssuingAuthority', r.issuanceCountry, { shouldDirty: true })
       if (r.issuingCountry) setValue('nationality', r.issuingCountry, { shouldDirty: true })
       if (r.issuingCountry && !getValues('birthCountry')) setValue('birthCountry', r.issuingCountry, { shouldDirty: true })
       if (r.passportIssueDate) setValue('passportIssueDate', r.passportIssueDate, { shouldDirty: true })
@@ -1522,7 +1527,6 @@ export default function DS160IsraelForm({
     // ── Card 3: Passport ──
     req('passportIssuingCountry')
     req('passportIssuingCity')
-    req('passportIssuingAuthority')
     req('passportType')
     req('passportIssueDate')
     req('passportExpirationDate')
@@ -2136,7 +2140,7 @@ export default function DS160IsraelForm({
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-blue-50 rounded p-3 border border-blue-100">
                       <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="passportIssuingCity" hint="לדוגמה: Jerusalem" />
                       <FormInput register={register} getFieldError={getFieldError} label="מחוז (Province) — אם מצוין" name="passportIssuingState" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה (Country/Region)" name="passportIssuingAuthority" hint="לדוגמה: Israel" />
+                      <FormInput register={register} getFieldError={getFieldError} label="רשות מנפיקה (Issuing Authority)" name="passportIssuingAuthority" hint="לדוגמה: Ministry of Interior" optional />
                     </div>
                   </div>
 
