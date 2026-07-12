@@ -309,10 +309,12 @@ PERSONAL INFORMATION 2
 
 * Do you hold or have you held another nationality? YES/NO
 
-  * IF YES:
+  * IF YES: iterate over the foreignNationalities array. For each entry output:
 
-    * Other Nationality
-    * Passport Number
+    * Other Nationality → foreignNationalities[i].country; if absent → ❗ MISSING
+    * Passport Number →
+      if foreignNationalities[i].hasForeignPassport is "yes" → foreignNationalities[i].id; if absent → N/A
+      if foreignNationalities[i].hasForeignPassport is "no" or absent → N/A (no passport for this nationality)
 
 * Are you a permanent resident of another country? YES/NO
   Rule: use isPermanentResidentElsewhere field (yes → YES, no → NO); default NO if absent
@@ -385,6 +387,7 @@ PERSONAL INFORMATION 2
   Rule: read the following fields directly — do NOT parse or infer from a single text blob.
   Street Address (Line 1): accommodationStreet1
   Street Address (Line 2): accommodationStreet2 (Optional — N/A if empty)
+  City: accommodationCity (Optional — N/A if empty)
   State: accommodationState (Optional — N/A if empty)
   ZIP Code: accommodationZip (Optional — N/A if empty)
 
@@ -775,15 +778,10 @@ RELATIVES IN THE U.S.
     Translate unemploymentReason to English before outputting.
 
   IF the answer is MILITARY:
-  * Present Employer / Unit → militaryBranch; if absent → ❗ MISSING
-  * Job Title / Role → militaryRole; if absent → ❗ MISSING
-  * Country of Service → militaryCountry; if absent → ❗ MISSING
-  * Rank → militaryRank; if absent → N/A
-  * Unit Address → militaryBaseAddress; if absent → N/A
-  * Unit Phone → militaryUnitPhone; if absent → N/A
-  * Monthly Salary → militarySalary; if absent → N/A
-  * Employment Start Date → militaryDraftDate; if absent → ❗ MISSING
-  ⛔ STOP — do NOT output the standard employer fields below for MILITARY.
+  Use the same standard employer fields as any other employed occupation (see ELSE block below).
+  The military branch / unit name is stored in employerName; the role/title in jobTitle.
+  Do NOT look for militaryBranch, militaryRole, militaryCountry, or militaryDraftDate here —
+  those fields are only used in the separate "Have you served in the military?" background section.
 
   IF the answer is RETIRED OR HOMEMAKER:
   ⛔ STOP — do NOT output any of the fields below (Employer Name, Job Title, Employer Address, Employer City, Country of Employment, Employer Phone, Employment Start Date). They are intentionally omitted for Retired/Homemaker applicants. This overrides the general "never omit" rule.

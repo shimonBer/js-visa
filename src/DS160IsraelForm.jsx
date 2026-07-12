@@ -197,6 +197,171 @@ function FormSelect({ label, name, options, register, getFieldError, optional })
 const _DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
 const _MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
+const COUNTRIES_LIST = [
+  'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan',
+  'Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria','Burkina Faso','Burundi',
+  'Cabo Verde','Cambodia','Cameroon','Canada','Central African Republic','Chad','Chile','China','Colombia','Comoros','Congo','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic',
+  'Denmark','Djibouti','Dominica','Dominican Republic',
+  'Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia',
+  'Fiji','Finland','France',
+  'Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana',
+  'Haiti','Honduras','Hungary',
+  'Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Ivory Coast',
+  'Jamaica','Japan','Jordan',
+  'Kazakhstan','Kenya','Kiribati','Kuwait','Kyrgyzstan',
+  'Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg',
+  'Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar',
+  'Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway',
+  'Oman',
+  'Pakistan','Palau','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal',
+  'Qatar',
+  'Romania','Russia','Rwanda',
+  'Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Samoa','San Marino','Sao Tome and Principe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria',
+  'Taiwan','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu',
+  'Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan',
+  'Vanuatu','Vatican City','Venezuela','Vietnam',
+  'Yemen',
+  'Zambia','Zimbabwe',
+]
+
+function CountrySelect({ label, name, register, getFieldError, optional, hint }) {
+  const fieldError = getFieldError(name)
+  const listId = `dl-country-${name.replace(/[^a-zA-Z0-9]/g, '-')}`
+  return (
+    <div id={`field-${name}`} className="flex flex-col mb-4">
+      <label className="font-semibold mb-1 text-gray-700">{label}{optional && <OptionalBadge />}</label>
+      {hint && <span className="text-xs text-gray-400 mb-1">{hint}</span>}
+      <input
+        type="text"
+        list={listId}
+        {...register(name)}
+        dir="ltr"
+        placeholder="הקלד לחיפוש מדינה..."
+        className={`rounded-md p-2 border bg-white ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+      />
+      <datalist id={listId}>
+        {COUNTRIES_LIST.map((c) => (
+          <option key={c} value={c.toUpperCase()} />
+        ))}
+      </datalist>
+      {fieldError && <span className="text-red-500 text-sm mt-1">{fieldError?.message || 'שדה חובה'}</span>}
+    </div>
+  )
+}
+
+const IDF_RANKS = [
+  { he: 'טוראי', en: 'PRIVATE' },
+  { he: 'רב טוראי', en: 'PRIVATE FIRST CLASS' },
+  { he: 'סמל', en: 'SERGEANT' },
+  { he: 'סמל ראשון', en: 'STAFF SERGEANT' },
+  { he: 'רב סמל', en: 'SERGEANT FIRST CLASS' },
+  { he: 'רב סמל ראשון', en: 'MASTER SERGEANT' },
+  { he: 'רב סמל בכיר', en: 'CHIEF WARRANT OFFICER' },
+  { he: 'רב סמל מתקדם', en: 'MASTER WARRANT OFFICER' },
+  { he: 'סגן משנה', en: 'SECOND LIEUTENANT' },
+  { he: 'סגן', en: 'FIRST LIEUTENANT' },
+  { he: 'סרן', en: 'CAPTAIN' },
+  { he: 'רב סרן', en: 'MAJOR' },
+  { he: 'סגן אלוף', en: 'LIEUTENANT COLONEL' },
+  { he: 'אלוף משנה', en: 'COLONEL' },
+  { he: 'תת אלוף', en: 'BRIGADIER GENERAL' },
+  { he: 'אלוף', en: 'MAJOR GENERAL' },
+  { he: 'רב אלוף', en: 'LIEUTENANT GENERAL' },
+]
+
+const CITY_PRESETS = [
+  { label: 'מיאמי', city: 'Miami', state: 'FL' },
+  { label: 'ניו יורק', city: 'New York', state: 'NY' },
+  { label: 'לאס וגאס', city: 'Las Vegas', state: 'NV' },
+  { label: 'לוס אנג\'לס', city: 'Los Angeles', state: 'CA' },
+]
+
+function AccommodationBlock({ register, watch, setValue, getFieldError, translationErrors, hasExact, cityPreset }) {
+  function handleCityPreset(e) {
+    const val = e.target.value
+    setValue('accommodationCityPreset', val, { shouldDirty: true })
+    if (val === '__MANUAL__') {
+      setValue('accommodationCity', '', { shouldDirty: true })
+      setValue('accommodationState', '', { shouldDirty: true })
+    } else if (val) {
+      const preset = CITY_PRESETS.find((p) => p.city === val)
+      if (preset) {
+        setValue('accommodationCity', preset.city, { shouldDirty: true })
+        setValue('accommodationState', preset.state, { shouldDirty: true })
+        setValue('accommodationStreet1', 'Hotels', { shouldDirty: true })
+      }
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
+      <p className="text-sm font-semibold text-gray-700">כתובת לינה בארה״ב</p>
+      <div className="flex flex-col gap-1">
+        <label className="font-semibold text-sm text-gray-700">האם יש לך כתובת מדויקת?</label>
+        <div className="flex gap-4">
+          {[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }].map((opt) => (
+            <label key={opt.value} className="flex items-center gap-2 cursor-pointer text-sm">
+              <input type="radio" value={opt.value} {...register('hasExactAccommodationAddress')} className="w-4 h-4 text-blue-600" />
+              <span>{opt.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {hasExact === 'yes' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="accommodationStreet1" hint="לדוגמה: 9080 Sunrise Blvd" />
+          <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="accommodationStreet2" hint="לדוגמה: Apt 4B" optional />
+          <FormInput register={register} getFieldError={getFieldError} label="עיר" name="accommodationCity" />
+          <FormInput register={register} getFieldError={getFieldError} label="מדינה (State)" name="accommodationState" hint="לדוגמה: FL" optional />
+          <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP, אם ידוע)" name="accommodationZip" optional />
+        </div>
+      )}
+
+      {hasExact === 'no' && (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-1">
+            <label className="font-semibold text-sm text-gray-700">בחר עיר</label>
+            <select
+              value={cityPreset || ''}
+              onChange={handleCityPreset}
+              className="rounded-md p-2 border border-gray-300 bg-white"
+            >
+              <option value="">בחר עיר...</option>
+              {CITY_PRESETS.map((p) => (
+                <option key={p.city} value={p.city}>{p.label}</option>
+              ))}
+              <option value="__MANUAL__">הזן ידנית</option>
+            </select>
+          </div>
+          {(cityPreset === '__MANUAL__' || CITY_PRESETS.some((p) => p.city === cityPreset)) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {cityPreset === '__MANUAL__' && (
+                <>
+                  <FormInput register={register} getFieldError={getFieldError} label="עיר" name="accommodationCity" />
+                  <FormInput register={register} getFieldError={getFieldError} label="מדינה (State)" name="accommodationState" hint="לדוגמה: FL" />
+                </>
+              )}
+              {cityPreset !== '__MANUAL__' && (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-semibold text-sm text-gray-700">עיר</label>
+                    <input type="text" {...register('accommodationCity')} readOnly className="rounded-md p-2 border border-gray-300 bg-gray-100" dir="ltr" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-semibold text-sm text-gray-700">מדינה (State)</label>
+                    <input type="text" {...register('accommodationState')} readOnly className="rounded-md p-2 border border-gray-300 bg-gray-100" dir="ltr" />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** Strip formal prefixes like "State of", "Republic of", "Kingdom of" from country names. */
 function normalizeCountryName(name) {
   if (!name) return name
@@ -484,7 +649,7 @@ export default function DS160IsraelForm({
       passportId: '',
       passportType: 'REGULAR',
       passportBookNumberDoesNotApply: true,
-      passportIssuingCountry: '',
+      passportIssuingCountry: 'Israel',
       passportIssuingState: '',
       passportIssuingCity: '',
       passportIssuingAuthority: '',
@@ -504,7 +669,7 @@ export default function DS160IsraelForm({
 
       nationality: '',
       hasForeignCitizenship: 'no',
-      foreignNationalities: [{ country: '', id: '' }],
+      foreignNationalities: [{ country: '', hasForeignPassport: 'no', id: '' }],
       isPermanentResidentElsewhere: 'no',
       permanentResidencies: [{ country: '' }],
       usSocialSecurityNumber: '',
@@ -512,7 +677,7 @@ export default function DS160IsraelForm({
       // legacy single-entry fields kept for backward compat
       foreignCitizenshipCountry: '',
       foreignCitizenshipId: '',
-      visaClass: 'B1/B2',
+      visaClass: 'B1/B2 — תיירות ועסקים',
       travelingWithOthers: 'no',
       travelCompanions: [{ surname: '', givenName: '', relationship: '' }],
       visitedUSBefore: 'no',
@@ -548,6 +713,7 @@ export default function DS160IsraelForm({
       motherInUS: 'no',
       hasOrganizations: 'no',
       hasSpecializedSkills: 'no',
+      specializedSkillsDescription: 'FIREARMS - MILITARY TRAINING',
       organizations: [],
       // legacy kept for backward compat
       visaRefused: 'no',
@@ -574,8 +740,8 @@ export default function DS160IsraelForm({
       spouseAddressState: '',
       spouseAddressStateDoesNotApply: true,
       spouseAddressZip: '',
-      spouseAddressZipDoesNotApply: false,
-      spouseAddressCountry: '',
+      spouseAddressZipDoesNotApply: true,
+      spouseAddressCountry: 'Israel',
       hasUSContact: 'no',
       hasCloseRelativesInUS: 'no',
       hasOtherRelativesInUS: 'no',
@@ -586,26 +752,27 @@ export default function DS160IsraelForm({
       employerState: '',
       employerStateDoesNotApply: true,
       employerZip: '',
-      employerZipDoesNotApply: false,
-      employerCountry: '',
+      employerZipDoesNotApply: true,
+      employerCountry: 'Israel',
       monthlySalaryDoesNotApply: false,
       workedAnotherJobLast5Years: 'no',
-      previousEmployments: [{ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: false, country: '', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' }],
+      previousEmployments: [{ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: true, country: 'Israel', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' }],
       attendedHighSchool: 'no',
       hasAcademicDegree: 'no',
       additionalDegrees: [],
       hasEducation: 'no',
-      educationRecords: [{ institutionName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: false, country: '', courseOfStudy: '', dateFrom: '', dateTo: '' }],
+      educationRecords: [{ institutionName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: true, country: 'Israel', courseOfStudy: '', dateFrom: '', dateTo: '' }],
       additionalExSpouses: [],
       numberOfFormerSpouses: '',
-      formerSpouses: [{ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', marriageDate: '', marriageEndDate: '', howEnded: '', terminationCountry: '' }],
+      formerSpouses: [{ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', marriageDate: '', marriageEndDate: '', howEnded: 'Divorce Settlement', terminationCountry: 'Israel' }],
       hasClanOrTribe: 'no',
       clanOrTribeName: '',
       languagesList: [{ name: '' }],
       visitedAbroadLast5Years: 'no',
       countriesVisited: [{ country: '' }],
       servedInMilitary: 'no',
-      militaryService: [{ country: '', branch: '', rank: '', specialty: '', dateFrom: '', dateTo: '' }],
+      militaryService: [{ country: 'Israel', branch: '', rank: '', specialty: '', dateFrom: '', dateTo: '' }],
+      militaryCountry: 'Israel',
       hasParamilitary: 'no',
       paramilitaryExplanation: '',
       communicableDisease: 'no',
@@ -684,6 +851,8 @@ export default function DS160IsraelForm({
       mailingStreet2: '',
       mailingState: '',
       mondayItemId: '',
+      hasExactAccommodationAddress: '',
+      accommodationCityPreset: '',
       accommodationStreet1: '',
       accommodationStreet2: '',
       accommodationCity: '',
@@ -869,7 +1038,7 @@ export default function DS160IsraelForm({
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
   const [securitySectionOpen, setSecuritySectionOpen] = useState(false)
-  const WORK_OCCUPATIONS = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
+  const WORK_OCCUPATIONS = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','MILITARY','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
   const [occupationCategory, setOccupationCategory] = useState(() => {
     const v = watch('currentOccupation')
     return WORK_OCCUPATIONS.includes(v) ? '__WORKING__' : (v || '')
@@ -1739,9 +1908,9 @@ export default function DS160IsraelForm({
       req('studentInstitutionCity')
     }
     if (values.currentOccupation === 'MILITARY') {
-      req('militaryCountry')
-      req('militaryBranch')
-      req('militaryRole')
+      req('employerName')
+      req('jobTitle')
+      req('employerCity')
     }
     if (values.workedAnotherJobLast5Years === 'yes') {
       const prevJobs = values.previousEmployments || []
@@ -1921,6 +2090,8 @@ export default function DS160IsraelForm({
     spouseBirthCityDoNotKnow: watch('spouseBirthCityDoNotKnow'),
     mondayItemId: watch('mondayItemId'),
     specificTravelPlans: watch('specificTravelPlans'),
+    hasExactAccommodationAddress: watch('hasExactAccommodationAddress'),
+    accommodationCityPreset: watch('accommodationCityPreset'),
     communicableDisease: watch('communicableDisease'),
     mentalDisorder: watch('mentalDisorder'),
     drugAbuser: watch('drugAbuser'),
@@ -2056,10 +2227,37 @@ export default function DS160IsraelForm({
         </div>
       </div>
 
+      {/* ── Floating section navigation ── */}
+      <nav className="fixed right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-1 bg-white border border-gray-200 rounded-xl shadow-lg p-2 max-w-[10rem]" dir="rtl" aria-label="ניווט סקשנים">
+        {[
+          { label: 'מידע אישי', id: 'section-personal' },
+          { label: 'כתובות', id: 'section-address' },
+          { label: 'פרטי קשר', id: 'section-contact' },
+          { label: 'תכנון נסיעה', id: 'section-travel' },
+          { label: 'ביקורים קודמים', id: 'section-prior-visits' },
+          { label: 'איש קשר בארה"ב', id: 'section-us-contact' },
+          { label: 'משפחה', id: 'section-family' },
+          { label: 'תעסוקה', id: 'section-employment' },
+          { label: 'השכלה', id: 'section-education' },
+          { label: 'ביטחון', id: 'section-security' },
+          { label: 'רשתות חברתיות', id: 'section-social' },
+          { label: 'ראיון', id: 'section-interview' },
+        ].map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="text-right text-xs font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded px-2 py-1 transition-colors truncate"
+          >
+            {s.label}
+          </button>
+        ))}
+      </nav>
+
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden mt-4">
         <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-10">
 
-          <section className="space-y-4">
+          <section id="section-personal" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שם הלקוח ומידע אישי</h2>
             <div className="space-y-6">
 
@@ -2132,7 +2330,7 @@ export default function DS160IsraelForm({
                   </div>
 
                   {/* Country/Authority that Issued */}
-                  <FormInput register={register} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה את הדרכון" name="passportIssuingCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
+                  <CountrySelect register={register} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה את הדרכון" name="passportIssuingCountry" hint="ממולא אוטומטית מצילום הדרכון" />
 
                   {/* Where was it issued — sub-section */}
                   <div className="md:col-span-2">
@@ -2154,6 +2352,46 @@ export default function DS160IsraelForm({
                       <input type="checkbox" {...register('passportExpirationNoExpiry')} className="rounded" />
                       ללא תפוגה (No Expiration)
                     </label>
+                  </div>
+
+                  {/* ── Lost / Stolen Passport ── */}
+                  <div className="border-t border-gray-200 pt-4 space-y-3">
+                    <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אי פעם אבד או נגנב לך דרכון?" name="passportLostOrStolen" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                    {w.passportLostOrStolen === 'yes' && (
+                      <div className="space-y-4">
+                        {lostPassportFields.map((field, i) => (
+                          <div key={field.id} className="bg-white border border-gray-200 rounded p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-gray-700">דרכון אבוד / גנוב #{i + 1}</span>
+                              {lostPassportFields.length > 1 && (
+                                <button type="button" onClick={() => removeLostPassport(i)} className="text-red-500 text-sm hover:underline">הסר</button>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="font-semibold text-sm text-gray-700">מספר דרכון / מסמך נסיעה <span className="text-red-500">*</span></label>
+                              <div className="flex items-center gap-3">
+                                <input type="text" {...register(`lostPassports.${i}.number`)}
+                                  disabled={watch(`lostPassports.${i}.numberDoNotKnow`)}
+                                  className={`rounded-md p-2 border font-mono flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${translationErrors.has(`lostPassports.${i}.number`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                                  dir="ltr" />
+                                <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
+                                  <input type="checkbox" {...register(`lostPassports.${i}.numberDoNotKnow`)} className="rounded" />
+                                  לא ידוע
+                                </label>
+                              </div>
+                              {translationErrors.has(`lostPassports.${i}.number`) && <span className="text-red-500 text-xs">שדה חובה</span>}
+                            </div>
+                            <CountrySelect register={register} getFieldError={getFieldError} label="מדינה / רשות שהנפיקה" name={`lostPassports.${i}.country`} />
+                            <FormInput register={register} getFieldError={getFieldError} label="הסבר (Explain)" name={`lostPassports.${i}.explain`} type="textarea" />
+                          </div>
+                        ))}
+                        <button type="button"
+                          onClick={() => appendLostPassport({ number: '', numberDoNotKnow: false, country: '', explain: '' })}
+                          className="text-blue-600 text-sm hover:underline">
+                          + הוסף דרכון נוסף
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2219,14 +2457,14 @@ export default function DS160IsraelForm({
                   register={register} getFieldError={getFieldError} translationErrors={translationErrors}
                 />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר לידה" name="birthCity" />
-                <FormInput register={register} getFieldError={getFieldError} label="מדינת לידה (באנגלית, מהדרכון)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון; ניתן לתקן" />
+                <CountrySelect register={register} getFieldError={getFieldError} label="מדינת לידה (מהדרכון)" name="birthCountry" hint="ממולא אוטומטית מצילום הדרכון" />
               </div>
 
               {/* ── כרטיס 2: אזרחות ולאום ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
                 <h3 className="col-span-full font-bold text-lg">אזרחות ולאום</h3>
 
-                <FormInput register={register} getFieldError={getFieldError} label="לאום / אזרחות עיקרית (באנגלית, מהדרכון)" name="nationality" hint="ממולא אוטומטית מצילום הדרכון; לדוגמה: Israel" />
+                <CountrySelect register={register} getFieldError={getFieldError} label="לאום / אזרחות עיקרית (מהדרכון)" name="nationality" hint="ממולא אוטומטית מצילום הדרכון" />
                 <FormInput register={register} getFieldError={getFieldError} label="מספר תעודת זהות" name="idNumber" hint="ממולא אוטומטית מצילום הדרכון אם מופיע" />
 
                 {/* Extra nationality */}
@@ -2239,9 +2477,14 @@ export default function DS160IsraelForm({
                       {foreignNationalityFields.map((field, i) => (
                         <div key={field.id} className="pr-3 border-r-2 border-blue-200 space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <FormInput register={register} getFieldError={getFieldError} label={`מדינה ${i + 1}`} name={`foreignNationalities.${i}.country`} />
-                            <FormInput register={register} getFieldError={getFieldError} label="מספר זיהות / דרכון במדינה זו" name={`foreignNationalities.${i}.id`} optional />
+                            <CountrySelect register={register} getFieldError={getFieldError} label={`מדינה ${i + 1}`} name={`foreignNationalities.${i}.country`} />
                           </div>
+                          <div className="-mb-2">
+                            <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך דרכון זר לאזרחות זו?" name={`foreignNationalities.${i}.hasForeignPassport`} options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                          </div>
+                          {watch(`foreignNationalities.${i}.hasForeignPassport`) === 'yes' && (
+                            <FormInput register={register} getFieldError={getFieldError} label="מספר זיהות / דרכון במדינה זו" name={`foreignNationalities.${i}.id`} optional />
+                          )}
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1">
                               <DocumentFileSlot
@@ -2260,7 +2503,7 @@ export default function DS160IsraelForm({
                           </div>
                         </div>
                       ))}
-                      <button type="button" onClick={() => appendForeignNationality({ country: '', id: '' })}
+                      <button type="button" onClick={() => appendForeignNationality({ country: '', hasForeignPassport: 'no', id: '' })}
                         className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                         <span aria-hidden className="text-lg leading-none">+</span>
                         הוסף אזרחות נוספת
@@ -2278,7 +2521,7 @@ export default function DS160IsraelForm({
                     <div className="mt-2 space-y-2">
                       {permanentResidencyFields.map((field, i) => (
                         <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end pr-2 border-r-2 border-blue-200">
-                          <FormInput register={register} getFieldError={getFieldError} label={`מדינת מגורי קבע ${i + 1}`} name={`permanentResidencies.${i}.country`} />
+                          <CountrySelect register={register} getFieldError={getFieldError} label={`מדינת מגורי קבע ${i + 1}`} name={`permanentResidencies.${i}.country`} />
                           {permanentResidencyFields.length > 1 && (
                             <button type="button" onClick={() => removePermanentResidency(i)} className="pb-1 text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
                           )}
@@ -2293,8 +2536,22 @@ export default function DS160IsraelForm({
                   )}
                 </div>
 
-                <FormInput register={register} getFieldError={getFieldError} label="מספר ביטוח לאומי אמריקאי (SSN)" name="usSocialSecurityNumber" hint="לדוגמה: 123-45-6789" optional />
-                <FormInput register={register} getFieldError={getFieldError} label="מספר זיהוי משלם מס אמריקאי (ITIN)" name="usTaxpayerId" hint="לדוגמה: 912-34-5678" optional />
+                <div className="col-span-full space-y-2">
+                  <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך מספר ביטוח לאומי אמריקאי (SSN)?" name="hasSocialSecurityNumber" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  {w.hasSocialSecurityNumber === 'yes' && (
+                    <div className="pr-3 border-r-2 border-blue-200">
+                      <FormInput register={register} getFieldError={getFieldError} label="מספר SSN" name="usSocialSecurityNumber" hint="לדוגמה: 123-45-6789" />
+                    </div>
+                  )}
+                </div>
+                <div className="col-span-full space-y-2">
+                  <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך מספר זיהוי משלם מס אמריקאי (ITIN)?" name="hasTaxpayerID" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                  {w.hasTaxpayerID === 'yes' && (
+                    <div className="pr-3 border-r-2 border-blue-200">
+                      <FormInput register={register} getFieldError={getFieldError} label="מספר ITIN" name="usTaxpayerId" hint="לדוגמה: 912-34-5678" />
+                    </div>
+                  )}
+                </div>
 
                 <div className="col-span-full">
                   <FormSelect register={register} getFieldError={getFieldError} label="סטטוס משפחתי" name="maritalStatus" options={['רווק', 'נשוי', 'גרוש', 'אלמן', 'נשוי אזרחית', 'פרוד', 'חיים משותפים']} />
@@ -2342,7 +2599,7 @@ export default function DS160IsraelForm({
                               </label>
                             </div>
                           </div>
-                          <FormInput register={register} getFieldError={getFieldError} label="מדינה" name={`formerSpouses.${i}.birthCountry`} hint="לדוגמה: ISRAEL" optional />
+                          <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name={`formerSpouses.${i}.birthCountry`} optional />
                         </div>
 
                         <DateSelectInput label="תאריך נישואין" name={`formerSpouses.${i}.marriageDate`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
@@ -2354,12 +2611,12 @@ export default function DS160IsraelForm({
                             className={`rounded-md p-2 border w-full ${translationErrors.has(`formerSpouses.${i}.howEnded`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
                         </div>
 
-                        <FormInput register={register} getFieldError={getFieldError} label="מדינה שבה הסתיימו הנישואין" name={`formerSpouses.${i}.terminationCountry`} hint="לדוגמה: ISRAEL" />
+                        <CountrySelect register={register} getFieldError={getFieldError} label="מדינה שבה הסתיימו הנישואין" name={`formerSpouses.${i}.terminationCountry`} />
                       </div>
                     ))}
 
                     <button type="button"
-                      onClick={() => appendFormerSpouse({ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', marriageDate: '', marriageEndDate: '', howEnded: '', terminationCountry: '' })}
+                      onClick={() => appendFormerSpouse({ surnames: '', givenNames: '', nationality: '', birthCity: '', birthCityDoNotKnow: false, birthCountry: '', marriageDate: '', marriageEndDate: '', howEnded: 'Divorce Settlement', terminationCountry: 'Israel' })}
                       className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                       <span aria-hidden className="text-lg leading-none">+</span>
                       הוסף בן/בת זוג לשעבר
@@ -2413,7 +2670,7 @@ export default function DS160IsraelForm({
                           </label>
                         </div>
                       </div>
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה" name="spouseBirthCountry" hint="לדוגמה: ISRAEL" optional />
+                      <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name="spouseBirthCountry" optional />
                     </div>
 
                     {/* Spouse's Address */}
@@ -2469,7 +2726,7 @@ export default function DS160IsraelForm({
               </div>
 
               {/* ── כרטיס 3: כתובת מגורים ── */}
-              <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
+              <div id="section-address" className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
                 <h3 className="font-bold text-lg">כתובת מגורים נוכחית (Home Address)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
@@ -2542,7 +2799,7 @@ export default function DS160IsraelForm({
               </div>
 
               {/* ── כרטיס 4: טלפון ואימייל ── */}
-              <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
+              <div id="section-contact" className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
                 <h3 className="font-bold text-lg">טלפון ואימייל</h3>
 
                 {/* Primary Phone */}
@@ -2655,7 +2912,7 @@ export default function DS160IsraelForm({
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section id="section-travel" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">תכנון נסיעה לארה&quot;ב</h2>
             <div className="grid grid-cols-1 gap-4">
               <FormSelect register={register} getFieldError={getFieldError} label="מטרת הנסיעה / סוג הויזה" name="visaClass" options={['B1/B2 — תיירות ועסקים', 'F1/M1 — ויזת סטודנט']} />
@@ -2697,16 +2954,12 @@ export default function DS160IsraelForm({
                   </div>
 
                   {/* Accommodation address */}
-                  <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
-                    <p className="text-sm font-semibold text-gray-700">כתובת לינה בארה״ב</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="accommodationStreet1" hint="לדוגמה: 9080 Sunrise Blvd" />
-                      <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="accommodationStreet2" hint="לדוגמה: Apt 4B" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="עיר" name="accommodationCity" />
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה (State)" name="accommodationState" hint="לדוגמה: FL" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP, אם ידוע)" name="accommodationZip" optional />
-                    </div>
-                  </div>
+                  <AccommodationBlock
+                    register={register} watch={watch} setValue={setValue}
+                    getFieldError={getFieldError} translationErrors={translationErrors}
+                    hasExact={w.hasExactAccommodationAddress}
+                    cityPreset={w.accommodationCityPreset}
+                  />
                 </div>
               )}
 
@@ -2742,16 +2995,12 @@ export default function DS160IsraelForm({
                   </div>
 
                   {/* Accommodation address — required even without specific plans */}
-                  <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
-                    <p className="text-sm font-semibold text-gray-700">כתובת לינה בארה״ב</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="accommodationStreet1" hint="לדוגמה: 9080 Sunrise Blvd" />
-                      <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="accommodationStreet2" hint="לדוגמה: Apt 4B" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="עיר" name="accommodationCity" />
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה (State)" name="accommodationState" hint="לדוגמה: FL" optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP, אם ידוע)" name="accommodationZip" optional />
-                    </div>
-                  </div>
+                  <AccommodationBlock
+                    register={register} watch={watch} setValue={setValue}
+                    getFieldError={getFieldError} translationErrors={translationErrors}
+                    hasExact={w.hasExactAccommodationAddress}
+                    cityPreset={w.accommodationCityPreset}
+                  />
                 </div>
               )}
 
@@ -2777,7 +3026,18 @@ export default function DS160IsraelForm({
                       <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="tripPayerGivenName" />
                       <FormInput register={register} getFieldError={getFieldError} label="מספר טלפון" name="tripPayerPhone" type="tel" />
                       <FormInput register={register} getFieldError={getFieldError} label="דואר אלקטרוני" name="tripPayerEmail" type="email" optional />
-                      <FormSelect register={register} getFieldError={getFieldError} label="קרבה למבקש" name="tripPayerRelationship" options={['CHILD', 'PARENT', 'SPOUSE', 'OTHER RELATIVE', 'FRIEND', 'OTHER']} />
+                      <div className="flex flex-col gap-1">
+                        <label className="font-semibold text-sm text-gray-700">קרבה למבקש</label>
+                        <select {...register('tripPayerRelationship')} className="rounded-md p-2 border border-gray-300 bg-white">
+                          <option value="">בחר...</option>
+                          <option value="CHILD">ילד/ה</option>
+                          <option value="PARENT">הורה</option>
+                          <option value="SPOUSE">בן/בת זוג</option>
+                          <option value="OTHER RELATIVE">קרוב משפחה אחר</option>
+                          <option value="FRIEND">חבר/ה</option>
+                          <option value="OTHER">אחר</option>
+                        </select>
+                      </div>
                     </div>
                     <FormRadioGroup register={register} getFieldError={getFieldError} label="האם כתובת המשלם זהה לכתובת הבית / הדואר שלי?" name="tripPayerSameAddress" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
                     {w.tripPayerSameAddress === 'no' && (
@@ -2832,13 +3092,19 @@ export default function DS160IsraelForm({
                         >
                           <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name={`travelCompanions.${index}.surname`} />
                           <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name={`travelCompanions.${index}.givenName`} />
-                          <FormSelect
-                            register={register}
-                            getFieldError={getFieldError}
-                            label="קרבה"
-                            name={`travelCompanions.${index}.relationship`}
-                            options={['PARENT', 'SPOUSE', 'CHILD', 'OTHER RELATIVE', 'FRIEND', 'BUSINESS ASSOCIATE', 'OTHER']}
-                          />
+                          <div className="flex flex-col gap-1">
+                            <label className="font-semibold text-sm text-gray-700">קרבה</label>
+                            <select {...register(`travelCompanions.${index}.relationship`)} className="rounded-md p-2 border border-gray-300 bg-white">
+                              <option value="">בחר...</option>
+                              <option value="PARENT">הורה</option>
+                              <option value="SPOUSE">בן/בת זוג</option>
+                              <option value="CHILD">ילד/ה</option>
+                              <option value="OTHER RELATIVE">קרוב משפחה אחר</option>
+                              <option value="FRIEND">חבר/ה</option>
+                              <option value="BUSINESS ASSOCIATE">שותף עסקי</option>
+                              <option value="OTHER">אחר</option>
+                            </select>
+                          </div>
                           {travelCompanionFields.length > 1 && (
                             <button
                               type="button"
@@ -2865,7 +3131,7 @@ export default function DS160IsraelForm({
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section id="section-prior-visits" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">ביקורים קודמים בארה&quot;ב</h2>
             <div className="grid grid-cols-1 gap-4">
 
@@ -3164,7 +3430,6 @@ export default function DS160IsraelForm({
                         </label>
                       </div>
                       <DateSelectInput label="תאריך הנפקת הויזה האחרונה" name="lastVisaIssueDate" hint="ניתן למלא אוטומטית מצילום הויזה" register={register} getFieldError={getFieldError} translationErrors={translationErrors} setValue={setValue} watch={watch} />
-                      <DateSelectInput label="תאריך תפוגת הויזה" name="lastVisaExpirationDate" hint="ניתן למלא אוטומטית מצילום הויזה" optional register={register} getFieldError={getFieldError} translationErrors={translationErrors} setValue={setValue} watch={watch} />
                       <FormRadioGroup register={register} getFieldError={getFieldError} label="האם מבקש/ת אותו סוג ויזה כמו הפעם הקודמת?" name="sameVisaType" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
                       <FormRadioGroup register={register} getFieldError={getFieldError} label="האם הויזה הקודמת שלך הונפקה בישראל?" name="visaIssuedInIsrael" options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
                       <FormRadioGroup register={register} getFieldError={getFieldError} label="האם עברת טביעות אצבעות של 10 אצבעות (ten-print) בארה״ב?" name="tenPrinted" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
@@ -3222,67 +3487,10 @@ export default function DS160IsraelForm({
                 )}
               </div>
 
-              {/* ── Passport lost/stolen ── */}
-              <FormRadioGroup register={register} getFieldError={getFieldError} label="האם אי פעם אבד או נגנב לך דרכון?" name="passportLostOrStolen" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
-              {w.passportLostOrStolen === 'yes' && (
-                <div className="space-y-4">
-                  {lostPassportFields.map((field, i) => (
-                    <div key={field.id} className="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-gray-700">דרכון אבוד / גנוב #{i + 1}</span>
-                        {lostPassportFields.length > 1 && (
-                          <button type="button" onClick={() => removeLostPassport(i)} className="text-red-500 text-sm hover:underline">הסר</button>
-                        )}
-                      </div>
-                      {/* Number + Do Not Know */}
-                      <div className="flex flex-col gap-1">
-                        <label className="font-semibold text-sm text-gray-700">מספר דרכון / מסמך נסיעה <span className="text-red-500">*</span></label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="text"
-                            {...register(`lostPassports.${i}.number`)}
-                            disabled={watch(`lostPassports.${i}.numberDoNotKnow`)}
-                            className={`rounded-md p-2 border font-mono flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${translationErrors.has(`lostPassports.${i}.number`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                            dir="ltr"
-                          />
-                          <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
-                            <input type="checkbox" {...register(`lostPassports.${i}.numberDoNotKnow`)} className="rounded" />
-                            לא ידוע
-                          </label>
-                        </div>
-                        {translationErrors.has(`lostPassports.${i}.number`) && <span className="text-red-500 text-xs">שדה חובה</span>}
-                      </div>
-                      {/* Country/Authority */}
-                      <FormInput
-                        register={register}
-                        getFieldError={getFieldError}
-                        label="מדינה / רשות שהנפיקה"
-                        name={`lostPassports.${i}.country`}
-                        hint="לדוגמה: Israel"
-                      />
-                      {/* Explain */}
-                      <FormInput
-                        register={register}
-                        getFieldError={getFieldError}
-                        label="הסבר (Explain)"
-                        name={`lostPassports.${i}.explain`}
-                        type="textarea"
-                      />
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => appendLostPassport({ number: '', numberDoNotKnow: false, country: '', explain: '' })}
-                    className="text-blue-600 text-sm hover:underline"
-                  >
-                    + הוסף דרכון נוסף
-                  </button>
-                </div>
-              )}
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section id="section-us-contact" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">איש קשר בארה&quot;ב (U.S. Point of Contact)</h2>
             <FormRadioGroup register={register} getFieldError={getFieldError} label="יש לך איש קשר בארה״ב?" name="hasUSContact" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
             {w.hasUSContact === 'yes' && (
@@ -3338,13 +3546,19 @@ export default function DS160IsraelForm({
                 </div>
 
                 {/* Relationship */}
-                <FormSelect
-                  register={register}
-                  getFieldError={getFieldError}
-                  label="קשר אליך (Relationship to You)"
-                  name="contactRelationship"
-                  options={['RELATIVE', 'SPOUSE', 'FRIEND', 'BUSINESS ASSOCIATE', 'EMPLOYER', 'SCHOOL OFFICIAL', 'OTHER']}
-                />
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-sm text-gray-700">קשר אליך (Relationship to You)</label>
+                  <select {...register('contactRelationship')} className="rounded-md p-2 border border-gray-300 bg-white">
+                    <option value="">בחר...</option>
+                    <option value="RELATIVE">קרוב משפחה</option>
+                    <option value="SPOUSE">בן/בת זוג</option>
+                    <option value="FRIEND">חבר/ה</option>
+                    <option value="BUSINESS ASSOCIATE">שותף עסקי</option>
+                    <option value="EMPLOYER">מעסיק</option>
+                    <option value="SCHOOL OFFICIAL">נציג מוסד לימודי</option>
+                    <option value="OTHER">אחר</option>
+                  </select>
+                </div>
 
                 {/* Address & Phone */}
                 <div className="bg-white rounded border border-gray-200 p-4 space-y-3">
@@ -3380,7 +3594,7 @@ export default function DS160IsraelForm({
             )}
           </section>
 
-          <section className="space-y-6">
+          <section id="section-family" className="space-y-6">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מידע משפחתי: קרובים</h2>
             <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
               הערה: אנא מסור/י מידע על הוריך הביולוגיים. אם אומצת, מסור/י מידע על הוריך המאמצים.
@@ -3525,8 +3739,18 @@ export default function DS160IsraelForm({
                       <input type="text" {...register(`usRelatives.${index}.givenNames`)}
                         className="rounded-md p-2 border border-gray-300 w-full" dir="ltr" />
                     </div>
-                    <FormSelect register={register} getFieldError={getFieldError} label="קשר אליך" name={`usRelatives.${index}.relationship`}
-                      options={['- SELECT ONE -', 'SPOUSE', 'FIANCÉ/FIANCÉE', 'CHILD', 'SIBLING']} />
+                    <div className="flex flex-col gap-1">
+                      <label className="font-semibold text-sm text-gray-700">קשר אליך</label>
+                      <select {...register(`usRelatives.${index}.relationship`)} className="rounded-md p-2 border border-gray-300 bg-white">
+                        <option value="">בחר...</option>
+                        <option value="SPOUSE">בן/בת זוג</option>
+                        <option value="FIANCÉ/FIANCÉE">ארוס/ה</option>
+                        <option value="CHILD">ילד/ה</option>
+                        <option value="SIBLING">אח/ות</option>
+                        <option value="PARENT">הורה</option>
+                        <option value="OTHER RELATIVE">קרוב משפחה אחר</option>
+                      </select>
+                    </div>
                     <FormSelect register={register} getFieldError={getFieldError} label="מעמד הקרוב" name={`usRelatives.${index}.status`}
                       options={['- SELECT ONE -', 'U.S. CITIZEN', 'U.S. LEGAL PERMANENT RESIDENT (LPR)', 'NONIMMIGRANT', 'OTHER/I DON\'T KNOW']} />
                   </div>
@@ -3549,7 +3773,7 @@ export default function DS160IsraelForm({
             )}
           </section>
 
-          <section className="space-y-4">
+          <section id="section-employment" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">תעסוקה / השכלה / הכשרה נוכחית</h2>
             <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
               הערה: אנא מסור/י מידע על תעסוקתך או לימודיך הנוכחיים.
@@ -3577,7 +3801,6 @@ export default function DS160IsraelForm({
                   <option value="NOT EMPLOYED">לא מועסק/ת</option>
                   <option value="RETIRED">פנסיה</option>
                   <option value="HOMEMAKER">עקר/עקרת בית</option>
-                  <option value="MILITARY">שירות צבאי</option>
                 </select>
               </div>
 
@@ -3601,6 +3824,7 @@ export default function DS160IsraelForm({
                     <option value="GOVERNMENT">ממשלה / שירות ציבורי</option>
                     <option value="LEGAL PROFESSION">משפטים</option>
                     <option value="MEDICAL/HEALTH">רפואה / בריאות</option>
+                    <option value="MILITARY">צבא</option>
                     <option value="NATURAL SCIENCE">מדעי הטבע</option>
                     <option value="PHYSICAL SCIENCES">מדעים פיזיקליים</option>
                     <option value="RELIGIOUS VOCATION">עיסוק דתי</option>
@@ -3617,7 +3841,7 @@ export default function DS160IsraelForm({
             </div>
 
             {/* Employed occupations → employer details */}
-            {['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER'].includes(w.currentOccupation) && (
+            {['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','MILITARY','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER'].includes(w.currentOccupation) && (
               <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
                 <FormInput register={register} getFieldError={getFieldError} label="שם המעסיק / מוסד הלימודים" name="employerName" />
 
@@ -3650,7 +3874,7 @@ export default function DS160IsraelForm({
                     </div>
                   </div>
                   <FormInput register={register} getFieldError={getFieldError} label="טלפון" name="employerPhone" />
-                  <FormInput register={register} getFieldError={getFieldError} label="מדינה" name="employerCountry" hint="לדוגמה: ISRAEL" />
+                  <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name="employerCountry" />
                 </div>
 
                 <FormInput register={register} getFieldError={getFieldError} label="תפקיד / כותרת משרה" name="jobTitle" />
@@ -3685,22 +3909,6 @@ export default function DS160IsraelForm({
                 <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב המוסד" name="studentInstitutionStreet" />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר" name="studentInstitutionCity" />
                 <FormInput register={register} getFieldError={getFieldError} label="הכנסה חודשית" name="studentMonthlyIncome" optional />
-              </div>
-            )}
-
-            {/* MILITARY */}
-            {w.currentOccupation === 'MILITARY' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border border-gray-200">
-                <h3 className="col-span-full font-bold text-lg">פרטי שירות צבאי נוכחי</h3>
-                <FormInput register={register} getFieldError={getFieldError} label="מדינה (Country)" name="militaryCountry" />
-                <FormInput register={register} getFieldError={getFieldError} label="חיל / זרוע (Branch)" name="militaryBranch" />
-                <FormInput register={register} getFieldError={getFieldError} label="תפקיד (Specialty/Job Title)" name="militaryRole" />
-                <FormInput register={register} getFieldError={getFieldError} label="דרגה (Rank)" name="militaryRank" optional />
-                <FormInput register={register} getFieldError={getFieldError} label="כתובת הבסיס" name="militaryBaseAddress" optional />
-                <FormInput register={register} getFieldError={getFieldError} label="טלפון יחידה" name="militaryUnitPhone" optional />
-                <FormInput register={register} getFieldError={getFieldError} label="שכר" name="militarySalary" optional />
-                <DateSelectInput label="תאריך גיוס" name="militaryDraftDate" register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
-                <DateSelectInput label="תאריך שחרור (אם רלוונטי)" name="militaryDischargeDate" optional register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
               </div>
             )}
 
@@ -3756,7 +3964,7 @@ export default function DS160IsraelForm({
                           </label>
                         </div>
                       </div>
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה" name={`previousEmployments.${i}.country`} hint="לדוגמה: ISRAEL" optional />
+                      <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name={`previousEmployments.${i}.country`} optional />
                       <FormInput register={register} getFieldError={getFieldError} label="טלפון" name={`previousEmployments.${i}.phone`} optional />
                     </div>
 
@@ -3796,16 +4004,16 @@ export default function DS160IsraelForm({
                   </div>
                 ))}
                 <button type="button"
-                  onClick={() => appendPreviousEmployment({ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: false, country: '', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' })}
+                  onClick={() => appendPreviousEmployment({ employerName: '', street: '', street2: '', city: '', state: '', stateDoesNotApply: true, zip: '', zipDoesNotApply: true, country: 'Israel', phone: '', jobTitle: '', supervisorSurnames: '', supervisorSurnamesDoNotKnow: false, supervisorGivenNames: '', supervisorGivenNamesDoNotKnow: false, dateFrom: '', dateTo: '', duties: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
-                  הוסף תפקיד
+                  הוסף מעסיק קודם נוסף
                 </button>
               </div>
             )}
           </section>
 
-          <section className="space-y-4">
+          <section id="section-education" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">השכלה</h2>
 
             <FormRadioGroup register={register} getFieldError={getFieldError}
@@ -3854,7 +4062,7 @@ export default function DS160IsraelForm({
                           </label>
                         </div>
                       </div>
-                      <FormInput register={register} getFieldError={getFieldError} label="מדינה" name={`educationRecords.${i}.country`} hint="לדוגמה: ISRAEL" optional />
+                      <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name={`educationRecords.${i}.country`} optional />
                     </div>
 
                     <FormInput register={register} getFieldError={getFieldError} label="תחום לימוד" name={`educationRecords.${i}.courseOfStudy`} />
@@ -3889,9 +4097,27 @@ export default function DS160IsraelForm({
                 <div key={field.id} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded p-3">
                   <div className="flex flex-col gap-1 flex-1">
                     <label className="font-semibold text-sm text-gray-700">שפה</label>
-                    <input type="text" {...register(`languagesList.${i}.name`)}
-                      className={`rounded-md p-2 border w-full ${translationErrors.has(`languagesList.${i}.name`) || (i === 0 && translationErrors.has('languagesList.0.name')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                      dir="ltr" />
+                    <input type="text" list={`dl-lang-${i}`} {...register(`languagesList.${i}.name`)} dir="ltr"
+                      placeholder="הקלד לחיפוש שפה..."
+                      className={`rounded-md p-2 border w-full bg-white ${translationErrors.has(`languagesList.${i}.name`) || (i === 0 && translationErrors.has('languagesList.0.name')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                    <datalist id={`dl-lang-${i}`}>
+                      <option value="HEBREW">עברית (Hebrew)</option>
+                      <option value="ENGLISH">אנגלית (English)</option>
+                      <option value="ARABIC">ערבית (Arabic)</option>
+                      <option value="RUSSIAN">רוסית (Russian)</option>
+                      <option value="FRENCH">צרפתית (French)</option>
+                      <option value="SPANISH">ספרדית (Spanish)</option>
+                      <option value="GERMAN">גרמנית (German)</option>
+                      <option value="YIDDISH">יידיש (Yiddish)</option>
+                      <option value="AMHARIC">אמהרית (Amharic)</option>
+                      <option value="PORTUGUESE">פורטוגזית (Portuguese)</option>
+                      <option value="ITALIAN">איטלקית (Italian)</option>
+                      <option value="TURKISH">טורקית (Turkish)</option>
+                      <option value="PERSIAN">פרסית (Persian)</option>
+                      <option value="ROMANIAN">רומנית (Romanian)</option>
+                      <option value="HUNGARIAN">הונגרית (Hungarian)</option>
+                      <option value="OTHER">אחר (Other)</option>
+                    </datalist>
                   </div>
                   {languagesListFields.length > 1 && (
                     <button type="button" onClick={() => removeLanguage(i)} className="text-red-500 text-sm hover:underline mt-5">הסר</button>
@@ -3918,9 +4144,12 @@ export default function DS160IsraelForm({
                   <div key={field.id} className="flex items-end gap-3 bg-gray-50 border border-gray-200 rounded p-3">
                     <div className="flex flex-col gap-1 flex-1">
                       <label className="font-semibold text-sm text-gray-700">מדינה</label>
-                      <input type="text" {...register(`countriesVisited.${i}.country`)}
-                        className={`rounded-md p-2 border w-full ${translationErrors.has(`countriesVisited.${i}.country`) || (i === 0 && translationErrors.has('countriesVisited.0.country')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-                        dir="ltr" placeholder="e.g., ISRAEL" />
+                      <input type="text" list={`dl-cv-${i}`} {...register(`countriesVisited.${i}.country`)} dir="ltr"
+                        placeholder="הקלד לחיפוש מדינה..."
+                        className={`rounded-md p-2 border w-full bg-white ${translationErrors.has(`countriesVisited.${i}.country`) || (i === 0 && translationErrors.has('countriesVisited.0.country')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} />
+                      <datalist id={`dl-cv-${i}`}>
+                        {COUNTRIES_LIST.map((c) => <option key={c} value={c.toUpperCase()} />)}
+                      </datalist>
                     </div>
                     {countriesVisitedFields.length > 1 && (
                       <button type="button" onClick={() => removeCountryVisited(i)} className="text-red-500 text-sm hover:underline pb-2">הסר</button>
@@ -3991,9 +4220,17 @@ export default function DS160IsraelForm({
                         <button type="button" onClick={() => removeMilitaryService(i)} className="text-red-500 text-sm hover:underline">הסר</button>
                       )}
                     </div>
-                    <FormInput register={register} getFieldError={getFieldError} label="מדינה" name={`militaryService.${i}.country`} hint="e.g., ISRAEL" />
+                    <CountrySelect register={register} getFieldError={getFieldError} label="מדינה" name={`militaryService.${i}.country`} />
                     <FormInput register={register} getFieldError={getFieldError} label="חיל / זרוע" name={`militaryService.${i}.branch`} />
-                    <FormInput register={register} getFieldError={getFieldError} label="דרגה / תפקיד" name={`militaryService.${i}.rank`} optional />
+                    <div className="flex flex-col gap-1">
+                      <label className="font-semibold text-sm text-gray-700">דרגה</label>
+                      <select {...register(`militaryService.${i}.rank`)} className="rounded-md p-2 border border-gray-300 bg-white" dir="ltr">
+                        <option value="">-- בחר דרגה --</option>
+                        {IDF_RANKS.map((r) => (
+                          <option key={r.en} value={r.en}>{r.en} ({r.he})</option>
+                        ))}
+                      </select>
+                    </div>
                     <FormInput register={register} getFieldError={getFieldError} label="התמחות צבאית" name={`militaryService.${i}.specialty`} optional />
                     <DateSelectInput label="תאריך תחילת שירות" name={`militaryService.${i}.dateFrom`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
                     <DateSelectInput label="תאריך סיום שירות" name={`militaryService.${i}.dateTo`} register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
@@ -4021,11 +4258,31 @@ export default function DS160IsraelForm({
           </section>
 
           {/* Security and Background — collapsible */}
-          <section className="space-y-4">
+          <section id="section-security" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Security and Background</h2>
             <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
               NOTE: Provide the following security and background information. A visa may not be issued to persons who are within specific categories defined by law as inadmissible to the United States. While a YES answer does not automatically signify ineligibility for a visa, if you answer YES you may be required to personally appear before a consular officer.
             </p>
+
+            {/* Priority questions — shown in Hebrew outside the toggle */}
+            <div className="space-y-4 border border-orange-200 bg-orange-50 rounded-lg p-4">
+              <p className="text-sm font-semibold text-orange-800">שאלות חשובות — יש לענות עליהן</p>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                <FormRadioGroup register={register} getFieldError={getFieldError}
+                  label="האם הורשעת בפשע כלשהו או נעצרת אי פעם?"
+                  name="arrestedOrConvicted"
+                  options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+                {w.arrestedOrConvicted === 'yes' && (
+                  <FormInput register={register} getFieldError={getFieldError} label="הסבר" name="arrestedOrConvictedExplanation" type="textarea" />
+                )}
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                <FormRadioGroup register={register} getFieldError={getFieldError}
+                  label="האם שהית בארצות הברית ללא אישור חוקי, או הפרת תנאי ויזה?"
+                  name="illegalStayInUS"
+                  options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
+              </div>
+            </div>
 
             {/* Toggle */}
             <div className="flex items-center gap-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -4102,7 +4359,6 @@ export default function DS160IsraelForm({
                   <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 2 — Criminal</h3>
                   <div className="space-y-4">
                     {[
-                      { name: 'arrestedOrConvicted', expl: 'arrestedOrConvictedExplanation', watch: w.arrestedOrConvicted, label: 'Have you ever been arrested or convicted for any offense or crime, even though subject of a pardon, amnesty, or other similar action?' },
                       { name: 'violatedControlledSubstances', expl: 'violatedControlledSubstancesExplanation', watch: w.violatedControlledSubstances, label: 'Have you ever violated, or engaged in a conspiracy to violate, any law relating to controlled substances?' },
                       { name: 'engagedInProstitution', expl: 'engagedInProstitutionExplanation', watch: w.engagedInProstitution, label: 'Are you coming to the United States to engage in prostitution or unlawful commercialized vice or have you been engaged in prostitution or procuring prostitutes within the past 10 years?' },
                       { name: 'moneyLaundering', expl: 'moneyLaunderingExplanation', watch: w.moneyLaundering, label: 'Have you ever been involved in, or do you seek to engage in, money laundering?' },
@@ -4188,7 +4444,7 @@ export default function DS160IsraelForm({
             )}
           </section>
 
-          <section className="space-y-4">
+          <section id="section-social" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">רשתות חברתיות</h2>
             <p className="text-sm text-gray-600">
               בחר את פלטפורמות המדיה החברתית בהן השתמשת במהלך 5 השנים האחרונות והזן את שם המשתמש שלך. אל תמסור סיסמאות.
@@ -4274,7 +4530,7 @@ export default function DS160IsraelForm({
             </div>
           </section>
 
-          <section className="space-y-4">
+          <section id="section-interview" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מיקום ראיון</h2>
             <FormRadioGroup register={register} getFieldError={getFieldError} label="לאן תגש לראיון?" name="interviewLocation" options={[
               { label: 'הירקון 71, תל אביב', value: 'tel_aviv' },
