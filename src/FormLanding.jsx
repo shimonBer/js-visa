@@ -284,6 +284,12 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                           <span dir="ltr">{new Date(f.completedAt).toLocaleString('he-IL')}</span>
                         </span>
                       )}
+                      {f.mondaySentAt && (
+                        <span className="text-xs text-blue-700 font-medium mt-0.5">
+                          ✓ הועבר ל-Monday:{' '}
+                          <span dir="ltr">{new Date(f.mondaySentAt).toLocaleString('he-IL')}</span>
+                        </span>
+                      )}
                       {!isCompleted && f.isComplete === false && (
                         <span className="text-xs text-red-600 mt-0.5">
                           חסרים {f.missingCount ?? '?'} שדות

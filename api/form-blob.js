@@ -242,11 +242,14 @@ export default async function handler(req, res) {
                 payload?.data && typeof payload.data === 'object' ? payload.data : {}
               const { isComplete, missingFields } = calculateCompleteness(formData)
               const prev = statusIndex[f.pathname] || {}
+              const mondayItemId = typeof formData.mondayItemId === 'string' ? formData.mondayItemId.trim() : ''
               statusIndex[f.pathname] = {
                 isComplete,
                 missingCount: missingFields.length,
                 guestToken: prev.guestToken ?? null,
                 completedAt: isComplete ? (prev.completedAt || null) : null,
+                mondayItemId: mondayItemId || prev.mondayItemId || null,
+                mondaySentAt: mondayItemId ? (prev.mondaySentAt || null) : (prev.mondaySentAt || null),
               }
               return f.pathname
             } catch {
@@ -268,6 +271,8 @@ export default async function handler(req, res) {
           missingCount: status?.missingCount ?? null,
           guestToken: status?.guestToken ?? null,
           completedAt: status?.completedAt ?? null,
+          mondayItemId: status?.mondayItemId ?? null,
+          mondaySentAt: status?.mondaySentAt ?? null,
         }
       })
 
@@ -305,6 +310,7 @@ export default async function handler(req, res) {
       const statusIndex = await readStatusIndex(token)
       const prev = statusIndex[pathname] || {}
       const nowIso = new Date().toISOString()
+      const mondayItemId = typeof formData.mondayItemId === 'string' ? formData.mondayItemId.trim() : ''
       statusIndex[pathname] = {
         isComplete: completeness.isComplete,
         missingCount: completeness.missingFields.length,
@@ -312,6 +318,8 @@ export default async function handler(req, res) {
         completedAt: completeness.isComplete
           ? (prev.completedAt || nowIso)
           : null,
+        mondayItemId: mondayItemId || prev.mondayItemId || null,
+        mondaySentAt: mondayItemId ? (prev.mondaySentAt || nowIso) : (prev.mondaySentAt || null),
       }
       await writeStatusIndex(token, statusIndex)
 
