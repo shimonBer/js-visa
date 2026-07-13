@@ -1304,6 +1304,7 @@ export default function DS160IsraelForm({
   )
   const [asyncFlow, setAsyncFlow] = useState({ phase: 'idle', message: '' })
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
+  const [foreignPassportOcr, setForeignPassportOcr] = useState({}) // keyed by index
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
   const [securitySectionOpen, setSecuritySectionOpen] = useState(false)
   const WORK_OCCUPATIONS = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','MILITARY','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
@@ -1670,6 +1671,7 @@ export default function DS160IsraelForm({
   }
 
   async function runForeignPassportOcrFromFile(file, index) {
+    setForeignPassportOcr(prev => ({ ...prev, [index]: { status: 'loading', message: '' } }))
     try {
       const r = await extractForeignPassportNumber(file)
       if (r.passportNumber) {
@@ -1677,9 +1679,12 @@ export default function DS160IsraelForm({
         if (watch(`foreignNationalities.${index}.hasForeignPassport`) !== 'yes') {
           setValue(`foreignNationalities.${index}.hasForeignPassport`, 'yes', { shouldDirty: true })
         }
+        setForeignPassportOcr(prev => ({ ...prev, [index]: { status: 'idle', message: 'מספר דרכון זוהה ועודכן.' } }))
+      } else {
+        setForeignPassportOcr(prev => ({ ...prev, [index]: { status: 'idle', message: 'לא זוהה מספר דרכון — הזן ידנית.' } }))
       }
-    } catch {
-      // silently ignore — the file is still stored, user can type manually
+    } catch (e) {
+      setForeignPassportOcr(prev => ({ ...prev, [index]: { status: 'error', message: e?.message || 'שגיאה בזיהוי דרכון' } }))
     }
   }
 
@@ -2818,6 +2823,15 @@ export default function DS160IsraelForm({
                                 accept="image/*,application/pdf"
                                 onFilePicked={(f) => void runForeignPassportOcrFromFile(f, i)}
                               />
+                              {foreignPassportOcr[i]?.status === 'loading' && (
+                                <p className="text-sm text-blue-600 mt-1">מזהה מספר דרכון מהצילום…</p>
+                              )}
+                              {foreignPassportOcr[i]?.status === 'error' && (
+                                <p className="text-sm text-red-600 mt-1" role="alert">{foreignPassportOcr[i].message}</p>
+                              )}
+                              {foreignPassportOcr[i]?.status === 'idle' && foreignPassportOcr[i]?.message && (
+                                <p className="text-sm text-green-700 mt-1">{foreignPassportOcr[i].message}</p>
+                              )}
                             </div>
                             {foreignNationalityFields.length > 1 && (
                               <button type="button" onClick={() => removeForeignNationality(i)} className="mt-1 text-sm text-red-500 hover:text-red-700 font-medium whitespace-nowrap">הסר ✕</button>

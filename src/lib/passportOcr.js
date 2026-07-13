@@ -1,3 +1,5 @@
+import { resizeImageFile } from './resizeImage.js'
+
 /**
  * POST passport image bytes to /api/extract-passport (same origin; use vercel dev locally).
  * @param {File} file
@@ -7,16 +9,18 @@ export async function extractPassportFieldsFromFile(file) {
   if (!(file instanceof File)) {
     throw new Error('Invalid file')
   }
-  const mime = file.type || 'application/octet-stream'
   const allowed = /^image\/(jpeg|png|gif|webp)$|^application\/pdf$/i
-  if (!allowed.test(mime)) {
+  if (!allowed.test(file.type || '')) {
     throw new Error('Unsupported file type; use JPEG, PNG, GIF, WebP, or PDF')
   }
+
+  const resized = await resizeImageFile(file)
+  const mime = resized.type || 'image/jpeg'
 
   const res = await fetch('/api/extract-passport', {
     method: 'POST',
     headers: { 'Content-Type': mime },
-    body: file,
+    body: resized,
   })
   const text = await res.text()
   let json

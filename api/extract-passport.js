@@ -4,7 +4,7 @@
  * Uses OpenAI GPT-4o vision to extract passport fields as JSON.
  */
 
-const MAX_BYTES = 4 * 1024 * 1024 // ~4 MiB — within typical serverless body limits
+const MAX_BYTES = 10 * 1024 * 1024 // 10 MiB — images are resized client-side; PDFs may still be large
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_TIMEOUT_MS = 60_000
 

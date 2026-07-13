@@ -1,5 +1,7 @@
+import { resizeImageFile } from './resizeImage.js'
+
 /**
- * POST a foreign passport image to /api/extract-foreign-passport.
+ * POST a foreign passport image to /api/extract-passport?mode=foreign.
  * Returns the passport number cross-checked between the visual field and MRZ.
  * @param {File} file
  * @returns {Promise<{ passportNumber: string|null, matched: boolean }>}
@@ -7,14 +9,16 @@
 export async function extractForeignPassportNumber(file) {
   if (!(file instanceof File)) throw new Error('Invalid file')
 
-  const mime = file.type || 'application/octet-stream'
   const allowed = /^image\/(jpeg|png|gif|webp)$|^application\/pdf$/i
-  if (!allowed.test(mime)) throw new Error('Unsupported file type; use JPEG, PNG, GIF, WebP, or PDF')
+  if (!allowed.test(file.type || '')) throw new Error('Unsupported file type; use JPEG, PNG, GIF, WebP, or PDF')
+
+  const resized = await resizeImageFile(file)
+  const mime = resized.type || 'image/jpeg'
 
   const res = await fetch('/api/extract-passport?mode=foreign', {
     method: 'POST',
     headers: { 'Content-Type': mime },
-    body: file,
+    body: resized,
   })
 
   const text = await res.text()
