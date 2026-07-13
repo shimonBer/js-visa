@@ -23,6 +23,7 @@
     "@vercel/blob": "^2.3.3",
     "fuse.js": "^7.3.0",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.75.0"
