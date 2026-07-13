@@ -30,27 +30,64 @@ function jsonResponse(res, status, body) {
  */
 const FOREIGN_PASSPORT_SYSTEM_PROMPT = `You are an expert passport OCR engine.
 
-Your task: extract the passport number from the document image.
+Your task: extract the passport number from the document image with 100% character-level accuracy.
 
+━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 1 — VISUAL READ
-Find the field visually labeled "Passport No.", "Passport Number", "No. de passeport", "Numéro de passeport", "Reisepass-Nr.", or any equivalent label in any language. Read the value exactly as printed.
+━━━━━━━━━━━━━━━━━━━━━━━━
+Find the printed field labeled "Passport No.", "Passport Number", "Număr/Passport", "No. de passeport", "Reisepass-Nr.", or any equivalent in any language.
+Read every character individually. Do not read the number as a whole word — read it digit by digit, left to right.
+Count the characters and record the count.
 
-STEP 2 — MRZ READ
-Locate the Machine Readable Zone (MRZ) — the two lines of monospace text at the bottom of the passport.
-According to ICAO 9303 TD3, Line 2 positions 1–9 contain the passport number (strip trailing "<" filler characters).
-Read this value exactly as printed. Do NOT guess or correct characters.
+━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — MRZ RAW EXTRACTION (primary source)
+━━━━━━━━━━━━━━━━━━━━━━━━
+Locate the Machine Readable Zone — two lines of monospace OCR-B text at the bottom of the passport.
 
-STEP 3 — CROSS-CHECK
-Compare the visual value (Step 1) with the MRZ value (Step 2).
-- If they match: return that value as passportNumber, set matched = true.
-- If they differ: return null as passportNumber, set matched = false, and include both raw values in mismatchDetails.
-- If only one source is visible: return that value, set matched = false.
+Read Line 2 completely as a raw string of characters, one by one, left to right, without skipping any character.
 
-RULES
-- Never guess unreadable characters. If a character is ambiguous, return null.
-- Watch for: 0 ↔ O, 1 ↔ I ↔ l, 2 ↔ Z, 5 ↔ S, 8 ↔ B.
-- Strip trailing "<" from MRZ values only.
-- Return the passport number exactly as printed (no spaces, no hyphens unless printed).`
+ICAO 9303 TD3 structure of Line 2 (44 characters total):
+  Position  1– 9 : Passport number
+  Position 10    : Check digit for passport number
+  Position 11–13 : Country code
+  Position 14–19 : Date of birth (YYMMDD)
+  ...
+
+Extract EXACTLY the characters at positions 1 through 9 (the first 9 characters of Line 2).
+Do NOT stop early. Do NOT merge adjacent identical characters.
+Each character occupies exactly one position — "00" is two zeros, not one.
+
+Strip any trailing "<" filler from the result.
+Record both the raw 9-character string and the stripped result.
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — DIGIT-BY-DIGIT VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━
+For both the visual read (Step 1) and the MRZ read (Step 2):
+- List every character individually (e.g. "0", "4", "0", "0", "2", "1", "0", "3", "9")
+- Count them
+- Confirm neither run of identical characters was collapsed (e.g. "00" must stay "00", not "0")
+
+Common OCR errors to watch for:
+- 0 ↔ O  (zero vs letter O)
+- 1 ↔ I ↔ l
+- 2 ↔ Z
+- 5 ↔ S
+- 8 ↔ B
+- "00" read as single "0" ← very common mistake, check every pair of zeros
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4 — CROSS-CHECK & DECISION
+━━━━━━━━━━━━━━━━━━━━━━━━
+Compare the character-verified visual value with the character-verified MRZ value.
+- If character counts differ, you made an error — re-read the shorter value and look for collapsed characters.
+- If they match after verification: return that value as passportNumber, set matched = true.
+- If they still differ: return null, set matched = false, include both raw values in mismatchDetails.
+- If only one source is readable: return that value, set matched = false.
+
+IMPORTANT: Prefer the MRZ value when in doubt — the MRZ is machine-printed in monospace OCR-B font and is more reliable than the visual field.
+
+Return the passport number exactly as found (no spaces, no hyphens unless they appear in the original).`
 
 const FOREIGN_PASSPORT_SCHEMA = {
   type: 'json_schema',
@@ -519,7 +556,7 @@ async function handleForeignMode(req, res, apiKey) {
             {
               role: 'user',
               content: [
-                { type: 'text', text: 'Read the passport image and identify the passport number using both the visual field labeled "Passport No." and the MRZ. Cross-check both sources. If they match, return only the passport number.' },
+                { type: 'text', text: 'Read the passport number character by character from both the visual "Passport No." field and the MRZ (positions 1–9 of Line 2). Verify digit counts match. Do not collapse consecutive identical characters (e.g. "00" must stay "00"). Cross-check both sources and return the verified passport number.' },
                 { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
               ],
             },
