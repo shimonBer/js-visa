@@ -49,15 +49,24 @@ Find the sequence in the MRZ that corresponds to the passport number from Step 1
 Read it character by character and record the value.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 3 — DIGIT-BY-DIGIT VERIFICATION
+STEP 3 — CHARACTER-BY-CHARACTER VERIFICATION
 ━━━━━━━━━━━━━━━━━━━━━━━━
-Before finalising, check your visual read for these common OCR mistakes:
+Write out every character of your visual read as a numbered list (1: C, 2: 4, 3: K, ...).
+Then count them and confirm the count matches what you see on the document.
+
+Common OCR mistakes to check:
 - 0 ↔ O  (zero vs letter O)
 - 1 ↔ I ↔ l
 - 2 ↔ Z
 - 5 ↔ S
 - 8 ↔ B
-- Consecutive identical characters collapsed: "00" → "0", "11" → "1" ← very common, check every run
+- Consecutive identical characters collapsed — this applies to BOTH digits AND letters:
+    "00" → "0"  ← very common
+    "LL" → "L"  ← very common
+    "MM" → "M", "NN" → "N", "KK" → "K", "RR" → "R", etc.
+  Zoom in on every pair of adjacent identical characters and confirm there are truly two of them.
+
+Do NOT include the check digit (the single character that immediately follows the passport number in the MRZ) in the passport number value.
 
 If the MRZ value matches the visual value: set matched = true.
 If they differ: set matched = false and record both in mismatchDetails.
