@@ -1,0 +1,22 @@
+{
+  "name": "i94-service",
+  "version": "1.0.0",
+  "description": "Headed Playwright I-94 lookup service for Railway",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:xvfb": "xvfb-run --server-args=\"-screen 0 1280x900x24 -ac\" node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "playwright": "^1.60.0",
+    "playwright-extra": "^4.3.6",
+    "playwright-extra-plugin-stealth": "^0.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

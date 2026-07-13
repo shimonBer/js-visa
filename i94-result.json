@@ -1,0 +1,45 @@
+{
+  "success": true,
+  "history": [
+    {
+      "date": "04/17/2024",
+      "type": "Departure",
+      "location": "MIA"
+    },
+    {
+      "date": "04/02/2024",
+      "type": "Arrival",
+      "location": "MIA"
+    },
+    {
+      "date": "01/02/2022",
+      "type": "Departure",
+      "location": "MIA"
+    },
+    {
+      "date": "12/16/2021",
+      "type": "Arrival",
+      "location": "MIA"
+    },
+    {
+      "date": "03/02/2020",
+      "type": "Departure",
+      "location": "MIA"
+    },
+    {
+      "date": "02/02/2020",
+      "type": "Arrival",
+      "location": "NEW"
+    },
+    {
+      "date": "01/09/2018",
+      "type": "Departure",
+      "location": "Unavailable"
+    },
+    {
+      "date": "07/14/2017",
+      "type": "Arrival",
+      "location": "CHI"
+    }
+  ]
+}

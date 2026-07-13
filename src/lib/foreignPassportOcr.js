@@ -11,7 +11,7 @@ export async function extractForeignPassportNumber(file) {
   const allowed = /^image\/(jpeg|png|gif|webp)$|^application\/pdf$/i
   if (!allowed.test(mime)) throw new Error('Unsupported file type; use JPEG, PNG, GIF, WebP, or PDF')
 
-  const res = await fetch('/api/extract-foreign-passport', {
+  const res = await fetch('/api/extract-passport?mode=foreign', {
     method: 'POST',
     headers: { 'Content-Type': mime },
     body: file,
