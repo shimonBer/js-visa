@@ -8,6 +8,7 @@ import { buildFormId } from './lib/formId.js'
 import { saveFormBlobPayload } from './lib/formBlob.js'
 import { calculateCompleteness } from './lib/formCompleteness.js'
 import { extractPassportFieldsFromFile } from './lib/passportOcr.js'
+import { extractForeignPassportNumber } from './lib/foreignPassportOcr.js'
 import { extractSocialSecurityNumberFromFile } from './lib/socialSecurityOcr.js'
 import { extractUsLicenseFieldsFromFile } from './lib/usLicenseOcr.js'
 import { extractUsVisaDatesFromFile } from './lib/usVisaOcr.js'
@@ -920,7 +921,7 @@ export default function DS160IsraelForm({
 
       nationality: '',
       hasForeignCitizenship: 'no',
-      foreignNationalities: [{ country: '', hasForeignPassport: 'no', id: '', idNA: true }],
+      foreignNationalities: [{ country: '', hasForeignPassport: 'no', id: '' }],
       isPermanentResidentElsewhere: 'no',
       permanentResidencies: [{ country: '' }],
       usSocialSecurityNumber: '',
@@ -1665,6 +1666,20 @@ export default function DS160IsraelForm({
       setPassportOcr({ status: 'idle', message: 'שדות דרכון עודכנו מהצילום.' })
     } catch (e) {
       setPassportOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי דרכון' })
+    }
+  }
+
+  async function runForeignPassportOcrFromFile(file, index) {
+    try {
+      const r = await extractForeignPassportNumber(file)
+      if (r.passportNumber) {
+        setValue(`foreignNationalities.${index}.id`, r.passportNumber, { shouldDirty: true })
+        if (watch(`foreignNationalities.${index}.hasForeignPassport`) !== 'yes') {
+          setValue(`foreignNationalities.${index}.hasForeignPassport`, 'yes', { shouldDirty: true })
+        }
+      }
+    } catch {
+      // silently ignore — the file is still stored, user can type manually
     }
   }
 
@@ -2789,7 +2804,7 @@ export default function DS160IsraelForm({
                             <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך דרכון זר לאזרחות זו?" name={`foreignNationalities.${i}.hasForeignPassport`} options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                           </div>
                           {watch(`foreignNationalities.${i}.hasForeignPassport`) === 'yes' && (
-                            <FormInput register={register} getFieldError={getFieldError} label="מספר זיהות / דרכון במדינה זו" name={`foreignNationalities.${i}.id`} optional naGate watch={watch} setValue={setValue} />
+                            <FormInput register={register} getFieldError={getFieldError} label="מספר זהות / דרכון במדינה זו" name={`foreignNationalities.${i}.id`} optional watch={watch} setValue={setValue} />
                           )}
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1">
@@ -2801,6 +2816,7 @@ export default function DS160IsraelForm({
                                 getFieldError={getFieldError}
                                 watchedValue={w.foreignNationalities?.[i]?.scan}
                                 accept="image/*,application/pdf"
+                                onFilePicked={(f) => void runForeignPassportOcrFromFile(f, i)}
                               />
                             </div>
                             {foreignNationalityFields.length > 1 && (
@@ -2809,7 +2825,7 @@ export default function DS160IsraelForm({
                           </div>
                         </div>
                       ))}
-                      <button type="button" onClick={() => appendForeignNationality({ country: '', hasForeignPassport: 'no', id: '', idNA: true })}
+                      <button type="button" onClick={() => appendForeignNationality({ country: '', hasForeignPassport: 'no', id: '' })}
                         className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                         <span aria-hidden className="text-lg leading-none">+</span>
                         הוסף אזרחות נוספת
