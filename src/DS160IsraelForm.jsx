@@ -934,6 +934,7 @@ export default function DS160IsraelForm({
       travelCompanions: [{ surname: '', givenName: '', relationship: '' }],
       visitedUSBefore: 'no',
       previousUSVisits: [{ arrivalDate: '', stayValue: '', stayUnit: '' }],
+      hasESTAPermit: false,
       hadUSVisa: 'no',
       lastVisaIssueDate: '',
       lastVisaExpirationDate: '',
@@ -941,6 +942,7 @@ export default function DS160IsraelForm({
       sameVisaType: 'yes',
       visaNumber: '',
       visaNumberDoNotKnow: false,
+      visaNoCopyAvailable: false,
       visaWasCancelled: 'no',
       visaWasCancelledExplanation: '',
       visaLostOrStolen: 'no',
@@ -2047,9 +2049,15 @@ export default function DS160IsraelForm({
     // fatherBirthDate + motherBirthDate are NOT required
     if (values.fatherInUS === 'yes') req('fatherUSStatus')
     if (values.motherInUS === 'yes') req('motherUSStatus')
-    // at least one language must be provided
+    // at least one language must be provided; every added entry must have a name
     const langs = values.languagesList || []
-    if (!langs.some(l => String(l?.name ?? '').trim())) missing.add('languagesList.0.name')
+    if (!langs.some(l => String(l?.name ?? '').trim())) {
+      missing.add('languagesList.0.name')
+    } else {
+      langs.forEach((l, i) => {
+        if (!String(l?.name ?? '').trim()) missing.add(`languagesList.${i}.name`)
+      })
+    }
     req('currentOccupation')
     if (values.hasOrganizations === 'yes') {
       const orgs = values.organizations || []
@@ -2096,8 +2104,19 @@ export default function DS160IsraelForm({
       } else {
         visits.forEach((v, i) => {
           if (!String(v?.arrivalDate ?? '').trim()) missing.add(`previousUSVisits.${i}.arrivalDate`)
+          if (!String(v?.stayValue ?? '').trim()) missing.add(`previousUSVisits.${i}.stayValue`)
+          if (!String(v?.stayUnit ?? '').trim()) missing.add(`previousUSVisits.${i}.stayUnit`)
         })
       }
+    }
+    if (values.travelingWithOthers === 'yes') {
+      const companions = values.travelCompanions || []
+      companions.forEach((c, i) => {
+        if (!String(c?.surname ?? '').trim() && !String(c?.givenName ?? '').trim()) {
+          missing.add(`travelCompanions.${i}.surname`)
+        }
+        if (!String(c?.relationship ?? '').trim()) missing.add(`travelCompanions.${i}.relationship`)
+      })
     }
     if (values.hadUSVisa === 'yes') {
       if (!values.visaNumberDoNotKnow) req('visaNumber')
@@ -2224,7 +2243,13 @@ export default function DS160IsraelForm({
     }
     if (values.visitedAbroadLast5Years === 'yes') {
       const countries = values.countriesVisited || []
-      if (!countries.some(c => String(c?.country ?? '').trim())) missing.add('countriesVisited.0.country')
+      if (!countries.some(c => String(c?.country ?? '').trim())) {
+        missing.add('countriesVisited.0.country')
+      } else {
+        countries.forEach((c, i) => {
+          if (!String(c?.country ?? '').trim()) missing.add(`countriesVisited.${i}.country`)
+        })
+      }
     }
     if (values.servedInMilitary === 'yes') {
       const milServices = values.militaryService || []
@@ -3460,7 +3485,10 @@ export default function DS160IsraelForm({
                           <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name={`travelCompanions.${index}.givenName`} />
                           <div className="flex flex-col gap-1">
                             <label className="font-semibold text-sm text-gray-700">קרבה</label>
-                            <select {...register(`travelCompanions.${index}.relationship`)} className="rounded-md p-2 border border-gray-300 bg-white">
+                            <select
+                              {...register(`travelCompanions.${index}.relationship`)}
+                              className={`rounded-md p-2 border bg-white ${getFieldError(`travelCompanions.${index}.relationship`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                            >
                               <option value="">בחר...</option>
                               <option value="PARENT">הורה</option>
                               <option value="SPOUSE">בן/בת זוג</option>
@@ -3470,6 +3498,9 @@ export default function DS160IsraelForm({
                               <option value="BUSINESS ASSOCIATE">שותף עסקי</option>
                               <option value="OTHER">אחר</option>
                             </select>
+                            {getFieldError(`travelCompanions.${index}.relationship`) && (
+                              <span className="text-red-500 text-xs">שדה חובה</span>
+                            )}
                           </div>
                           {travelCompanionFields.length > 1 && (
                             <button
@@ -3569,14 +3600,17 @@ export default function DS160IsraelForm({
                             {...register(`previousUSVisits.${index}.stayValue`)}
                             placeholder="מספר"
                             dir="ltr"
-                            className="w-full rounded-md p-2 border border-gray-300 text-sm"
+                            className={`w-full rounded-md p-2 border text-sm ${getFieldError(`previousUSVisits.${index}.stayValue`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                           />
+                          {getFieldError(`previousUSVisits.${index}.stayValue`) && (
+                            <span className="text-red-500 text-xs mt-0.5 block">שדה חובה</span>
+                          )}
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">יחידה</label>
                           <select
                             {...register(`previousUSVisits.${index}.stayUnit`)}
-                            className="w-full rounded-md p-2 border border-gray-300 text-sm bg-white"
+                            className={`w-full rounded-md p-2 border text-sm bg-white ${getFieldError(`previousUSVisits.${index}.stayUnit`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                             dir="ltr"
                           >
                             <option value="">-- יחידה --</option>
@@ -3585,6 +3619,9 @@ export default function DS160IsraelForm({
                             <option value="MONTHS">חודשים</option>
                             <option value="YEARS">שנים</option>
                           </select>
+                          {getFieldError(`previousUSVisits.${index}.stayUnit`) && (
+                            <span className="text-red-500 text-xs mt-0.5 block">שדה חובה</span>
+                          )}
                         </div>
                         {previousVisitFields.length > 1 && (
                           <button
@@ -3601,6 +3638,10 @@ export default function DS160IsraelForm({
                   <p className="text-xs text-gray-500">
                     ניתן למלא ידנית או ללחוץ &quot;בדוק I-94&quot; למעלה — התאריכים יועתקו אוטומטית.
                   </p>
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                    <input type="checkbox" {...register('hasESTAPermit')} className="rounded" />
+                    ללקוח יש / הייתה אישור ESTA (היתר נסיעה אלקטרוני לארה״ב)
+                  </label>
                 </div>
               )}
 
@@ -3816,6 +3857,10 @@ export default function DS160IsraelForm({
                           </div>
                         )}
                       </div>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                        <input type="checkbox" {...register('visaNoCopyAvailable')} className="rounded" />
+                        אין ברשות הלקוח עותק של הויזה הקודמת
+                      </label>
                     </div>
                   )}
                 </div>
@@ -4117,7 +4162,10 @@ export default function DS160IsraelForm({
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="font-semibold text-sm text-gray-700">קשר אליך</label>
-                      <select {...register(`usRelatives.${index}.relationship`)} className="rounded-md p-2 border border-gray-300 bg-white">
+                      <select
+                        {...register(`usRelatives.${index}.relationship`)}
+                        className={`rounded-md p-2 border bg-white ${getFieldError(`usRelatives.${index}.relationship`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                      >
                         <option value="">בחר...</option>
                         <option value="SPOUSE">בן/בת זוג</option>
                         <option value="FIANCÉ/FIANCÉE">ארוס/ה</option>
@@ -4126,6 +4174,9 @@ export default function DS160IsraelForm({
                         <option value="PARENT">הורה</option>
                         <option value="OTHER RELATIVE">קרוב משפחה אחר</option>
                       </select>
+                      {getFieldError(`usRelatives.${index}.relationship`) && (
+                        <span className="text-red-500 text-xs">שדה חובה</span>
+                      )}
                     </div>
                     <FormSelect register={register} getFieldError={getFieldError} label="מעמד הקרוב" name={`usRelatives.${index}.status`}
                       options={['- SELECT ONE -', 'U.S. CITIZEN', 'U.S. LEGAL PERMANENT RESIDENT (LPR)', 'NONIMMIGRANT', 'OTHER/I DON\'T KNOW']} />
