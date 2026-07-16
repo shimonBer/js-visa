@@ -21,6 +21,7 @@ import {
 import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
 import { getS3UploadApiBase } from './lib/uploadFormDocuments.js'
 import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
+import CopyFromFormButton from './CopyFromFormButton.jsx'
 
 /**
  * Keeps latest S3 object per document field (passport / visa / SSN card / license) for translate + PDF when the browser has no File.
@@ -526,7 +527,17 @@ const CITY_PRESETS = [
   { label: 'לוס אנג\'לס', city: 'Los Angeles', state: 'CA' },
 ]
 
-function AccommodationBlock({ register, watch, setValue, getFieldError, translationErrors, hasExact, cityPreset }) {
+function AccommodationBlock({
+  register,
+  watch,
+  setValue,
+  getFieldError,
+  translationErrors,
+  hasExact,
+  cityPreset,
+  excludePathname,
+  excludeFormId,
+}) {
   function handleCityPreset(e) {
     const val = e.target.value
     setValue('accommodationCityPreset', val, { shouldDirty: true })
@@ -545,7 +556,15 @@ function AccommodationBlock({ register, watch, setValue, getFieldError, translat
 
   return (
     <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
-      <p className="text-sm font-semibold text-gray-700">כתובת לינה בארה״ב</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-semibold text-gray-700 pt-1.5">כתובת לינה בארה״ב</p>
+        <CopyFromFormButton
+          sectionId="accommodation"
+          setValue={setValue}
+          excludePathname={excludePathname}
+          excludeFormId={excludeFormId}
+        />
+      </div>
       <div className="flex flex-col gap-1">
         <label className="font-semibold text-sm text-gray-700">האם יש לך כתובת מדויקת?</label>
         <div className="flex gap-4">
@@ -3350,6 +3369,8 @@ export default function DS160IsraelForm({
                     getFieldError={getFieldError} translationErrors={translationErrors}
                     hasExact={w.hasExactAccommodationAddress}
                     cityPreset={w.accommodationCityPreset}
+                    excludePathname={loadedBlobKeyRef.current}
+                    excludeFormId={formUUIDRef.current || storageFormId}
                   />
                 </div>
               )}
@@ -3391,6 +3412,8 @@ export default function DS160IsraelForm({
                     getFieldError={getFieldError} translationErrors={translationErrors}
                     hasExact={w.hasExactAccommodationAddress}
                     cityPreset={w.accommodationCityPreset}
+                    excludePathname={loadedBlobKeyRef.current}
+                    excludeFormId={formUUIDRef.current || storageFormId}
                   />
                 </div>
               )}
@@ -3635,12 +3658,9 @@ export default function DS160IsraelForm({
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500">
-                    ניתן למלא ידנית או ללחוץ &quot;בדוק I-94&quot; למעלה — התאריכים יועתקו אוטומטית.
-                  </p>
                   <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
                     <input type="checkbox" {...register('hasESTAPermit')} className="rounded" />
-                    ללקוח יש / הייתה אישור ESTA (היתר נסיעה אלקטרוני לארה״ב)
+                    ללקוח יש / היה אישור ESTA (היתר נסיעה אלקטרוני לארה״ב)
                   </label>
                 </div>
               )}
