@@ -21,7 +21,7 @@ import {
 import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
 import { getS3UploadApiBase } from './lib/uploadFormDocuments.js'
 import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
-import CopyFromFormButton from './CopyFromFormButton.jsx'
+import CopyFromFormButton, { SectionCopyHeader } from './CopyFromFormButton.jsx'
 
 /**
  * Keeps latest S3 object per document field (passport / visa / SSN card / license) for translate + PDF when the browser has no File.
@@ -3137,7 +3137,14 @@ export default function DS160IsraelForm({
 
               {/* ── כרטיס 3: כתובת מגורים ── */}
               <div id="section-address" className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
-                <h3 className="font-bold text-lg">כתובת מגורים נוכחית (Home Address)</h3>
+                <SectionCopyHeader
+                  as="h3"
+                  title="כתובת מגורים נוכחית (Home Address)"
+                  sectionId="address"
+                  setValue={setValue}
+                  excludePathname={loadedBlobKeyRef.current}
+                  excludeFormId={formUUIDRef.current || storageFormId}
+                />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <FormInput register={register} getFieldError={getFieldError} label="רחוב (Street Address Line 1)" name="addressStreet" hint="לדוגמה: 12 Herzl St" />
@@ -3210,7 +3217,14 @@ export default function DS160IsraelForm({
 
               {/* ── כרטיס 4: טלפון ואימייל ── */}
               <div id="section-contact" className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
-                <h3 className="font-bold text-lg">טלפון ואימייל</h3>
+                <SectionCopyHeader
+                  as="h3"
+                  title="טלפון ואימייל"
+                  sectionId="contact"
+                  setValue={setValue}
+                  excludePathname={loadedBlobKeyRef.current}
+                  excludeFormId={formUUIDRef.current || storageFormId}
+                />
 
                 {/* Primary Phone */}
                 <div>
@@ -3323,7 +3337,13 @@ export default function DS160IsraelForm({
           </section>
 
           <section id="section-travel" className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">תכנון נסיעה לארה&quot;ב</h2>
+            <SectionCopyHeader
+              title={<>תכנון נסיעה לארה&quot;ב</>}
+              sectionId="travel"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+            />
             <div className="grid grid-cols-1 gap-4">
               <FormSelect register={register} getFieldError={getFieldError} label="מטרת הנסיעה / סוג הויזה" name="visaClass" options={['B1/B2 — תיירות ועסקים', 'F1/M1 — ויזת סטודנט']} />
 
@@ -3552,7 +3572,13 @@ export default function DS160IsraelForm({
           </section>
 
           <section id="section-prior-visits" className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">ביקורים קודמים בארה&quot;ב</h2>
+            <SectionCopyHeader
+              title={<>ביקורים קודמים בארה&quot;ב</>}
+              sectionId="priorVisits"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+            />
             <div className="grid grid-cols-1 gap-4">
 
               {/* ── 1. Visited the US before? ── */}
@@ -3922,7 +3948,13 @@ export default function DS160IsraelForm({
           </section>
 
           <section id="section-us-contact" className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">איש קשר בארה&quot;ב (U.S. Point of Contact)</h2>
+            <SectionCopyHeader
+              title={<>איש קשר בארה&quot;ב (U.S. Point of Contact)</>}
+              sectionId="usContact"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+            />
             <FormRadioGroup register={register} getFieldError={getFieldError} label="יש לך איש קשר בארה״ב?" name="hasUSContact" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
             {w.hasUSContact === 'yes' && (
               <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
@@ -4026,7 +4058,13 @@ export default function DS160IsraelForm({
           </section>
 
           <section id="section-family" className="space-y-6">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מידע משפחתי: קרובים</h2>
+            <SectionCopyHeader
+              title="מידע משפחתי: קרובים"
+              sectionId="family"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+            />
             <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
               הערה: אנא מסור/י מידע על הוריך הביולוגיים. אם אומצת, מסור/י מידע על הוריך המאמצים.
             </p>
@@ -4221,7 +4259,17 @@ export default function DS160IsraelForm({
           </section>
 
           <section id="section-employment" className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">תעסוקה / השכלה / הכשרה נוכחית</h2>
+            <SectionCopyHeader
+              title="תעסוקה / השכלה / הכשרה נוכחית"
+              sectionId="employment"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+              onCopied={(_meta, values) => {
+                const v = String(values?.currentOccupation || '')
+                setOccupationCategory(WORK_OCCUPATIONS.includes(v) ? '__WORKING__' : (v || ''))
+              }}
+            />
             <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
               הערה: אנא מסור/י מידע על תעסוקתך או לימודיך הנוכחיים.
             </p>
@@ -4461,7 +4509,13 @@ export default function DS160IsraelForm({
           </section>
 
           <section id="section-education" className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">השכלה</h2>
+            <SectionCopyHeader
+              title="השכלה"
+              sectionId="education"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+            />
 
             <FormRadioGroup register={register} getFieldError={getFieldError}
               label="האם למדת במוסד חינוכי ברמת תיכון ומעלה?"
@@ -4689,7 +4743,14 @@ export default function DS160IsraelForm({
 
           {/* Security and Background — collapsible */}
           <section id="section-security" className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">Security and Background</h2>
+            <SectionCopyHeader
+              title="Security and Background"
+              sectionId="security"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+              onCopied={() => setSecuritySectionOpen(true)}
+            />
             <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
               NOTE: Provide the following security and background information. A visa may not be issued to persons who are within specific categories defined by law as inadmissible to the United States. While a YES answer does not automatically signify ineligibility for a visa, if you answer YES you may be required to personally appear before a consular officer.
             </p>
@@ -4875,7 +4936,13 @@ export default function DS160IsraelForm({
           </section>
 
           <section id="section-social" className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">רשתות חברתיות</h2>
+            <SectionCopyHeader
+              title="רשתות חברתיות"
+              sectionId="social"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+            />
             <p className="text-sm text-gray-600">
               בחר את פלטפורמות המדיה החברתית בהן השתמשת במהלך 5 השנים האחרונות והזן את שם המשתמש שלך. אל תמסור סיסמאות.
             </p>
@@ -4961,7 +5028,13 @@ export default function DS160IsraelForm({
           </section>
 
           <section id="section-interview" className="space-y-4">
-            <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">מיקום ראיון</h2>
+            <SectionCopyHeader
+              title="מיקום ראיון"
+              sectionId="interview"
+              setValue={setValue}
+              excludePathname={loadedBlobKeyRef.current}
+              excludeFormId={formUUIDRef.current || storageFormId}
+            />
             <FormRadioGroup register={register} getFieldError={getFieldError} label="לאן תגש לראיון?" name="interviewLocation" options={[
               { label: 'הירקון 71, תל אביב', value: 'tel_aviv' },
               { label: 'דוד פלוסר 14, ירושלים', value: 'jerusalem' },
