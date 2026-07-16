@@ -2571,7 +2571,6 @@ export default function DS160IsraelForm({
       >
         <div className="px-3 py-2.5 bg-slate-900 text-white">
           <p className="text-[11px] font-bold tracking-wide uppercase opacity-80">ניווט מהיר</p>
-          <p className="text-sm font-extrabold leading-tight">סקציות הטופס</p>
         </div>
         <div className="flex flex-col gap-0.5 p-1.5 max-h-[70vh] overflow-y-auto">
           {[
