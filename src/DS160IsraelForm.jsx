@@ -2564,30 +2564,45 @@ export default function DS160IsraelForm({
       </div>
 
       {/* ── Floating section navigation ── */}
-      <nav className="fixed right-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-1 bg-white border border-gray-200 rounded-xl shadow-lg p-2 max-w-[10rem]" dir="rtl" aria-label="ניווט סקשנים">
-        {[
-          { label: 'מידע אישי', id: 'section-personal' },
-          { label: 'כתובות', id: 'section-address' },
-          { label: 'פרטי קשר', id: 'section-contact' },
-          { label: 'תכנון נסיעה', id: 'section-travel' },
-          { label: 'ביקורים קודמים', id: 'section-prior-visits' },
-          { label: 'איש קשר בארה"ב', id: 'section-us-contact' },
-          { label: 'משפחה', id: 'section-family' },
-          { label: 'תעסוקה', id: 'section-employment' },
-          { label: 'השכלה', id: 'section-education' },
-          { label: 'ביטחון', id: 'section-security' },
-          { label: 'רשתות חברתיות', id: 'section-social' },
-          { label: 'ראיון', id: 'section-interview' },
-        ].map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="text-right text-xs font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded px-2 py-1 transition-colors truncate"
-          >
-            {s.label}
-          </button>
-        ))}
+      <nav
+        className="fixed right-3 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col w-[11.5rem] rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_8px_30px_rgba(15,23,42,0.12)] backdrop-blur-sm overflow-hidden"
+        dir="rtl"
+        aria-label="ניווט סקשנים"
+      >
+        <div className="px-3 py-2.5 bg-slate-900 text-white">
+          <p className="text-[11px] font-bold tracking-wide uppercase opacity-80">ניווט מהיר</p>
+          <p className="text-sm font-extrabold leading-tight">סקציות הטופס</p>
+        </div>
+        <div className="flex flex-col gap-0.5 p-1.5 max-h-[70vh] overflow-y-auto">
+          {[
+            { label: 'מידע אישי', id: 'section-personal', emoji: '🪪' },
+            { label: 'כתובות', id: 'section-address', emoji: '🏠' },
+            { label: 'פרטי קשר', id: 'section-contact', emoji: '📞' },
+            { label: 'תכנון נסיעה', id: 'section-travel', emoji: '✈️' },
+            { label: 'ביקורים קודמים', id: 'section-prior-visits', emoji: '🇺🇸' },
+            { label: 'איש קשר בארה"ב', id: 'section-us-contact', emoji: '🤝' },
+            { label: 'משפחה', id: 'section-family', emoji: '👨‍👩‍👧' },
+            { label: 'תעסוקה', id: 'section-employment', emoji: '💼' },
+            { label: 'השכלה', id: 'section-education', emoji: '🎓' },
+            { label: 'ביטחון', id: 'section-security', emoji: '🛡️' },
+            { label: 'רשתות חברתיות', id: 'section-social', emoji: '💬' },
+            { label: 'ראיון', id: 'section-interview', emoji: '📍' },
+          ].map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="group flex items-center gap-2 text-right rounded-lg px-2 py-1.5 transition-all hover:bg-teal-50 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+            >
+              <span className="text-base leading-none shrink-0 grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-110 transition-transform" aria-hidden>
+                {s.emoji}
+              </span>
+              <span className="text-[12px] font-bold text-slate-700 group-hover:text-teal-800 truncate leading-snug">
+                {s.label}
+              </span>
+            </button>
+          ))}
+        </div>
       </nav>
 
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden mt-4">
