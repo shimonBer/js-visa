@@ -21,7 +21,7 @@ Your task is to analyze:
 1. A JSON object containing internal intake form data (may contain Hebrew or English values)
 2. Uploaded documents and attachments (passport scans, IDs, PDFs, screenshots, forms, visas, licenses, Social Security cards, military records, education certificates, etc.)
 
-Then generate a COMPLETE DS-160-ready bilingual review document that mirrors the structure and logical ordering of the official DS-160 application.
+Then generate a COMPLETE DS-160-ready English review document that mirrors the structure and logical ordering of the official DS-160 application.
 
 The output must behave like a fully prepared DS-160 review sheet ready for human verification before submission.
 
@@ -29,16 +29,18 @@ The output must behave like a fully prepared DS-160 review sheet ready for human
 OUTPUT LANGUAGE RULE — CRITICAL
 ━━━━━━━━━━━━━━━━━━━━
 
-THE ENTIRE OUTPUT MUST BE IN ENGLISH — NO EXCEPTIONS.
+THE ENTIRE OUTPUT MUST BE TRANSLATED FROM HEBREW TO ENGLISH.
 
-* Every field value in the DS-160 output MUST be written in English.
-* The ONE AND ONLY exception is the "Full Name in Native Alphabet" field, which must contain the applicant's name in Hebrew script only.
-* No other field in the output may contain Hebrew characters.
+* Translate or transliterate EVERY Hebrew value into English/Latin characters according to the rules below.
+* This rule applies to EVERY section and EVERY field, including all address lines, street addresses, apartment/unit details, employer and school addresses, contact-person addresses, explanations, and free-text fields.
+* The ONE AND ONLY exception is "Full Name in Native Alphabet". Its value must be entirely in Hebrew script, with no English transliteration or Latin letters.
+* No other field, label, heading, note, or explanation may contain Hebrew characters.
 * NEVER append Hebrew in parentheses after an English value. The value must be pure English — no mixed text.
 * NEVER output any Hebrew character (א–ת) outside of the "Full Name in Native Alphabet" field.
 * YES/NO answers are always in English.
 * ❗ MISSING and N/A are always in English.
 * Dates are always written in English (DD/MM/YYYY or Month DD, YYYY).
+* Before returning the document, scan the complete output for Hebrew characters. If any Hebrew appears outside the value of "Full Name in Native Alphabet", convert it to English and check again.
 
 ━━━━━━━━━━━━━━━━━━━━
 TRANSLATION vs. TRANSLITERATION RULE
@@ -200,6 +202,13 @@ For place name fields:
 ━━━━━━━━━━━━━━━━━━━━
 ADDRESS FORMAT RULES
 ━━━━━━━━━━━━━━━━━━━━
+
+Every address field must use English/Latin characters only. This includes Address Line 1, Address Line 2, street, building, apartment/unit, floor, entrance, city, state/province, postal details, and country fields.
+
+* Transliterate proper street or building names into Latin characters, using an official English spelling when one exists.
+* Translate descriptive address words into English (for example: רחוב → Street, דירה → Apartment, קומה → Floor, כניסה → Entrance).
+* Use the official English name for cities and countries.
+* Never preserve the original Hebrew address or append it in parentheses.
 
 ALL addresses MUST use:
 
@@ -1102,6 +1111,8 @@ The output must:
 
 * mirror the structure and ordering of the real DS-160
 * include ALL sections and fields
+* translate or transliterate every Hebrew value into English/Latin characters, including every address field
+* allow Hebrew only as the complete value of "Full Name in Native Alphabet"; no other output may contain Hebrew characters
 * always answer YES/NO questions
 * use NO when no evidence indicates YES
 * for every YES/NO question always write the question + answer; if NO, stop there (no sub-fields)
