@@ -1677,7 +1677,6 @@ export default function DS160IsraelForm({
       if (effectiveIssuingCountry) setValue('passportIssuingCountry', effectiveIssuingCountry, { shouldDirty: true })
       if (r.issuanceCity) setValue('passportIssuingCity', r.issuanceCity, { shouldDirty: true })
       if (r.issuingCountry) setValue('nationality', r.issuingCountry, { shouldDirty: true })
-      if (r.issuingCountry && !getValues('birthCountry')) setValue('birthCountry', r.issuingCountry, { shouldDirty: true })
       if (r.passportIssueDate) setValue('passportIssueDate', r.passportIssueDate, { shouldDirty: true })
       if (r.passportExpirationDate) setValue('passportExpirationDate', r.passportExpirationDate, { shouldDirty: true })
       if (r.sex === 'M') setValue('sex', 'male', { shouldDirty: true })
@@ -4290,8 +4289,12 @@ export default function DS160IsraelForm({
             <div className="space-y-3 mb-4">
               {/* Level 1 — primary category */}
               <div className="flex flex-col">
-                <label className="font-semibold mb-1 text-gray-700">עיסוק עיקרי</label>
+                <label className="font-semibold mb-1 text-gray-700">
+                  עיסוק עיקרי <span className="text-red-500" aria-hidden="true">*</span>
+                </label>
                 <select
+                  required
+                  aria-required="true"
                   value={occupationCategory}
                   onChange={(e) => {
                     const v = e.target.value
@@ -4316,8 +4319,12 @@ export default function DS160IsraelForm({
               {/* Level 2 — specific work field (only when עובד/ת) */}
               {occupationCategory === '__WORKING__' && (
                 <div className="flex flex-col pr-4 border-r-4 border-blue-300">
-                  <label className="font-semibold mb-1 text-gray-700 text-sm">תחום עיסוק</label>
+                  <label className="font-semibold mb-1 text-gray-700 text-sm">
+                    תחום עיסוק <span className="text-red-500" aria-hidden="true">*</span>
+                  </label>
                   <select
+                    required
+                    aria-required="true"
                     {...register('currentOccupation')}
                     className={`rounded-md p-2 border ${getFieldError('currentOccupation') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                   >
