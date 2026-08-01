@@ -619,29 +619,33 @@ SOCIAL MEDIA
 
 🟦 U.S. CONTACT INFORMATION
 
-* Do you have a contact in the U.S.? YES/NO
-  Rule: if hasUSContact is "yes" → YES; otherwise → NO
+This section is always required. There is no valid "NO CONTACT" result.
+The intake UI enforces either a complete contact-person name or an organization name.
+Never infer these values from travel accommodation, the applicant's own contact details,
+UI examples, placeholders, or generic hotel information.
 
-  * IF YES:
+* Contact Person Surname
+  Rule: use contactSurnames. If an organization is supplied instead and no person is supplied → DO NOT KNOW.
+  Otherwise, if absent → ❗ MISSING
+* Contact Person Given Name
+  Rule: use contactGivenNames. If an organization is supplied instead and no person is supplied → DO NOT KNOW.
+  Otherwise, if absent → ❗ MISSING
+* Organization Name
+  Rule: use contactOrganization. If a complete contact-person name is supplied instead → DO NOT KNOW.
+  Otherwise, if absent → ❗ MISSING
+* Relationship to You: contactRelationship; if absent → ❗ MISSING
 
-    * Contact Person Surname
-    * Contact Person Given Name
-    * Organization Name
-      Rule: if absent or not provided → N/A (never ❗ MISSING)
-    * Relationship to You
+U.S. ADDRESS
+Rule: read the following fields directly — do NOT parse or infer from a single text blob.
+* Street Address: contactStreet; if absent → ❗ MISSING
+* City: contactCity; if absent → ❗ MISSING
+* State: contactState; if absent → ❗ MISSING
+* ZIP Code: contactZip; if contactZipNA is true or absent → DOES NOT APPLY
 
-    U.S. ADDRESS
-    Rule: read the following fields directly — do NOT parse or infer from a single text blob.
-    * Street Address: contactStreet
-    * City: contactCity
-    * State: contactState (Optional — N/A if empty)
-    * ZIP Code: contactZip
+CONTACT DETAILS
 
-    CONTACT DETAILS
-
-    * Phone Number
-    * Email Address
-      Rule: if contactEmail is empty or absent → output: N/A
+* Phone Number: contactPhone; if absent → ❗ MISSING
+* Email Address: contactEmail; if contactEmailDoesNotApply is true → DOES NOT APPLY; otherwise if absent → ❗ MISSING
 
 ━━━━━━━━━━━━━━━━━━━━
 

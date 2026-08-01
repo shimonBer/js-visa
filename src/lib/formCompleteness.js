@@ -72,9 +72,15 @@ export const FIELD_META = {
   studentInstitutionCity:   { label: 'עיר מוסד לימודים' },
   // Contact
   'contactSurnames':        { label: 'שם איש קשר בארה״ב' },
+  'contactGivenNames':      { label: 'שם פרטי של איש קשר בארה״ב' },
+  'contactOrganization':    { label: 'שם ארגון בארה״ב' },
+  'contactRelationship':    { label: 'הקשר לאיש הקשר / הארגון' },
   'contactStreet':          { label: 'כתובת איש קשר — רחוב' },
   'contactCity':            { label: 'כתובת איש קשר — עיר' },
+  'contactState':           { label: 'כתובת איש קשר — מדינה' },
   'contactZip':             { label: 'מיקוד איש קשר' },
+  'contactPhone':           { label: 'טלפון איש קשר / ארגון' },
+  'contactEmail':           { label: 'אימייל איש קשר / ארגון' },
   // Education
   'educationRecords.0.institutionName': { label: 'שם מוסד חינוכי' },
   'educationRecords.0.courseOfStudy':   { label: 'תחום לימוד' },
@@ -312,16 +318,18 @@ export function calculateCompleteness(data) {
     req('sameVisaType')
     req('tenPrinted')
   }
-  if (d.hasUSContact === 'yes') {
-    req('contactRelationship')
-    req('contactStreet')
-    req('contactCity')
-    req('contactPhone')
-    const hasName = d.contactNameDoNotKnow || String(d.contactSurnames ?? '').trim() || String(d.contactGivenNames ?? '').trim()
-    const hasOrg = d.contactOrganizationDoNotKnow || String(d.contactOrganization ?? '').trim()
-    if (!hasName && !hasOrg) {
-      list.push({ field: 'contactSurnames', label: 'שם איש קשר בארה״ב (או ארגון)' })
-    }
+  req('contactRelationship')
+  req('contactStreet')
+  req('contactCity')
+  req('contactState')
+  req('contactPhone')
+  if (!d.contactEmailDoesNotApply) req('contactEmail')
+  const hasContactPerson =
+    String(d.contactSurnames ?? '').trim() &&
+    String(d.contactGivenNames ?? '').trim()
+  const hasContactOrganization = String(d.contactOrganization ?? '').trim()
+  if (!hasContactPerson && !hasContactOrganization) {
+    list.push({ field: 'contactSurnames', label: 'שם מלא של איש קשר בארה״ב או שם ארגון' })
   }
   if (d.hasCloseRelativesInUS === 'yes') {
     const relatives = d.usRelatives || []

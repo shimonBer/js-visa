@@ -246,22 +246,22 @@ Work through the left-side navigation menu from top to bottom. Do not skip secti
 
 | Form Field | Source |
 |---|---|
-| Do you have a contact in the U.S.? | `Do you have a contact in the U.S.?` |
-
-If Yes:
-
-| Form Field | Source |
-|---|---|
 | Contact Person Surname | `Contact Person Surname` |
 | Contact Person Given Name | `Contact Person Given Name` |
-| Organization Name | `Organization Name` — leave blank if `N/A` |
+| Organization Name | `Organization Name` |
 | Relationship to You | `Relationship to You` |
 | Street Address | U.S. ADDRESS > `Street Address` |
 | City | `City` |
 | State | `State` |
 | ZIP Code | `ZIP Code` |
 | Phone Number | `Phone Number` |
-| Email Address | `Email Address` — leave blank if `N/A` |
+| Email Address | `Email Address` |
+
+This section is mandatory. The source must contain either a complete contact-person
+name or an organization name, plus relationship, address, state, and phone.
+Never invent missing contact data, reuse the applicant's own phone, reuse travel
+accommodation data, or copy examples/hints such as `5555555555` from the DS-160 UI.
+If a required source value is `❗ MISSING`, stop rather than filling a placeholder.
 
 ---
 

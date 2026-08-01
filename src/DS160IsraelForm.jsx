@@ -1016,7 +1016,7 @@ export default function DS160IsraelForm({
       spouseAddressZip: '',
       spouseAddressZipDoesNotApply: true,
       spouseAddressCountry: 'Israel',
-      hasUSContact: 'no',
+      hasUSContact: 'yes',
       hasCloseRelativesInUS: 'no',
       hasOtherRelativesInUS: 'no',
       usRelatives: [{ surnames: '', givenNames: '', relationship: '', status: '' }],
@@ -2193,21 +2193,22 @@ export default function DS160IsraelForm({
         if (!String(lp?.explain ?? '').trim()) missing.add(`lostPassports.${i}.explain`)
       })
     }
-    if (values.hasUSContact === 'yes') {
-      req('contactRelationship')
-      req('contactStreet')
-      req('contactCity')
-      req('contactPhone')
-      // At least one of contact person name or organization must be provided
-      const hasName = values.contactNameDoNotKnow ||
-        String(values.contactSurnames ?? '').trim() ||
-        String(values.contactGivenNames ?? '').trim()
-      const hasOrg = values.contactOrganizationDoNotKnow ||
-        String(values.contactOrganization ?? '').trim()
-      if (!hasName && !hasOrg) {
-        missing.add('contactSurnames')
-        missing.add('contactOrganization')
-      }
+    req('contactRelationship')
+    req('contactStreet')
+    req('contactCity')
+    req('contactState')
+    req('contactPhone')
+    if (!values.contactEmailDoesNotApply) req('contactEmail')
+    // DS-160 requires a real contact person (both names) or an organization.
+    // "Do Not Know" flags describe the unused side; they cannot replace both.
+    const hasContactPerson =
+      String(values.contactSurnames ?? '').trim() &&
+      String(values.contactGivenNames ?? '').trim()
+    const hasContactOrganization = String(values.contactOrganization ?? '').trim()
+    if (!hasContactPerson && !hasContactOrganization) {
+      missing.add('contactSurnames')
+      missing.add('contactGivenNames')
+      missing.add('contactOrganization')
     }
     if (values.hasCloseRelativesInUS === 'yes') {
       const relatives = values.usRelatives || []
@@ -2509,6 +2510,10 @@ export default function DS160IsraelForm({
       )
     })
   }
+
+  const contactSurnamesError = getFieldError('contactSurnames')
+  const contactGivenNamesError = getFieldError('contactGivenNames')
+  const contactOrganizationError = getFieldError('contactOrganization')
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 font-sans text-right pb-10">
@@ -3968,12 +3973,14 @@ export default function DS160IsraelForm({
               excludePathname={loadedBlobKeyRef.current}
               excludeFormId={formUUIDRef.current || storageFormId}
             />
-            <FormRadioGroup register={register} getFieldError={getFieldError} label="יש לך איש קשר בארה״ב?" name="hasUSContact" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
-            {w.hasUSContact === 'yes' && (
-              <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
+            <input type="hidden" {...register('hasUSContact')} value="yes" />
+            <p className="text-sm text-gray-600">
+              חובה להזין פרטים מלאים של איש קשר או שם ארגון בארה״ב, וכן כתובת ומספר טלפון.
+            </p>
+            <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
 
                 {/* Contact Person */}
-                <div className="bg-white rounded border border-gray-200 p-4 space-y-3">
+                <div id="field-contactSurnames" className={`bg-white rounded border p-4 space-y-3 ${contactSurnamesError || contactGivenNamesError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
                   <p className="font-semibold text-gray-800">Contact Person <span className="text-gray-400 font-normal text-sm">(נדרש אחד מבין Contact Person / Organization)</span></p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
@@ -3997,6 +4004,9 @@ export default function DS160IsraelForm({
                       />
                     </div>
                   </div>
+                  {(contactSurnamesError || contactGivenNamesError) && (
+                    <span className="text-red-500 text-xs">יש להזין שם משפחה ושם פרטי, או להזין שם ארגון</span>
+                  )}
                   <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                     <input type="checkbox" {...register('contactNameDoNotKnow')} className="rounded" />
                     Do Not Know
@@ -4004,7 +4014,7 @@ export default function DS160IsraelForm({
                 </div>
 
                 {/* Organization Name */}
-                <div className="bg-white rounded border border-gray-200 p-4 space-y-2">
+                <div id="field-contactOrganization" className={`bg-white rounded border p-4 space-y-2 ${contactOrganizationError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
                   <div className="flex flex-col gap-1">
                     <label className="font-semibold text-sm text-gray-700">שם ארגון (Organization Name) <span className="text-gray-400 font-normal text-sm">(נדרש אחד מבין Contact Person / Organization)</span></label>
                     <input
@@ -4014,6 +4024,7 @@ export default function DS160IsraelForm({
                       className="rounded-md p-2 border border-gray-300 w-full disabled:bg-gray-100 disabled:text-gray-400"
                       dir="ltr"
                     />
+                    {contactOrganizationError && <span className="text-red-500 text-xs">יש להזין שם ארגון, או פרטים מלאים של איש קשר</span>}
                   </div>
                   <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                     <input type="checkbox" {...register('contactOrganizationDoNotKnow')} className="rounded" />
@@ -4066,8 +4077,7 @@ export default function DS160IsraelForm({
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+            </div>
           </section>
 
           <section id="section-family" className="space-y-6">
