@@ -943,7 +943,7 @@ export default function DS160IsraelForm({
       foreignNationalities: [{ country: '', hasForeignPassport: 'no', id: '' }],
       isPermanentResidentElsewhere: 'no',
       permanentResidencies: [{ country: '' }],
-      usSocialSecurityNumber: '',
+      socialSecurityNumber: '',
       usTaxpayerId: '',
       // legacy single-entry fields kept for backward compat
       foreignCitizenshipCountry: '',
@@ -1175,6 +1175,8 @@ export default function DS160IsraelForm({
       contactState: '',
       contactZip: '',
       contactZipNA: true,
+      contactPhone: '',
+      contactEmail: '',
       contactEmailDoesNotApply: false,
       arrivalFlight: '',
       arrivalFlightNA: true,
@@ -1444,6 +1446,9 @@ export default function DS160IsraelForm({
     })
     const resetValues = {
       ...data,
+      // Older drafts stored the UI value under usSocialSecurityNumber while
+      // validation and translation use socialSecurityNumber.
+      socialSecurityNumber: data.socialSecurityNumber || data.usSocialSecurityNumber || '',
       travelCompanions: companions,
       previousUSVisits: restoredVisits,
       mondayItemId: String(data.mondayItemId || ''),
@@ -2428,6 +2433,8 @@ export default function DS160IsraelForm({
     specificTravelPlans: watch('specificTravelPlans'),
     hasExactAccommodationAddress: watch('hasExactAccommodationAddress'),
     accommodationCityPreset: watch('accommodationCityPreset'),
+    accommodationCity: watch('accommodationCity'),
+    accommodationState: watch('accommodationState'),
     communicableDisease: watch('communicableDisease'),
     mentalDisorder: watch('mentalDisorder'),
     drugAbuser: watch('drugAbuser'),
@@ -2460,6 +2467,25 @@ export default function DS160IsraelForm({
     tripPayerType: watch('tripPayerType'),
     tripPayerSameAddress: watch('tripPayerSameAddress'),
   }
+
+  useEffect(() => {
+    if (w.hasUSContact !== 'no') return
+    setValue('contactSurnames', '')
+    setValue('contactGivenNames', '')
+    setValue('contactNameDoNotKnow', true)
+    setValue('contactOrganization', 'HOTELS')
+    setValue('contactOrganizationDoNotKnow', false)
+    setValue('contactRelationship', 'OTHER')
+    setValue('contactStreet', 'HOTELS')
+    setValue('contactStreet2', '')
+    setValue('contactCity', w.accommodationCity || '')
+    setValue('contactState', w.accommodationState || '')
+    setValue('contactZip', '')
+    setValue('contactZipNA', true)
+    setValue('contactPhone', '0000000000')
+    setValue('contactEmail', '')
+    setValue('contactEmailDoesNotApply', true)
+  }, [w.hasUSContact, w.accommodationCity, w.accommodationState, setValue])
 
   const allFormValues = watch()
 
@@ -2938,7 +2964,7 @@ export default function DS160IsraelForm({
                   <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך מספר ביטוח לאומי אמריקאי (SSN)?" name="hasSocialSecurityNumber" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                   {w.hasSocialSecurityNumber === 'yes' && (
                     <div className="pr-3 border-r-2 border-blue-200">
-                      <FormInput register={register} getFieldError={getFieldError} label="מספר SSN" name="usSocialSecurityNumber" hint="לדוגמה: 123-45-6789" />
+                      <FormInput register={register} getFieldError={getFieldError} label="מספר SSN" name="socialSecurityNumber" hint="לדוגמה: 123-45-6789" />
                     </div>
                   )}
                 </div>
@@ -3973,11 +3999,19 @@ export default function DS160IsraelForm({
               excludePathname={loadedBlobKeyRef.current}
               excludeFormId={formUUIDRef.current || storageFormId}
             />
-            <input type="hidden" {...register('hasUSContact')} value="yes" />
-            <p className="text-sm text-gray-600">
-              חובה להזין פרטים מלאים של איש קשר או שם ארגון בארה״ב, וכן כתובת ומספר טלפון.
-            </p>
-            <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
+            <FormRadioGroup
+              register={register}
+              getFieldError={getFieldError}
+              label="האם יש לך איש קשר בארה״ב?"
+              name="hasUSContact"
+              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]}
+            />
+            {w.hasUSContact === 'yes' && (
+              <>
+                <p className="text-sm text-gray-600">
+                  חובה להזין פרטים מלאים של איש קשר או שם ארגון בארה״ב, וכן כתובת ומספר טלפון.
+                </p>
+                <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
 
                 {/* Contact Person */}
                 <div id="field-contactSurnames" className={`bg-white rounded border p-4 space-y-3 ${contactSurnamesError || contactGivenNamesError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}>
@@ -4077,7 +4111,36 @@ export default function DS160IsraelForm({
                     </div>
                   </div>
                 </div>
-            </div>
+                </div>
+              </>
+            )}
+            {w.hasUSContact === 'no' && (
+              <div className="space-y-3 bg-gray-50 p-4 rounded border border-gray-200">
+                <p className="text-sm text-gray-600">
+                  פרטי המלון ימולאו אוטומטית לפי העיר והמדינה שהוזנו בתכנון הנסיעה.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    ['שם ארגון (Organization Name)', 'contactOrganization'],
+                    ['כתובת רחוב — שורה 1 (Street Address Line 1)', 'contactStreet'],
+                    ['עיר (City)', 'contactCity'],
+                    ['מדינה (State)', 'contactState'],
+                    ['טלפון (Phone Number)', 'contactPhone'],
+                  ].map(([label, name]) => (
+                    <div key={name} className="flex flex-col gap-1">
+                      <label className="font-semibold text-sm text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        {...register(name)}
+                        readOnly
+                        className="rounded-md p-2 border border-gray-300 bg-gray-100"
+                        dir="ltr"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
           <section id="section-family" className="space-y-6">
