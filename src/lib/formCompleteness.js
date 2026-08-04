@@ -235,7 +235,7 @@ export function calculateCompleteness(data) {
 
   // ── Occupation ──
   req('currentOccupation')
-  const employedOccupations = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
+  const employedOccupations = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','MILITARY','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
   if (employedOccupations.includes(d.currentOccupation)) {
     req('employerName')
     req('employerStreet')
@@ -252,12 +252,6 @@ export function calculateCompleteness(data) {
     req('studentInstitutionStreet')
     req('studentInstitutionCity')
   }
-  if (d.currentOccupation === 'MILITARY') {
-    req('militaryCountry')
-    req('militaryBranch')
-    req('militaryRole')
-  }
-
   // ── Previous employment ──
   if (d.workedAnotherJobLast5Years === 'yes') {
     const prevJobs = d.previousEmployments || []
@@ -358,9 +352,15 @@ export function calculateCompleteness(data) {
   }
   if (d.hasSocialMedia === 'yes') {
     const accounts = d.socialMediaAccounts || []
-    if (!accounts.some((a) => String(a?.platform ?? '').trim())) {
-      list.push({ field: 'socialMediaAccounts.0.platform', label: 'פלטפורמת מדיה חברתית' })
-    }
+    const entries = accounts.length > 0 ? accounts : [{}]
+    entries.forEach((account, i) => {
+      if (!String(account?.platform ?? '').trim()) {
+        list.push({ field: `socialMediaAccounts.${i}.platform`, label: `רשת חברתית #${i + 1} — פלטפורמה` })
+      }
+      if (!String(account?.identifier ?? '').trim()) {
+        list.push({ field: `socialMediaAccounts.${i}.identifier`, label: `רשת חברתית #${i + 1} — שם משתמש` })
+      }
+    })
   }
   if (d.hasSocialSecurityNumber === 'yes') req('socialSecurityNumber')
   if (d.hasTaxpayerID === 'yes') req('taxpayerIDNumber')

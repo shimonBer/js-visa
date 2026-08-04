@@ -944,7 +944,7 @@ export default function DS160IsraelForm({
       isPermanentResidentElsewhere: 'no',
       permanentResidencies: [{ country: '' }],
       socialSecurityNumber: '',
-      usTaxpayerId: '',
+      taxpayerIDNumber: '',
       // legacy single-entry fields kept for backward compat
       foreignCitizenshipCountry: '',
       foreignCitizenshipId: '',
@@ -1104,7 +1104,6 @@ export default function DS160IsraelForm({
       aidedHumanTraffickingExplanation: '',
       spouseOfTrafficker: 'no',
       spouseOfTraffickerExplanation: '',
-      criminalRecord: 'no',
       hasSocialMedia: 'no',
       socialMediaAccounts: [{ platform: '', identifier: '' }],
       hasWebsiteContent: 'no',
@@ -1418,7 +1417,14 @@ export default function DS160IsraelForm({
 
   useEffect(() => {
     if (!initialBlob?.data || typeof initialBlob.data !== 'object') return
-    const { passportDate: _omitBlobPd, ...data } = initialBlob.data
+    const {
+      passportDate: _omitBlobPd,
+      usSocialSecurityNumber: legacySocialSecurityNumber,
+      usTaxpayerId: legacyTaxpayerIDNumber,
+      criminalRecord: legacyCriminalRecord,
+      criminalRecordExplanation: legacyCriminalRecordExplanation,
+      ...data
+    } = initialBlob.data
     // Restore the original formStartedDate so re-saves overwrite the same blob filename.
     if (typeof data.formStartedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.formStartedDate)) {
       formStartedDateRef.current = data.formStartedDate
@@ -1448,7 +1454,22 @@ export default function DS160IsraelForm({
       ...data,
       // Older drafts stored the UI value under usSocialSecurityNumber while
       // validation and translation use socialSecurityNumber.
-      socialSecurityNumber: data.socialSecurityNumber || data.usSocialSecurityNumber || '',
+      socialSecurityNumber: data.socialSecurityNumber || legacySocialSecurityNumber || '',
+      // Migrate drafts created while the ITIN input used a UI-only alias.
+      taxpayerIDNumber: data.taxpayerIDNumber || legacyTaxpayerIDNumber || '',
+      arrestedOrConvicted:
+        data.arrestedOrConvicted === 'yes' || legacyCriminalRecord === 'yes' ? 'yes' : 'no',
+      arrestedOrConvictedExplanation:
+        data.arrestedOrConvictedExplanation || legacyCriminalRecordExplanation || '',
+      // The social-media question was previously missing, so infer YES for
+      // drafts that already contain an account.
+      hasSocialMedia:
+        data.hasSocialMedia === 'yes' ||
+        (Array.isArray(data.socialMediaAccounts) &&
+          data.socialMediaAccounts.some((account) =>
+            String(account?.platform ?? '').trim() || String(account?.identifier ?? '').trim()))
+          ? 'yes'
+          : 'no',
       travelCompanions: companions,
       previousUSVisits: restoredVisits,
       mondayItemId: String(data.mondayItemId || ''),
@@ -2183,6 +2204,14 @@ export default function DS160IsraelForm({
     if (values.spouseOfTrafficker === 'yes') req('spouseOfTraffickerExplanation')
     if (values.hasSocialSecurityNumber === 'yes') req('socialSecurityNumber')
     if (values.hasTaxpayerID === 'yes') req('taxpayerIDNumber')
+    if (values.hasSocialMedia === 'yes') {
+      const accounts = values.socialMediaAccounts || []
+      const entries = accounts.length > 0 ? accounts : [{}]
+      entries.forEach((account, i) => {
+        if (!String(account?.platform ?? '').trim()) missing.add(`socialMediaAccounts.${i}.platform`)
+        if (!String(account?.identifier ?? '').trim()) missing.add(`socialMediaAccounts.${i}.identifier`)
+      })
+    }
     if (values.hasUSDriversLicense === 'yes') {
       const licenses = values.usDriversLicenses || []
       licenses.forEach((lic, i) => {
@@ -2462,7 +2491,6 @@ export default function DS160IsraelForm({
     humanTrafficking: watch('humanTrafficking'),
     aidedHumanTrafficking: watch('aidedHumanTrafficking'),
     spouseOfTrafficker: watch('spouseOfTrafficker'),
-    criminalRecord: watch('criminalRecord'),
     selfPaying: watch('selfPaying'),
     tripPayerType: watch('tripPayerType'),
     tripPayerSameAddress: watch('tripPayerSameAddress'),
@@ -2972,7 +3000,7 @@ export default function DS160IsraelForm({
                   <FormRadioGroup register={register} getFieldError={getFieldError} label="האם יש לך מספר זיהוי משלם מס אמריקאי (ITIN)?" name="hasTaxpayerID" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                   {w.hasTaxpayerID === 'yes' && (
                     <div className="pr-3 border-r-2 border-blue-200">
-                      <FormInput register={register} getFieldError={getFieldError} label="מספר ITIN" name="usTaxpayerId" hint="לדוגמה: 912-34-5678" />
+                      <FormInput register={register} getFieldError={getFieldError} label="מספר ITIN" name="taxpayerIDNumber" hint="לדוגמה: 912-34-5678" />
                     </div>
                   )}
                 </div>
@@ -5040,14 +5068,22 @@ export default function DS160IsraelForm({
             <p className="text-sm text-gray-600">
               בחר את פלטפורמות המדיה החברתית בהן השתמשת במהלך 5 השנים האחרונות והזן את שם המשתמש שלך. אל תמסור סיסמאות.
             </p>
-            <div className="space-y-3">
+            <FormRadioGroup
+              register={register}
+              getFieldError={getFieldError}
+              label="האם השתמשת ברשתות חברתיות במהלך 5 השנים האחרונות?"
+              name="hasSocialMedia"
+              options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]}
+            />
+            {w.hasSocialMedia === 'yes' && (
+              <div className="space-y-3">
               {socialMediaAccountFields.map((field, index) => (
                 <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <div>
+                  <div id={`field-socialMediaAccounts.${index}.platform`}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">פלטפורמה (Social Media Provider/Platform)</label>
                     <select
                       {...register(`socialMediaAccounts.${index}.platform`)}
-                      className="w-full rounded-md p-2 border border-gray-300 text-sm bg-white"
+                      className={`w-full rounded-md p-2 border text-sm bg-white ${getFieldError(`socialMediaAccounts.${index}.platform`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                       dir="ltr"
                     >
                       <option value="">-- SELECT ONE --</option>
@@ -5066,15 +5102,17 @@ export default function DS160IsraelForm({
                       <option>Myspace</option>
                       <option>Other</option>
                     </select>
+                    {getFieldError(`socialMediaAccounts.${index}.platform`) && <span className="text-red-500 text-xs">שדה חובה</span>}
                   </div>
-                  <div>
+                  <div id={`field-socialMediaAccounts.${index}.identifier`}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">שם משתמש (Social Media Identifier)</label>
                     <input
                       {...register(`socialMediaAccounts.${index}.identifier`)}
                       placeholder="@username"
                       dir="ltr"
-                      className="w-full rounded-md p-2 border border-gray-300 text-sm"
+                      className={`w-full rounded-md p-2 border text-sm ${getFieldError(`socialMediaAccounts.${index}.identifier`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     />
+                    {getFieldError(`socialMediaAccounts.${index}.identifier`) && <span className="text-red-500 text-xs">שדה חובה</span>}
                   </div>
                   {socialMediaAccountFields.length > 1 && (
                     <button type="button" onClick={() => removeSocialMediaAccount(index)} className="pb-1 text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
@@ -5089,7 +5127,8 @@ export default function DS160IsraelForm({
                 <span aria-hidden className="text-lg leading-none">+</span>
                 הוסף פלטפורמה
               </button>
-            </div>
+              </div>
+            )}
 
             {/* Websites / Other Apps */}
             <div className="pt-2 border-t border-gray-200">

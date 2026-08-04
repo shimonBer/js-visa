@@ -330,7 +330,9 @@ PERSONAL INFORMATION 2
 
   * IF YES:
 
-    * Country: permanentResidenceCountry
+    Rule: iterate over permanentResidencies and output one Country line for
+    every non-empty permanentResidencies[i].country value, in source order.
+    If the array is empty or contains no country → ❗ MISSING
 
 * National Identification Number
   Rule: use the idNumber field value exactly as provided (digits only, no hyphens).
@@ -390,7 +392,9 @@ PERSONAL INFORMATION 2
 * Intended Date of Arrival
   Rule: use plannedArrivalDate; if empty or absent → ❗ MISSING
 * Intended Length of Stay
-  Rule: use plannedStayDuration field directly (free-text, e.g. "three months"); if empty or absent → ❗ MISSING
+  Rule: combine plannedStayValue and plannedStayUnit into one human-readable
+  duration (for example, plannedStayValue "3" plus plannedStayUnit "MONTHS"
+  becomes "3 months"). If either field is empty or absent → ❗ MISSING
 
 * Address Where You Will Stay in the U.S.:
   Rule: read the following fields directly — do NOT parse or infer from a single text blob.
@@ -973,7 +977,7 @@ MEDICAL & HEALTH
 CRIMINAL
 
 * Arrests or convictions
-  Rule: use criminalRecord field (yes/no). If YES, use criminalRecordExplanation as the explanation text.
+  Rule: use arrestedOrConvicted field (yes/no). If YES, use arrestedOrConvictedExplanation as the explanation text.
 * Drug law violations
 * Prostitution-related activities
 * Money laundering

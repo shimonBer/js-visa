@@ -320,7 +320,8 @@ export const COPYABLE_SECTIONS = {
       'votedIllegallyExplanation',
       'renouncedCitizenship',
       'renouncedCitizenshipExplanation',
-      'criminalRecord',
+      'arrestedOrConvicted',
+      'arrestedOrConvictedExplanation',
     ],
   },
 
