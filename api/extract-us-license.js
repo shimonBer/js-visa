@@ -104,7 +104,6 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           model: OPENAI_MODELS.ocr,
-          temperature: 0,
           max_completion_tokens: 400,
           response_format: { type: 'json_object' },
           messages: [

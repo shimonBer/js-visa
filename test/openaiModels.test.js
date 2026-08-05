@@ -64,6 +64,11 @@ test('source code contains no legacy OpenAI model references', async () => {
 
   for (const file of files) {
     const source = (await readFile(file, 'utf8')).toLowerCase()
+    assert.doesNotMatch(
+      source,
+      /temperature\s*:\s*0/,
+      `${path.relative(repoRoot, file)} sets an unsupported temperature`,
+    )
     for (const model of legacyModels) {
       assert.equal(source.includes(model), false, `${path.relative(repoRoot, file)} references ${model}`)
     }

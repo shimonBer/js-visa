@@ -1320,7 +1320,6 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           model: OPENAI_MODELS.translation,
-          temperature: 0,
           max_completion_tokens: 16_384,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },

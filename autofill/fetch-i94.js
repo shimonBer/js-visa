@@ -74,7 +74,6 @@ async function askRecaptchaModel(screenshotB64, apiKey) {
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: OPENAI_MODELS.ocr,
-      temperature: 0,
       max_completion_tokens: 128,
       messages: [{
         role: 'user',
@@ -304,7 +303,6 @@ async function askVisionAgent(screenshot, personInfo, actionHistory, apiKey) {
     },
     body: JSON.stringify({
       model: OPENAI_MODELS.i94,
-      temperature: 0,
       max_completion_tokens: 256,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -364,7 +362,6 @@ async function extractTravelHistory(screenshot, apiKey) {
     },
     body: JSON.stringify({
       model: OPENAI_MODELS.i94,
-      temperature: 0,
       max_completion_tokens: 2048,
       messages: [
         {

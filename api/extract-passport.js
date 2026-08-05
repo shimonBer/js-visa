@@ -421,7 +421,6 @@ fullName = givenNames + " " + surname (null if either is null).`
         },
         body: JSON.stringify({
           model: OPENAI_MODELS.ocr,
-          temperature: 0,
           max_completion_tokens: 2500,
           response_format: RESPONSE_SCHEMA,
           messages: [
@@ -544,7 +543,6 @@ async function handleForeignMode(req, res, apiKey) {
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: OPENAI_MODELS.ocr,
-          temperature: 0,
           max_completion_tokens: 500,
           response_format: FOREIGN_PASSPORT_SCHEMA,
           messages: [

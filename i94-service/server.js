@@ -101,7 +101,6 @@ async function askRecaptchaModel(screenshotB64, instructionText = '') {
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: I94_MODEL,
-      temperature: 0,
       max_completion_tokens: 64,
       messages: [{
         role: 'user',

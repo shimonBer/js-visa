@@ -124,7 +124,6 @@ export async function solveCaptchaOnPage(page, apiKey) {
     },
     body: JSON.stringify({
       model: OPENAI_MODELS.ocr,
-      temperature: 0,
       max_completion_tokens: 32,
       messages: [
         {
@@ -1477,7 +1476,6 @@ export async function askAgent(screenshotBuffer, translatedText, actionHistory, 
     },
     body: JSON.stringify({
       model: OPENAI_MODELS.autofill,
-      temperature: 0,
       max_completion_tokens: 128,
       messages: [
         { role: 'system', content: AGENT_SYSTEM_PROMPT },
