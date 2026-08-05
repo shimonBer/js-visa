@@ -8,6 +8,7 @@
 
 import { buildTranslationPdf } from '../lib/buildTranslationPdf.js'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
+import { stripParentheticalAliasesFromPersonNames } from '../lib/personNameFormatting.js'
 import { fetchS3FormDocumentBytes } from '../lib/s3FormDocuments.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
@@ -38,6 +39,8 @@ THE ENTIRE OUTPUT MUST BE TRANSLATED FROM HEBREW TO ENGLISH.
 * No other field, label, heading, note, or explanation may contain Hebrew characters.
 * NEVER append Hebrew in parentheses after an English value. The value must be pure English — no mixed text.
 * NEVER output any Hebrew character (א–ת) outside of the "Full Name in Native Alphabet" field.
+* PERSON NAMES MUST NEVER CONTAIN PARENTHESES. This applies to every surname, given name, full name, spouse/parent/relative/contact name, former name, and "Full Name in Native Alphabet".
+* If a person-name source contains a maiden name, former name, alias, or any other text in parentheses, omit the entire parenthetical segment from the current-name field. Put a genuine former/other name only in the dedicated Other Names fields, without parentheses.
 * YES/NO answers are always in English.
 * ❗ MISSING and N/A are always in English.
 * Dates are always written in English (DD/MM/YYYY or Month DD, YYYY).
@@ -167,6 +170,7 @@ If the passport contains a native-language name:
 * extract it exactly as shown
 * preserve original spelling
 * place directly below the English full name
+* remove any parenthetical alias/former-name segment; the native-name value must contain only the current official given name and surname, with no parentheses
 
 Example:
 
@@ -184,6 +188,7 @@ For name fields (Surname, Given Name, Place of Birth, etc.):
 * Preserve official MRZ spelling when available.
 * Do NOT invent spellings.
 * Do NOT phoneticize manually.
+* NEVER include parentheses or parenthetical aliases in a person-name value.
 * Example: "Given Name: DAVID ORI"
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -272,8 +277,9 @@ PERSONAL INFORMATION 1
 
 * Full Name in Native Alphabet
   Rule:
-  1. If passport scan contains a native-language (e.g. Hebrew) given name AND surname → concatenate them (given name + space + surname) exactly as shown.
+  1. If passport scan contains a native-language (e.g. Hebrew) given name AND surname → concatenate the current official given name + space + current official surname.
   2. Otherwise → concatenate firstName + " " + lastName from JSON (the Hebrew name fields the user typed).
+  3. Remove every parenthetical segment and both parentheses. Never include a maiden/former/alias surname here; those belong only in Other Names.
 
 * Have you ever used other names? YES/NO
 
@@ -1347,10 +1353,11 @@ export default async function handler(req, res) {
     } catch {
       return jsonResponse(res, 502, { error: 'Invalid JSON from OpenAI' })
     }
-    const translated = completion?.choices?.[0]?.message?.content
-    if (!translated || typeof translated !== 'string') {
+    const translatedContent = completion?.choices?.[0]?.message?.content
+    if (!translatedContent || typeof translatedContent !== 'string') {
       return jsonResponse(res, 502, { error: 'Missing translation text from OpenAI' })
     }
+    const translated = stripParentheticalAliasesFromPersonNames(translatedContent)
 
     const orderIdx = (f) => {
       const i = UPLOAD_DOC_FIELDS.indexOf(String(f || ''))
