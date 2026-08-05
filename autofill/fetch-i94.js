@@ -2,7 +2,7 @@
 /**
  * I-94 Travel History Fetcher
  *
- * Uses local Playwright + GPT-4o vision — the same mechanism as the DS-160
+ * Uses local Playwright + the configured vision model — the same mechanism as the DS-160
  * autofill — to navigate i94.cbp.dhs.gov and extract past US visit records.
  * Running locally avoids the bot-detection issues that plagued Browser Use.
  *
@@ -18,12 +18,13 @@
  *   --headless    Run headlessly
  *   --output      Path to write JSON result (default: i94-result.json)
  *
- * reCAPTCHA is solved automatically using GPT-4o vision.
+ * reCAPTCHA is solved automatically using the configured OCR model.
  */
 
 import fs from 'fs'
 import path from 'path'
 import { chromium } from 'playwright'
+import { OPENAI_MODELS } from '../lib/openaiModels.js'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -62,18 +63,19 @@ async function fetchWithTimeout(url, options) {
 // ─── reCAPTCHA solver ────────────────────────────────────────────────────────
 
 /**
- * Ask GPT-4o to look at a reCAPTCHA image challenge screenshot and return
+ * Ask the OCR model to inspect a reCAPTCHA image challenge and return
  * which grid cells (1-based, row-major) contain the target object.
  * Returns an array of 1-based indices, e.g. [1, 3, 7].
  */
-async function askGpt4oRecaptcha(screenshotB64, apiKey) {
+async function askRecaptchaModel(screenshotB64, apiKey) {
+  log(`OpenAI reCAPTCHA request model=${OPENAI_MODELS.ocr}`)
   const resp = await fetchWithTimeout(OPENAI_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: OPENAI_MODELS.ocr,
       temperature: 0,
-      max_tokens: 128,
+      max_completion_tokens: 128,
       messages: [{
         role: 'user',
         content: [
@@ -102,7 +104,7 @@ async function askGpt4oRecaptcha(screenshotB64, apiKey) {
  * Fully automated reCAPTCHA v2 solver:
  * 1. Find the reCAPTCHA iframe checkbox and click it
  * 2. If it passes immediately → done
- * 3. If an image challenge appears → use GPT-4o vision to click matching cells
+ * 3. If an image challenge appears → use the OCR model to click matching cells
  * 4. Repeat for dynamic "click new images" rounds
  */
 async function solveRecaptcha(page, apiKey) {
@@ -151,9 +153,9 @@ async function solveRecaptcha(page, apiKey) {
     const challengeShot = await challengeEl.screenshot()
     const b64 = challengeShot.toString('base64')
 
-    // Ask GPT-4o which cells to click
-    const cells = await askGpt4oRecaptcha(b64, apiKey)
-    log(`GPT-4o selected cells: ${JSON.stringify(cells)}`)
+    // Ask the OCR model which cells to click
+    const cells = await askRecaptchaModel(b64, apiKey)
+    log(`OCR model selected cells: ${JSON.stringify(cells)}`)
 
     if (cells.length === 0) {
       // Nothing to select — try clicking Verify/Skip
@@ -240,7 +242,7 @@ function parseArgs() {
   return { firstName, lastName, birthDate, passport, country, outputFile, headless }
 }
 
-// ─── GPT-4o vision agent ─────────────────────────────────────────────────────
+// ─── Vision agent ────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are an automation agent controlling a real web browser on the I-94 CBP travel history website (i94.cbp.dhs.gov).
 
@@ -288,11 +290,12 @@ Use "done" with an error if the process fails.
 
 Be decisive. Do not loop — make progress each step.`
 
-async function askGpt4o(screenshot, personInfo, actionHistory, apiKey) {
+async function askVisionAgent(screenshot, personInfo, actionHistory, apiKey) {
   const historyText = actionHistory.length
     ? `\nActions taken so far:\n${actionHistory.slice(-12).map((a, i) => `  ${i + 1}. ${JSON.stringify(a)}`).join('\n')}`
     : ''
 
+  log(`OpenAI I-94 agent request model=${OPENAI_MODELS.i94}`)
   const resp = await fetchWithTimeout(OPENAI_URL, {
     method: 'POST',
     headers: {
@@ -300,9 +303,9 @@ async function askGpt4o(screenshot, personInfo, actionHistory, apiKey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: OPENAI_MODELS.i94,
       temperature: 0,
-      max_tokens: 256,
+      max_completion_tokens: 256,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         {
@@ -346,12 +349,13 @@ async function askGpt4o(screenshot, personInfo, actionHistory, apiKey) {
   try {
     return JSON.parse(cleaned)
   } catch {
-    throw new Error(`GPT-4o returned invalid JSON: ${raw.slice(0, 200)}`)
+    throw new Error(`Vision model returned invalid JSON: ${raw.slice(0, 200)}`)
   }
 }
 
-/** Use a separate GPT-4o call to extract the travel history from the results page */
+/** Use a separate vision-model call to extract travel history from the results page. */
 async function extractTravelHistory(screenshot, apiKey) {
+  log(`OpenAI I-94 extraction request model=${OPENAI_MODELS.i94}`)
   const resp = await fetchWithTimeout(OPENAI_URL, {
     method: 'POST',
     headers: {
@@ -359,9 +363,9 @@ async function extractTravelHistory(screenshot, apiKey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: OPENAI_MODELS.i94,
       temperature: 0,
-      max_tokens: 2048,
+      max_completion_tokens: 2048,
       messages: [
         {
           role: 'user',
@@ -679,9 +683,9 @@ async function main() {
 
     let action
     try {
-      action = await askGpt4o(screenshot, personInfo, actionHistory, apiKey)
+      action = await askVisionAgent(screenshot, personInfo, actionHistory, apiKey)
     } catch (err) {
-      logError('GPT-4o call failed', err)
+      logError('Vision model call failed', err)
       await page.waitForTimeout(3000)
       continue
     }

@@ -3,7 +3,7 @@
  * DS-160 Page Tester — run translated.txt against a local DOM snapshot
  *
  * Loads a saved DOM snapshot as a local file in Playwright (no real DS-160 site,
- * no CAPTCHA, no network except the GPT-4o API calls).
+ * no CAPTCHA, no network except the configured OpenAI API calls).
  * The agent fills fields exactly as it would on the live site.
  * Stops automatically before any "Next / Continue" navigation click so the
  * snapshot page is never unloaded.

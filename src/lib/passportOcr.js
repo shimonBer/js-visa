@@ -40,6 +40,7 @@ export async function extractPassportFieldsFromFile(file) {
     issuingCountry: String(json.issuingCountry ?? json.country ?? ''),
     sex: String(json.sex ?? '').trim().toUpperCase().slice(0, 1),
     nationalId: String(json.nationalId ?? '').trim(),
+    passportBookNumber: String(json.passportBookNumber ?? '').trim(),
     passportIssueDate: String(json.dateOfIssue ?? '').trim(),
     passportExpirationDate: String(json.dateOfExpiry ?? '').trim(),
     issuanceCity: String(json.issuanceCity ?? '').trim(),

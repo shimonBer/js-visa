@@ -1,8 +1,10 @@
 /**
  * POST /api/extract-passport
  * Raw image body (same pattern as /api/upload): Content-Type = image/* or application/pdf.
- * Uses OpenAI GPT-4o vision to extract passport fields as JSON.
+ * Uses the configured OpenAI OCR model to extract passport fields as JSON.
  */
+
+import { OPENAI_MODELS } from '../lib/openaiModels.js'
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MiB — images are resized client-side; PDFs may still be large
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
@@ -138,7 +140,7 @@ export default async function handler(req, res) {
     const base64 = buf.toString('base64')
     const dataUrl = `data:${rawCt};base64,${base64}`
 
-    // Step 3: call OpenAI Chat Completions (GPT-4o) with vision + structured output schema
+    // Step 3: call OpenAI Chat Completions with vision + structured output schema
     const PASSPORT_SYSTEM_PROMPT = `You are an expert OCR and document extraction engine specialized in Israeli biometric passports.
 
 Your primary goal is accuracy, not completeness.
@@ -410,6 +412,7 @@ fullName = givenNames + " " + surname (null if either is null).`
     const t = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS)
     let openaiRes
     try {
+      console.info(`[extract-passport] OpenAI request model=${OPENAI_MODELS.ocr}`)
       openaiRes = await fetch(OPENAI_URL, {
         method: 'POST',
         headers: {
@@ -417,8 +420,9 @@ fullName = givenNames + " " + surname (null if either is null).`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1',
-          max_tokens: 2500,
+          model: OPENAI_MODELS.ocr,
+          temperature: 0,
+          max_completion_tokens: 2500,
           response_format: RESPONSE_SCHEMA,
           messages: [
             {
@@ -432,7 +436,7 @@ fullName = givenNames + " " + surname (null if either is null).`
                   type: 'text',
                   text: 'Extract all passport fields from this image.',
                 },
-                { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
+                { type: 'image_url', image_url: { url: dataUrl, detail: 'original' } },
               ],
             },
           ],
@@ -534,12 +538,14 @@ async function handleForeignMode(req, res, apiKey) {
     const t = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS)
     let openaiRes
     try {
+      console.info(`[extract-passport:foreign] OpenAI request model=${OPENAI_MODELS.ocr}`)
       openaiRes = await fetch(OPENAI_URL, {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'gpt-4.1',
-          max_tokens: 500,
+          model: OPENAI_MODELS.ocr,
+          temperature: 0,
+          max_completion_tokens: 500,
           response_format: FOREIGN_PASSPORT_SCHEMA,
           messages: [
             { role: 'system', content: FOREIGN_PASSPORT_SYSTEM_PROMPT },
@@ -547,7 +553,7 @@ async function handleForeignMode(req, res, apiKey) {
               role: 'user',
               content: [
                 { type: 'text', text: 'Read the passport number character by character from the visual "Passport No." field. Use the MRZ only as a cross-check. Do not collapse consecutive identical characters (e.g. "00" must stay "00"). Return the value exactly as printed in the visual field.' },
-                { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } },
+                { type: 'image_url', image_url: { url: dataUrl, detail: 'original' } },
               ],
             },
           ],

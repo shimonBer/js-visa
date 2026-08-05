@@ -1,8 +1,10 @@
 /**
  * POST /api/extract-us-license
  * Raw image body: Content-Type = image/* or application/pdf.
- * GPT-4o vision → licenseNumber, issuingState (JSON).
+ * Configured OCR model → licenseNumber, issuingState (JSON).
  */
+
+import { OPENAI_MODELS } from '../lib/openaiModels.js'
 
 const MAX_BYTES = 4 * 1024 * 1024
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
@@ -93,6 +95,7 @@ export default async function handler(req, res) {
     const t = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS)
     let openaiRes
     try {
+      console.info(`[extract-us-license] OpenAI request model=${OPENAI_MODELS.ocr}`)
       openaiRes = await fetch(OPENAI_URL, {
         method: 'POST',
         headers: {
@@ -100,13 +103,14 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
-          max_tokens: 400,
+          model: OPENAI_MODELS.ocr,
+          temperature: 0,
+          max_completion_tokens: 400,
           response_format: { type: 'json_object' },
           messages: [
             {
               role: 'user',
-              content: [{ type: 'text', text: promptText }, { type: 'image_url', image_url: { url: dataUrl } }],
+              content: [{ type: 'text', text: promptText }, { type: 'image_url', image_url: { url: dataUrl, detail: 'original' } }],
             },
           ],
         }),

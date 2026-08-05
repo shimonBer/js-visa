@@ -345,7 +345,7 @@ async function runCrawler(page, translatedText, apiKey) {
 
     log(`[page: ${pageContext}, step-on-page: ${stepsOnCurrentPage}]`)
 
-    // Screenshot for GPT-4o
+    // Screenshot for the configured vision model
     const screenshot = await page.screenshot({ fullPage: false })
 
     let action

@@ -22,6 +22,43 @@ import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
 import { getS3UploadApiBase } from './lib/uploadFormDocuments.js'
 import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
 import CopyFromFormButton, { SectionCopyHeader } from './CopyFromFormButton.jsx'
+import OcrReviewDialog from './OcrReviewDialog.jsx'
+import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
+
+const PASSPORT_OCR_FIELDS = [
+  { key: 'firstName', label: 'Given names', required: true },
+  { key: 'lastName', label: 'Surname', required: true },
+  { key: 'birthDate', label: 'Date of birth', required: true, format: 'date' },
+  { key: 'passportNumber', label: 'Passport number', required: true, format: 'passport' },
+  { key: 'issuingCountry', label: 'Nationality', required: true },
+  { key: 'sex', label: 'Sex', required: true, format: 'sex' },
+  { key: 'nationalId', label: 'Israeli ID', format: 'nationalId' },
+  { key: 'passportIssueDate', label: 'Passport issue date', required: true, format: 'date' },
+  { key: 'passportExpirationDate', label: 'Passport expiration date', required: true, format: 'date', after: 'passportIssueDate' },
+  { key: 'issuanceCity', label: 'Issuance city' },
+  { key: 'issuanceCountry', label: 'Issuance country' },
+  { key: 'passportBookNumber', label: 'Passport book number' },
+]
+
+const FOREIGN_PASSPORT_OCR_FIELDS = [
+  { key: 'passportNumber', label: 'Passport number', required: true, format: 'passport' },
+  { key: 'matched', label: 'Visual field and MRZ agreement', required: true, format: 'confirmed' },
+]
+
+const SOCIAL_SECURITY_OCR_FIELDS = [
+  { key: 'socialSecurityNumber', label: 'Social Security Number', required: true, format: 'ssn' },
+]
+
+const US_LICENSE_OCR_FIELDS = [
+  { key: 'licenseNumber', label: 'Driver license number', required: true, format: 'license' },
+  { key: 'issuingState', label: 'Issuing state', required: true },
+]
+
+const US_VISA_OCR_FIELDS = [
+  { key: 'issueDate', label: 'Visa issue date', required: true, format: 'date' },
+  { key: 'expirationDate', label: 'Visa expiration date', required: true, format: 'date', after: 'issueDate' },
+  { key: 'visaNumber', label: 'Visa number', required: true },
+]
 
 /**
  * Keeps latest S3 object per document field (passport / visa / SSN card / license) for translate + PDF when the browser has no File.
@@ -1336,6 +1373,7 @@ export default function DS160IsraelForm({
   })
   const [usLicenseOcr, setUsLicenseOcr] = useState({ status: 'idle', message: '' })
   const [previousVisaOcr, setPreviousVisaOcr] = useState({ status: 'idle', message: '' })
+  const [ocrReview, setOcrReview] = useState(null)
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
   const i94AutoRanRef = useRef(false)
   const [saveBeforeTranslatePrompt, setSaveBeforeTranslatePrompt] = useState(false)
@@ -1372,6 +1410,77 @@ export default function DS160IsraelForm({
       uploading: false, uploadError: '', uploadSuccess: false,
       uploadItemId: '', uploadItemUrl: '', uploadIsNew: false,
     })
+  }
+
+  function resolveTwoPassOcr({
+    documentKey,
+    title,
+    file,
+    first,
+    second,
+    passErrors,
+    fields,
+    apply,
+    setStatus,
+  }) {
+    const comparison = compareOcrPasses(first, second, fields, passErrors)
+    const auditBase = {
+      pass1: first,
+      pass2: second,
+      reasons: comparison.reasons,
+    }
+    if (!comparison.needsReview) {
+      apply(comparison.approved)
+      setValue(`ocrReviews.${documentKey}`, {
+        ...auditBase,
+        status: 'auto_approved',
+        approved: comparison.approved,
+        reviewedAt: new Date().toISOString(),
+      }, { shouldDirty: true })
+      setStatus('הקריאות תאמו והנתונים עודכנו אוטומטית.')
+      return
+    }
+
+    setOcrReview({
+      ...comparison,
+      documentKey,
+      title,
+      file,
+      first,
+      second,
+      passErrors,
+      apply,
+      setStatus,
+    })
+    setStatus('נמצאו פערים בין קריאות ה-OCR — נדרש אישור ידני.')
+  }
+
+  function approveOcrReview(approved) {
+    if (!ocrReview) return
+    ocrReview.apply(approved)
+    setValue(`ocrReviews.${ocrReview.documentKey}`, {
+      status: 'approved',
+      pass1: ocrReview.first,
+      pass2: ocrReview.second,
+      reasons: ocrReview.reasons,
+      approved,
+      reviewedAt: new Date().toISOString(),
+    }, { shouldDirty: true })
+    ocrReview.setStatus('הערכים נבדקו ואושרו ידנית.')
+    setOcrReview(null)
+  }
+
+  function discardOcrReview() {
+    if (!ocrReview) return
+    setValue(`ocrReviews.${ocrReview.documentKey}`, {
+      status: 'discarded',
+      pass1: ocrReview.first,
+      pass2: ocrReview.second,
+      reasons: ocrReview.reasons,
+      reviewedAt: new Date().toISOString(),
+    }, { shouldDirty: true })
+    ocrReview.setStatus('תוצאות ה-OCR בוטלו — יש להזין את הערכים ידנית.')
+    setOcrReview(null)
   }
 
   /** Fields that failed the "translate" pre-flight validation (Set of field names). */
@@ -1689,28 +1798,38 @@ export default function DS160IsraelForm({
   async function runPassportOcrFromFile(file) {
     setPassportOcr({ status: 'loading', message: '' })
     try {
-      const r = await extractPassportFieldsFromFile(file)
-      if (r.firstName) setValue('firstNameEnglish', r.firstName, { shouldDirty: true })
-      if (r.lastName) setValue('lastNameEnglish', r.lastName, { shouldDirty: true })
-      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(r.birthDate || '').trim())
-      if (m) {
-        setValue('birthDateYear', m[1], { shouldDirty: true })
-        setValue('birthDateMonth', String(parseInt(m[2], 10)), { shouldDirty: true })
-        setValue('birthDateDay', String(parseInt(m[3], 10)), { shouldDirty: true })
-      }
-      if (r.passportNumber) setValue('passportId', r.passportNumber, { shouldDirty: true })
-      const effectiveIssuingCountry = normalizeCountryName(r.issuanceCountry || r.issuingCountry)
-      if (effectiveIssuingCountry) setValue('passportIssuingCountry', effectiveIssuingCountry, { shouldDirty: true })
-      if (r.issuanceCity) setValue('passportIssuingCity', r.issuanceCity, { shouldDirty: true })
-      if (r.issuingCountry) setValue('nationality', r.issuingCountry, { shouldDirty: true })
-      if (r.passportIssueDate) setValue('passportIssueDate', r.passportIssueDate, { shouldDirty: true })
-      if (r.passportExpirationDate) setValue('passportExpirationDate', r.passportExpirationDate, { shouldDirty: true })
-      if (r.sex === 'M') setValue('sex', 'male', { shouldDirty: true })
-      else if (r.sex === 'F') setValue('sex', 'female', { shouldDirty: true })
-      if (r.nationalId) setValue('idNumber', r.nationalId, { shouldDirty: true })
-      if (r.passportBookNumber) setValue('passportBookNumber', r.passportBookNumber, { shouldDirty: true })
-      else setValue('passportBookNumber', '', { shouldDirty: true })
-      setPassportOcr({ status: 'idle', message: 'שדות דרכון עודכנו מהצילום.' })
+      const { first, second, passErrors } = await runTwoPassOcr(extractPassportFieldsFromFile, file)
+      resolveTwoPassOcr({
+        documentKey: 'passport',
+        title: 'דרכון',
+        file,
+        first,
+        second,
+        passErrors,
+        fields: PASSPORT_OCR_FIELDS,
+        apply: (result) => {
+          if (result.firstName) setValue('firstNameEnglish', result.firstName, { shouldDirty: true })
+          if (result.lastName) setValue('lastNameEnglish', result.lastName, { shouldDirty: true })
+          const birthDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(result.birthDate || '').trim())
+          if (birthDate) {
+            setValue('birthDateYear', birthDate[1], { shouldDirty: true })
+            setValue('birthDateMonth', String(parseInt(birthDate[2], 10)), { shouldDirty: true })
+            setValue('birthDateDay', String(parseInt(birthDate[3], 10)), { shouldDirty: true })
+          }
+          if (result.passportNumber) setValue('passportId', result.passportNumber, { shouldDirty: true })
+          const issuingCountry = normalizeCountryName(result.issuanceCountry || result.issuingCountry)
+          if (issuingCountry) setValue('passportIssuingCountry', issuingCountry, { shouldDirty: true })
+          if (result.issuanceCity) setValue('passportIssuingCity', result.issuanceCity, { shouldDirty: true })
+          if (result.issuingCountry) setValue('nationality', result.issuingCountry, { shouldDirty: true })
+          if (result.passportIssueDate) setValue('passportIssueDate', result.passportIssueDate, { shouldDirty: true })
+          if (result.passportExpirationDate) setValue('passportExpirationDate', result.passportExpirationDate, { shouldDirty: true })
+          if (result.sex === 'M') setValue('sex', 'male', { shouldDirty: true })
+          else if (result.sex === 'F') setValue('sex', 'female', { shouldDirty: true })
+          if (result.nationalId) setValue('idNumber', result.nationalId, { shouldDirty: true })
+          setValue('passportBookNumber', result.passportBookNumber || '', { shouldDirty: true })
+        },
+        setStatus: (message) => setPassportOcr({ status: 'idle', message }),
+      })
     } catch (e) {
       setPassportOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי דרכון' })
     }
@@ -1719,16 +1838,25 @@ export default function DS160IsraelForm({
   async function runForeignPassportOcrFromFile(file, index) {
     setForeignPassportOcr(prev => ({ ...prev, [index]: { status: 'loading', message: '' } }))
     try {
-      const r = await extractForeignPassportNumber(file)
-      if (r.passportNumber) {
-        setValue(`foreignNationalities.${index}.id`, r.passportNumber, { shouldDirty: true })
-        if (watch(`foreignNationalities.${index}.hasForeignPassport`) !== 'yes') {
+      const { first, second, passErrors } = await runTwoPassOcr(extractForeignPassportNumber, file)
+      resolveTwoPassOcr({
+        documentKey: `foreignPassport_${index}`,
+        title: `דרכון זר ${index + 1}`,
+        file,
+        first,
+        second,
+        passErrors,
+        fields: FOREIGN_PASSPORT_OCR_FIELDS,
+        apply: (result) => {
+          if (!result.passportNumber) return
+          setValue(`foreignNationalities.${index}.id`, result.passportNumber, { shouldDirty: true })
           setValue(`foreignNationalities.${index}.hasForeignPassport`, 'yes', { shouldDirty: true })
-        }
-        setForeignPassportOcr(prev => ({ ...prev, [index]: { status: 'idle', message: 'מספר דרכון זוהה ועודכן.' } }))
-      } else {
-        setForeignPassportOcr(prev => ({ ...prev, [index]: { status: 'idle', message: 'לא זוהה מספר דרכון — הזן ידנית.' } }))
-      }
+        },
+        setStatus: (message) => setForeignPassportOcr(prev => ({
+          ...prev,
+          [index]: { status: 'idle', message },
+        })),
+      })
     } catch (e) {
       setForeignPassportOcr(prev => ({ ...prev, [index]: { status: 'error', message: e?.message || 'שגיאה בזיהוי דרכון' } }))
     }
@@ -1737,13 +1865,22 @@ export default function DS160IsraelForm({
   async function runSocialSecurityOcrFromFile(file) {
     setSocialSecurityOcr({ status: 'loading', message: '' })
     try {
-      const r = await extractSocialSecurityNumberFromFile(file)
-      if (r.socialSecurityNumber) {
-        setValue('socialSecurityNumber', r.socialSecurityNumber, { shouldDirty: true })
-        setSocialSecurityOcr({ status: 'idle', message: 'מספר סושיאל עודכן מהצילום.' })
-      } else {
-        setSocialSecurityOcr({ status: 'idle', message: 'לא זוהה מספר סושיאל בבירור מהתמונה.' })
-      }
+      const { first, second, passErrors } = await runTwoPassOcr(extractSocialSecurityNumberFromFile, file)
+      resolveTwoPassOcr({
+        documentKey: 'socialSecurity',
+        title: 'כרטיס Social Security',
+        file,
+        first,
+        second,
+        passErrors,
+        fields: SOCIAL_SECURITY_OCR_FIELDS,
+        apply: (result) => {
+          if (result.socialSecurityNumber) {
+            setValue('socialSecurityNumber', result.socialSecurityNumber, { shouldDirty: true })
+          }
+        },
+        setStatus: (message) => setSocialSecurityOcr({ status: 'idle', message }),
+      })
     } catch (e) {
       setSocialSecurityOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי כרטיס סושיאל' })
     }
@@ -1752,16 +1889,23 @@ export default function DS160IsraelForm({
   async function runUsLicenseOcrFromFile(file) {
     setUsLicenseOcr({ status: 'loading', message: '' })
     try {
-      const r = await extractUsLicenseFieldsFromFile(file)
-      const lines = []
-      if (r.licenseNumber) lines.push(`License number: ${r.licenseNumber}`)
-      if (r.issuingState) lines.push(`Issuing state: ${r.issuingState}`)
-      if (lines.length) {
-        setValue('driversLicenseDetails', lines.join('\n'), { shouldDirty: true })
-        setUsLicenseOcr({ status: 'idle', message: 'פרטי רישיון עודכנו מהצילום.' })
-      } else {
-        setUsLicenseOcr({ status: 'idle', message: 'לא זוהו מספר רישיון או מדינת/מחוז הנפקה (State) בבירור מהתמונה.' })
-      }
+      const { first, second, passErrors } = await runTwoPassOcr(extractUsLicenseFieldsFromFile, file)
+      resolveTwoPassOcr({
+        documentKey: 'usLicense',
+        title: 'רישיון נהיגה אמריקאי',
+        file,
+        first,
+        second,
+        passErrors,
+        fields: US_LICENSE_OCR_FIELDS,
+        apply: (result) => {
+          const lines = []
+          if (result.licenseNumber) lines.push(`License number: ${result.licenseNumber}`)
+          if (result.issuingState) lines.push(`Issuing state: ${result.issuingState}`)
+          if (lines.length) setValue('driversLicenseDetails', lines.join('\n'), { shouldDirty: true })
+        },
+        setStatus: (message) => setUsLicenseOcr({ status: 'idle', message }),
+      })
     } catch (e) {
       setUsLicenseOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי רישיון נהיגה' })
     }
@@ -1770,32 +1914,25 @@ export default function DS160IsraelForm({
   async function runPreviousVisaOcrFromFile(file) {
     setPreviousVisaOcr({ status: 'loading', message: '' })
     try {
-      const r = await extractUsVisaDatesFromFile(file)
-      let filled = 0
-      if (r.issueDate) {
-        setValue('lastVisaIssueDate', r.issueDate, { shouldDirty: true })
-        filled += 1
-      }
-      if (r.expirationDate) {
-        setValue('lastVisaExpirationDate', r.expirationDate, { shouldDirty: true })
-        filled += 1
-      }
-      if (r.visaNumber) {
-        setValue('visaNumber', r.visaNumber, { shouldDirty: true })
-        setValue('visaNumberDoNotKnow', false, { shouldDirty: true })
-        filled += 1
-      }
-      if (filled > 0) {
-        setPreviousVisaOcr({
-          status: 'idle',
-          message: 'פרטי הויזה עודכנו מהצילום.',
-        })
-      } else {
-        setPreviousVisaOcr({
-          status: 'idle',
-          message: 'לא זוהו פרטי ויזה בבירור מהתמונה.',
-        })
-      }
+      const { first, second, passErrors } = await runTwoPassOcr(extractUsVisaDatesFromFile, file)
+      resolveTwoPassOcr({
+        documentKey: 'previousUsVisa',
+        title: 'ויזה אמריקאית קודמת',
+        file,
+        first,
+        second,
+        passErrors,
+        fields: US_VISA_OCR_FIELDS,
+        apply: (result) => {
+          if (result.issueDate) setValue('lastVisaIssueDate', result.issueDate, { shouldDirty: true })
+          if (result.expirationDate) setValue('lastVisaExpirationDate', result.expirationDate, { shouldDirty: true })
+          if (result.visaNumber) {
+            setValue('visaNumber', result.visaNumber, { shouldDirty: true })
+            setValue('visaNumberDoNotKnow', false, { shouldDirty: true })
+          }
+        },
+        setStatus: (message) => setPreviousVisaOcr({ status: 'idle', message }),
+      })
     } catch (e) {
       setPreviousVisaOcr({ status: 'error', message: e?.message || 'שגיאה בזיהוי ויזה' })
     }
@@ -2317,6 +2454,14 @@ export default function DS160IsraelForm({
   }
 
   async function handleTranslateToEnglish({ withSave = false } = {}) {
+    if (ocrReview) {
+      setTranslateUi((state) => ({
+        ...state,
+        loading: false,
+        error: 'יש להשלים את בדיקת ה-OCR לפני התרגום.',
+      }))
+      return
+    }
     const values = getValues()
     const missing = validateForTranslation(values)
     if (missing.size > 0) {
@@ -2580,6 +2725,11 @@ export default function DS160IsraelForm({
           null
         }
       />
+      <OcrReviewDialog
+        review={ocrReview}
+        onApprove={approveOcrReview}
+        onDiscard={discardOcrReview}
+      />
       <MissingFieldsPanel values={allFormValues} />
 
       {/* Sticky action bar */}
@@ -2677,7 +2827,7 @@ export default function DS160IsraelForm({
                 <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
                   <p className="font-semibold text-gray-800">צילום דרכון</p>
                   <p className="text-xs text-gray-600">
-                    גרירה או בחירת קובץ — זיהוי אוטומטי (GPT-4o): שם באנגלית, תאריך לידה, מספר דרכון, מדינת הנפקה, מין (MRZ), תעודת זהות אם מופיעה במסמך.
+                    גרירה או בחירת קובץ — זיהוי OCR אוטומטי: שם באנגלית, תאריך לידה, מספר דרכון, מדינת הנפקה, מין (MRZ), תעודת זהות אם מופיעה במסמך.
                   </p>
                   {passportOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>}
                   {passportOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{passportOcr.message}</p>}
@@ -3835,7 +3985,7 @@ export default function DS160IsraelForm({
                     <div className="flex-1 min-w-0 space-y-4 rounded-lg border-r-4 border-blue-500 bg-gray-50 p-4">
                       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
                         <p className="text-xs text-gray-600">
-                          העלאת צילום — זיהוי אוטומטי (GPT-4o): מספר רישיון ומדינת/מחוז ארה״ב (State, באנגלית).
+                          העלאת צילום — זיהוי OCR אוטומטי: מספר רישיון ומדינת/מחוז ארה״ב (State, באנגלית).
                         </p>
                         {usLicenseOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה פרטי רישיון מהקובץ…</p>}
                         {usLicenseOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{usLicenseOcr.message}</p>}
@@ -3921,7 +4071,7 @@ export default function DS160IsraelForm({
                     <div className="flex-1 min-w-0 space-y-4 rounded-lg border-r-4 border-blue-500 bg-gray-50 p-4">
                       <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
                         <p className="text-xs text-gray-600">
-                          העלאת צילום ויזה — זיהוי אוטומטי (GPT-4o): תאריך הנפקה ותאריך תפוגה (YYYY-MM-DD כשאפשר), בלי ניחוש.
+                          העלאת צילום ויזה — זיהוי OCR אוטומטי: תאריך הנפקה ותאריך תפוגה (YYYY-MM-DD כשאפשר), בלי ניחוש.
                         </p>
                         {previousVisaOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה תאריכים מהקובץ…</p>}
                         {previousVisaOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{previousVisaOcr.message}</p>}

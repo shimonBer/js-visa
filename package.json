@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test test/*.test.js",
     "preview": "vite preview",
     "autofill": "node autofill/fill-ds160.js --input",
     "crawl-dom": "node autofill/crawl-dom.js --input",

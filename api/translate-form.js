@@ -7,6 +7,7 @@
  */
 
 import { buildTranslationPdf } from '../lib/buildTranslationPdf.js'
+import { OPENAI_MODELS } from '../lib/openaiModels.js'
 import { fetchS3FormDocumentBytes } from '../lib/s3FormDocuments.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
@@ -1292,7 +1293,7 @@ export default async function handler(req, res) {
       })
       content.push({
         type: 'image_url',
-        image_url: { url: `data:${mime};base64,${b64}` },
+        image_url: { url: `data:${mime};base64,${b64}`, detail: 'original' },
       })
       analyzedAttachments.push({ field, fileName })
       binaryAttachments.push({
@@ -1308,6 +1309,9 @@ export default async function handler(req, res) {
     const t = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS)
     let openaiRes
     try {
+      console.info(
+        `[translate-form] OpenAI translation/normalization request model=${OPENAI_MODELS.translation}`,
+      )
       openaiRes = await fetch(OPENAI_URL, {
         method: 'POST',
         headers: {
@@ -1315,12 +1319,9 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          // Vision attachments require a vision-capable model.
-          // gpt-4.1: better instruction-following than gpt-4o, 20% cheaper, 1M context, vision-capable.
-          model: 'gpt-4.1',
+          model: OPENAI_MODELS.translation,
           temperature: 0,
-          seed: 42,
-          max_tokens: 16_384,
+          max_completion_tokens: 16_384,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content },

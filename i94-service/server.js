@@ -12,12 +12,13 @@
  * Env vars:
  *   PORT          (default 3001)
  *   I94_SECRET    shared secret to protect the endpoint
- *   OPENAI_API_KEY  (optional) used only if GPT-4o fallback extraction is needed
+ *   OPENAI_API_KEY  (optional) used only if vision fallback extraction is needed
  */
 
 import express from 'express'
 import cors from 'cors'
 import { chromium } from 'playwright'
+import { I94_MODEL } from './openaiModels.js'
 
 const PORT   = process.env.PORT ?? 3001
 const SECRET = process.env.I94_SECRET ?? ''
@@ -82,11 +83,11 @@ function normalizeDob(dob) {
   return dob
 }
 
-// ─── GPT-4o reCAPTCHA image challenge solver ─────────────────────────────────
+// ─── reCAPTCHA image challenge solver ────────────────────────────────────────
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 
-async function askGpt4oRecaptcha(screenshotB64, instructionText = '') {
+async function askRecaptchaModel(screenshotB64, instructionText = '') {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) { log('No OPENAI_API_KEY — cannot solve image challenge'); return [] }
 
@@ -94,13 +95,14 @@ async function askGpt4oRecaptcha(screenshotB64, instructionText = '') {
     ? `This is a reCAPTCHA image challenge. The instruction says: "${instructionText}".\nClick all grid cells that contain the target object mentioned in the instruction.\nNumber the cells left-to-right, top-to-bottom starting at 1 (e.g. 3×3 grid has 9 cells, 4×4 has 16).\nReply with ONLY a JSON array of cell numbers, e.g. [1,4,7]. If none match, reply [].`
     : `This is a reCAPTCHA image challenge. Read the instruction at the top of the image to find the target object.\nNumber the cells left-to-right, top-to-bottom starting at 1.\nReply with ONLY a JSON array of cell numbers, e.g. [1,4,7]. If none match, reply [].`
 
+  log(`OpenAI reCAPTCHA request model=${I94_MODEL}`)
   const res = await fetch(OPENAI_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: I94_MODEL,
       temperature: 0,
-      max_tokens: 64,
+      max_completion_tokens: 64,
       messages: [{
         role: 'user',
         content: [
@@ -110,7 +112,7 @@ async function askGpt4oRecaptcha(screenshotB64, instructionText = '') {
       }],
     }),
   })
-  if (!res.ok) { log('GPT-4o reCAPTCHA request failed: ' + res.status); return [] }
+  if (!res.ok) { log('Vision-model reCAPTCHA request failed: ' + res.status); return [] }
   const json = await res.json()
   const raw = json?.choices?.[0]?.message?.content?.trim() ?? '[]'
   try { return JSON.parse(raw.replace(/^```[^\n]*\n?/, '').replace(/```$/, '').trim()) } catch { return [] }
@@ -206,8 +208,8 @@ async function solveRecaptchaV2(page, timeoutMs = 15000) {
       log('Dynamic 3×3 grid — clicking until clear...')
       for (let pass = 1; pass <= 8; pass++) {
         const b64 = (await challengeEl.screenshot()).toString('base64')
-        const cells = await askGpt4oRecaptcha(b64, instrClean)
-        log(`Pass ${pass} — GPT-4o cells: ${JSON.stringify(cells)}`)
+        const cells = await askRecaptchaModel(b64, instrClean)
+        log(`Pass ${pass} — vision-model cells: ${JSON.stringify(cells)}`)
         if (cells.length === 0) break
         for (const cellNum of cells) {
           const idx = cellNum - 1
@@ -223,8 +225,8 @@ async function solveRecaptchaV2(page, timeoutMs = 15000) {
       // Static 4×4: select all matching tiles, then verify once
       log(`Static ${totalCells}-tile grid — selecting all then verifying...`)
       const b64 = (await challengeEl.screenshot()).toString('base64')
-      const cells = await askGpt4oRecaptcha(b64, instrClean)
-      log(`GPT-4o cells: ${JSON.stringify(cells)}`)
+      const cells = await askRecaptchaModel(b64, instrClean)
+      log(`Vision-model cells: ${JSON.stringify(cells)}`)
       for (const cellNum of cells) {
         const idx = cellNum - 1
         if (idx < 0 || idx >= totalCells) continue

@@ -1,10 +1,10 @@
 /**
- * DS-160 GPT-4o Vision Agent
+ * DS-160 Vision Agent
  *
  * At each step:
  *   1. Screenshot the current page
- *   2. Send screenshot + applicant data + action history to GPT-4o
- *   3. GPT-4o returns ONE structured action
+ *   2. Send screenshot + applicant data + action history to the configured model
+ *   3. The model returns ONE structured action
  *   4. Execute the action with Playwright
  *   5. Wait for the page to settle, then repeat
  *
@@ -14,6 +14,7 @@
 
 import fs from 'fs'
 import path from 'path'
+import { OPENAI_MODELS } from '../lib/openaiModels.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_TIMEOUT_MS = 60_000
@@ -74,11 +75,11 @@ export function logWarn(msg) {
 // ─── CAPTCHA solver ──────────────────────────────────────────────────────────
 
 /**
- * Crops the CAPTCHA image from the page, sends it to GPT-4o, and returns
+ * Crops the CAPTCHA image from the page, sends it to the OCR model, and returns
  * the text. Retries up to maxRetries times if the form rejects the answer.
  */
 export async function solveCaptchaOnPage(page, apiKey) {
-  log('Solving CAPTCHA via GPT-4o OCR…')
+  log(`Solving CAPTCHA via OCR model=${OPENAI_MODELS.ocr}…`)
 
   // Common CAPTCHA image selectors on the DS-160 site
   const captchaSelectors = [
@@ -114,6 +115,7 @@ export async function solveCaptchaOnPage(page, apiKey) {
 
   const b64 = imgBuffer.toString('base64')
 
+  log(`OpenAI CAPTCHA request model=${OPENAI_MODELS.ocr}`)
   const resp = await fetchWithTimeout(OPENAI_URL, {
     method: 'POST',
     headers: {
@@ -121,9 +123,9 @@ export async function solveCaptchaOnPage(page, apiKey) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: OPENAI_MODELS.ocr,
       temperature: 0,
-      max_tokens: 32,
+      max_completion_tokens: 32,
       messages: [
         {
           role: 'user',
@@ -1360,7 +1362,7 @@ export async function detectAndLogSection(page) {
   return _lastSection
 }
 
-// ─── GPT-4o agent call ───────────────────────────────────────────────────────
+// ─── Vision agent call ───────────────────────────────────────────────────────
 
 const AGENT_SYSTEM_PROMPT = `You are a browser automation agent filling a U.S. DS-160 nonimmigrant visa application form on behalf of an applicant.
 
@@ -1453,7 +1455,7 @@ RULES:
   * If a field value is N/A in the applicant data and there is no "Does Not Apply" checkbox visible, skip the field entirely`
 
 /**
- * Ask GPT-4o what the next action should be.
+ * Ask the configured vision agent what the next action should be.
  * Returns a parsed action object.
  */
 export async function askAgent(screenshotBuffer, translatedText, actionHistory, apiKey) {
@@ -1465,6 +1467,7 @@ export async function askAgent(screenshotBuffer, translatedText, actionHistory, 
     : '\n\nNo actions taken yet — this is the first step.'
 
   const b64 = screenshotBuffer.toString('base64')
+  log(`OpenAI browser-agent request model=${OPENAI_MODELS.autofill}`)
 
   const resp = await fetchWithTimeout(OPENAI_URL, {
     method: 'POST',
@@ -1473,9 +1476,9 @@ export async function askAgent(screenshotBuffer, translatedText, actionHistory, 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o',
+      model: OPENAI_MODELS.autofill,
       temperature: 0,
-      max_tokens: 128,
+      max_completion_tokens: 128,
       messages: [
         { role: 'system', content: AGENT_SYSTEM_PROMPT },
         {

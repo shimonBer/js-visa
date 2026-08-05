@@ -7,6 +7,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY server.js ./
+COPY openaiModels.js ./
 
 ENV NODE_ENV=production
 ENV DISPLAY=:99
