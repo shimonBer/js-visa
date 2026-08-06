@@ -29,6 +29,7 @@ const PASSPORT_OCR_FIELDS = [
   { key: 'firstName', label: 'Given names', required: true },
   { key: 'lastName', label: 'Surname', required: true },
   { key: 'birthDate', label: 'Date of birth', required: true, format: 'date' },
+  { key: 'birthCountry', label: 'Country of birth', required: true },
   { key: 'passportNumber', label: 'Passport number', required: true, format: 'passport' },
   { key: 'issuingCountry', label: 'Nationality', required: true },
   { key: 'sex', label: 'Sex', required: true, format: 'sex' },
@@ -672,6 +673,15 @@ function AccommodationBlock({
 function normalizeCountryName(name) {
   if (!name) return name
   return name.trim().replace(/^(state|republic|kingdom|sultanate|principality|democratic republic|people's republic)\s+of\s+/i, '')
+}
+
+/** Return the canonical UI country name, or blank when OCR did not identify a known country. */
+function recognizedCountryName(name) {
+  const normalized = normalizeCountryName(name)
+  if (!normalized) return ''
+  return COUNTRIES_BILINGUAL.find(({ en, he }) =>
+    en.toLowerCase() === normalized.toLowerCase() || he === normalized
+  )?.en || ''
 }
 
 function _parseIso(str) {
@@ -1816,6 +1826,8 @@ export default function DS160IsraelForm({
             setValue('birthDateMonth', String(parseInt(birthDate[2], 10)), { shouldDirty: true })
             setValue('birthDateDay', String(parseInt(birthDate[3], 10)), { shouldDirty: true })
           }
+          const birthCountry = recognizedCountryName(result.birthCountry)
+          setValue('birthCountry', birthCountry, { shouldDirty: true })
           if (result.passportNumber) setValue('passportId', result.passportNumber, { shouldDirty: true })
           const issuingCountry = normalizeCountryName(result.issuanceCountry || result.issuingCountry)
           if (issuingCountry) setValue('passportIssuingCountry', issuingCountry, { shouldDirty: true })

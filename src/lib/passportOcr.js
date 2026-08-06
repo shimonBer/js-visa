@@ -3,7 +3,7 @@ import { resizeImageFile } from './resizeImage.js'
 /**
  * POST passport image bytes to /api/extract-passport (same origin; use vercel dev locally).
  * @param {File} file
- * @returns {Promise<{ firstName: string, lastName: string, birthDate: string, passportNumber: string, issuingCountry: string, sex: string, nationalId: string, passportIssueDate: string, passportExpirationDate: string, issuanceCity: string, issuanceCountry: string }>}
+ * @returns {Promise<{ firstName: string, lastName: string, birthDate: string, birthCountry: string, passportNumber: string, issuingCountry: string, sex: string, nationalId: string, passportIssueDate: string, passportExpirationDate: string, issuanceCity: string, issuanceCountry: string }>}
  */
 export async function extractPassportFieldsFromFile(file) {
   if (!(file instanceof File)) {
@@ -36,6 +36,7 @@ export async function extractPassportFieldsFromFile(file) {
     firstName: String(json.firstName ?? ''),
     lastName: String(json.lastName ?? ''),
     birthDate: String(json.birthDate ?? ''),
+    birthCountry: String(json.placeOfBirth ?? '').trim(),
     passportNumber: String(json.passportNumber ?? ''),
     issuingCountry: String(json.issuingCountry ?? json.country ?? ''),
     sex: String(json.sex ?? '').trim().toUpperCase().slice(0, 1),

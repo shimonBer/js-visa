@@ -210,7 +210,7 @@ Extract the following printed fields:
 • Nationality
 • Sex
 • Date of Birth
-• Place of Birth
+• Country of Birth — on Israeli passports, the field labeled "Place of birth / מקום לידה" contains the country of birth. Extract that country exactly as printed. Do not infer it from nationality or issuing country; if it is unreadable or not a recognizable country, return null.
 • Date of Issue
 • Date of Expiry
 • Israeli ID Number
@@ -240,7 +240,7 @@ Israeli ID Number: Middle-right — labeled "I.D. No. / מס' זהות".
                    Do NOT confuse with Passport No. (top-right) or MRZ digit runs.
 Date of Birth:     Center-left, below the photo.
 Sex:               Same row as Date of Birth.
-Place of Birth:    Same row as Date of Birth.
+Place of Birth:    Same row as Date of Birth. On an Israeli passport this is the country of birth, despite the generic label "Place of birth / מקום לידה".
 Date of Issue:     Lower-center.
 Date of Expiry:    Lower-right, paired with Date of Issue.
 Issuance City:     Adjacent to Date of Issue — typically labeled "Authority" or "Passport at".
@@ -292,7 +292,7 @@ If values disagree, prefer in this order:
 For passportNumber, surname, givenNames, nationality, sex, dateOfBirth, dateOfExpiry:
   → Prefer MRZ. If MRZ is null, use spatial. Record every disagreement in warnings.
 
-For placeOfBirth, dateOfIssue, issuanceCity, issuanceCountry:
+For placeOfBirth (the country of birth on an Israeli passport), dateOfIssue, issuanceCity, issuanceCountry:
   → Use spatial printed value (not in MRZ).
 
 For israeliIdNumber:
