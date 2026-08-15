@@ -220,6 +220,7 @@ Extract the following printed fields:
 Dates must use: YYYY-MM-DD
 
 Israeli ID Number: Extract the complete identifier exactly as printed, ensuring no digits are omitted. Remove hyphens and all other separators from the returned value — return digits only. If unreadable return null.
+Israeli passports do not have a separate passport book number. The printed "I.D. No. / מס' זהות" and the MRZ optional-data digits are the holder's national identification number only. Never classify, copy, or return either value as a passport book number.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SPATIAL VERIFICATION PASS (PASS 2)
@@ -479,13 +480,6 @@ fullName = givenNames + " " + surname (null if either is null).`
     const sex = sexRaw === 'M' || sexRaw === 'F' ? sexRaw : ''
 
     const nationalIdDigits = String(f.israeliIdNumber ?? '').replace(/[-\s]/g, '').trim()
-    const isIsraeli = /^israel$/i.test(String(f.nationality ?? '').trim())
-
-    // Format passportBookNumber as D-DDDDDDD-D only for Israeli passports with a valid 9-digit ID
-    let passportBookNumber
-    if (isIsraeli && /^\d{9}$/.test(nationalIdDigits)) {
-      passportBookNumber = `${nationalIdDigits.slice(0, 1)}-${nationalIdDigits.slice(1, 8)}-${nationalIdDigits.slice(8)}`
-    }
 
     const out = {
       firstName:          String(f.givenNames ?? '').trim(),
@@ -495,7 +489,6 @@ fullName = givenNames + " " + surname (null if either is null).`
       issuingCountry:     String(f.nationality ?? '').trim(),
       sex,
       nationalId:         nationalIdDigits,
-      passportBookNumber,
       placeOfBirth:       String(f.placeOfBirth ?? '').trim() || undefined,
       dateOfIssue:        String(f.dateOfIssue ?? '').trim() || undefined,
       dateOfExpiry:       String(f.dateOfExpiry ?? '').trim() || undefined,

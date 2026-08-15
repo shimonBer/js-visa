@@ -4,6 +4,7 @@ import { firstFile } from './uploadFormDocuments.js'
 const DB_NAME = 'ds160_form_app'
 const DB_VERSION = 1
 const STORE = 'translation_cache'
+const TRANSLATION_SCHEMA_VERSION = 'israeli-passport-book-na-v4'
 
 const DOC_FIELDS = [
   'passportScan',
@@ -40,7 +41,7 @@ function openDb() {
  */
 export function buildTranslationFingerprint(values) {
   const { data, fileMeta } = serializeFormValuesForJson(values)
-  const parts = [JSON.stringify(data), JSON.stringify(fileMeta ?? {})]
+  const parts = [TRANSLATION_SCHEMA_VERSION, JSON.stringify(data), JSON.stringify(fileMeta ?? {})]
   for (const field of DOC_FIELDS) {
     const f = firstFile(values[field])
     if (f instanceof File) parts.push(`${field}:${f.name}:${f.size}:${f.lastModified}`)

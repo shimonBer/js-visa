@@ -443,9 +443,11 @@ PERSON/ENTITY PAYING FOR TRIP
 
   * IF YES:
 
-    * Surnames of Person Traveling With You  
-    * Given Names of Person Traveling With You  
-    * Relationship
+    Rule: iterate over every entry in the travelCompanions array in source order.
+    Output all three lines for every entry; never merge or drop companions.
+    * Surnames of Person Traveling With You → travelCompanions[i].surname
+    * Given Names of Person Traveling With You → travelCompanions[i].givenName
+    * Relationship → travelCompanions[i].relationship
 
 (REPEATABLE GROUP)
 
@@ -470,41 +472,48 @@ PERSON/ENTITY PAYING FOR TRIP
     (REPEATABLE GROUP)
 
     * Do you or did you ever hold a U.S. Driver’s License? YES/NO
+      * IF YES:
+        * Driver's License Number
+        * State of Driver's License
+        (REPEATABLE GROUP)
 
 
-* Have you ever been issued a U.S. visa? YES/NO
+* Have you ever been issued a U.S. Visa? YES/NO
 
   * IF YES:
     Rule: populate from existingVisaScan attachment first; fall back to hadUSVisa JSON fields.
     If a specific sub-field is unavailable → N/A (not ❗ MISSING)
 
-    * Visa Issue Date
-    * Visa Expiration Date
+    * Date Last Visa Was Issued
     * Visa Number
       Rule: use visaNumber field if present; otherwise extract from existingVisaScan; if unavailable → N/A
-    * Same Visa Type? YES/NO
+    * Are you applying for the same type of visa? YES/NO
       Rule: use sameVisaType field (yes → YES, no → NO); default YES if absent
-    * Are you applying in the same country where the visa above was issued, and is this your principal country of residence? YES/NO
+    * Are you applying in the same country or location where the visa above was issued, and is this country or location your place of principal of residence? YES/NO
       Rule: derive from visaIssuedInIsrael (yes → YES, no → NO); default YES if absent
     * Have you been ten-printed? YES/NO
       Rule: derive from tenPrinted field (yes → YES, no → NO); if absent → ❗ MISSING
     * Has your U.S. Visa ever been lost or stolen? YES/NO
       Rule: derive from visaLostOrStolen field (yes → YES, no → NO); if absent → ❗ MISSING
+      * IF YES:
+        * Year
+        * Explain
     * Has your U.S. Visa ever been cancelled or revoked? YES/NO
       Rule: derive from visaWasCancelled field (yes → YES, no → NO); if absent → ❗ MISSING
+      * IF YES:
+        * Explain
 
-* Have you ever been refused a U.S. visa or denied admission? YES/NO
+* Have you ever been refused a U.S. Visa, or been refused admission to the United States, or withdrawn your application for admission at the port of entry? YES/NO
 
   * IF YES:
 
     * Full Explanation
 
-* Has anyone ever filed an immigrant petition on your behalf? YES/NO
+* Has anyone ever filed an immigrant petition on your behalf with the United States Citizenship and Immigration Services? YES/NO
 
   * IF YES:
 
-    * Petition Type
-    * Petition Number
+    * Explain
 
 
 ━━━━━━━━━━━━━━━━━━━━
@@ -537,7 +546,7 @@ HOME ADDRESS
   * IF YES:
     Mailing Address: SAME AS HOME ADDRESS
 
-CONTACT INFORMATION
+PHONE
 
 * Primary Phone Number: combine phoneCountryCode + phoneNumber
 * Secondary Phone Number: secondaryPhone — if empty → N/A
@@ -546,14 +555,22 @@ CONTACT INFORMATION
   Rule: NOT mandatory — if absent or empty → output: N/A (never output ❗ MISSING for this field)
 * Have you used any other phone numbers in the last five years? YES/NO
   Rule: use otherPhonesLastFiveYears field; default NO if absent
-  * IF YES: list from otherPhonesList (comma-separated → one per line)
-    Rule: if absent → N/A
+  * IF YES:
+    * Additional Phone Number
+      Rule: output one "Additional Phone Number: <number>" line for every non-empty otherPhones[].number entry, in source order.
+      (REPEATABLE GROUP)
+      If no number is available → N/A
+
+EMAIL ADDRESS
+
+* Email Address: email
 * Have you used any other email addresses in the last five years? YES/NO
   Rule: use otherEmailsLastFiveYears field; default NO if absent
-  * IF YES: list from otherEmailsList (comma-separated → one per line)
-    Rule: if absent → N/A
-* Email Address: email
-* Have you used any other email addresses in the last five years? → already mapped above
+  * IF YES:
+    * Additional Email Address
+      Rule: output one "Additional Email Address: <address>" line for every non-empty otherEmails[].address entry, in source order.
+      (REPEATABLE GROUP)
+      If no address is available → N/A
 
 SOCIAL MEDIA
 
@@ -592,36 +609,43 @@ SOCIAL MEDIA
 * Passport Number
 
 * Passport Book Number
-  Rule: use the passportBookNumber field value exactly as provided.
-  If passportBookNumber is absent or empty → output: No
-  Do not derive this from other fields or from the passport scan.
+  Rule: Israeli passports do not have a separate passport book number. If the
+  passport issuing country or nationality is Israel → output: No.
+  Otherwise, if passportBookNumberDoesNotApply is true or passportBookNumber is
+  absent/empty → output: No. Only for a non-Israeli passport, use an explicitly
+  supplied passportBookNumber exactly as provided.
+  Never derive this value from a national ID, MRZ optional data, or passport scan.
 
-* Country of Issuance
+* Country/Authority that Issued Passport/Travel Document
+  Rule: use the passport's issuing country/authority country (for an Israeli passport, output Israel).
 
-* City of Issuance
+* Passport Issuance City
   Rule: use passportIssuingCity field if present; otherwise extract from passportScan; if unavailable → N/A
   Output English city name only (e.g. Jerusalem). Never include Hebrew characters.
 
-* Issuing Authority
-  Rule: use passportIssuingAuthority field if present; otherwise extract from passportScan; if unavailable → N/A
-  Output English authority name only (e.g. Ministry of Interior). Never include Hebrew characters.
-
-* State/Province of Issuance
+* Passport Issuance State/Province
   Rule: if absent or empty → N/A
 
-* Passport Issue Date
+* Passport Issuance Country/Region
+  Rule: use the country where the passport was physically issued; for an Israeli passport issued in Israel, output Israel.
+
+* Issuance Date
   Rule: use passportIssueDate field if present; otherwise extract from passportScan; if unavailable → ❗ MISSING
 
-* Passport Expiration Date
-  Rule: use passportExpirationDate field if present; otherwise extract from passportScan; if unavailable → ❗ MISSING
+* Expiration Date
+  Rule: use passportExpirationDate field if present; otherwise extract from passportScan.
+  If the passport has no expiration date, output: No Expiration
+  If neither a date nor an explicit no-expiration indication is available → ❗ MISSING
 
 * Have you ever lost a passport or had one stolen? YES/NO
 
   * IF YES:
 
-    * Lost Passport Number
-    * Country of Issuance
-    * Explanation
+    * Lost Passport/Travel Document Number
+      Rule: if unknown, output Do Not Know
+    * Lost Passport Country/Authority
+    * Lost Passport Explanation
+    (REPEATABLE GROUP)
 
 
 
@@ -723,13 +747,15 @@ RELATIVES IN THE U.S.
 
   * IF YES:
 
-    * Spouse Surname
-    * Spouse Given Name
+    * Spouse Surname → spouseSurnames
+    * Spouse Given Name → spouseGivenNames
     * Spouse Date of Birth
     * Spouse Nationality
     * Spouse City of Birth
     * Spouse Country of Birth
     * Spouse Address
+      Never use contactSurnames, contactGivenNames, or any usRelatives entry for
+      the spouse name, even if a U.S. relative has relationship "SPOUSE".
       Rule: use spouseAddressType field:
       - "SAME AS HOME ADDRESS" → output: Same as home address
       - "SAME AS MAILING ADDRESS" → output: Same as mailing address
@@ -868,12 +894,12 @@ RELATIVES IN THE U.S.
     * Job Title → previousEmployments[i].jobTitle; if absent → ❗ MISSING
     * Employer Address → previousEmployments[i].street + previousEmployments[i].street2; if absent → N/A
     * Employer City → previousEmployments[i].city; if absent → N/A
-    * State / Province → previousEmployments[i].state; if previousEmployments[i].stateDoesNotApply is true → N/A
-    * ZIP Code → previousEmployments[i].zip; if previousEmployments[i].zipDoesNotApply is true or absent → N/A
+    * State / Province → previousEmployments[i].state; if previousEmployments[i].stateDoesNotApply is true or absent → DOES NOT APPLY
+    * ZIP Code → previousEmployments[i].zip; if previousEmployments[i].zipDoesNotApply is true or absent → DOES NOT APPLY
     * Country / Region → previousEmployments[i].country; if absent → N/A
     * Employer Phone Number → previousEmployments[i].phone; if absent → N/A
-    * Supervisor Surname → previousEmployments[i].supervisorSurnames; if supervisorSurnamesDoNotKnow is true → DO NOT KNOW; if absent → N/A
-    * Supervisor Given Name → previousEmployments[i].supervisorGivenNames; if supervisorGivenNamesDoNotKnow is true → DO NOT KNOW; if absent → N/A
+    * Supervisor Surname → previousEmployments[i].supervisorSurnames; if supervisorSurnamesDoNotKnow is true or absent → DO NOT KNOW
+    * Supervisor Given Name → previousEmployments[i].supervisorGivenNames; if supervisorGivenNamesDoNotKnow is true or absent → DO NOT KNOW
     * Start Date → previousEmployments[i].dateFrom; if absent → ❗ MISSING
     * End Date → previousEmployments[i].dateTo; if absent → N/A
     * Job Duties → previousEmployments[i].duties; if absent → N/A
@@ -892,8 +918,8 @@ RELATIVES IN THE U.S.
     * School / Institution Name → educationRecords[i].institutionName; if absent → ❗ MISSING
     * Address → educationRecords[i].street + educationRecords[i].street2; if absent → N/A
     * City → educationRecords[i].city; if absent → N/A
-    * State / Province → educationRecords[i].state; if educationRecords[i].stateDoesNotApply is true → N/A
-    * ZIP Code → educationRecords[i].zip; if educationRecords[i].zipDoesNotApply is true or absent → N/A
+    * State / Province → educationRecords[i].state; if educationRecords[i].stateDoesNotApply is true or absent → DOES NOT APPLY
+    * ZIP Code → educationRecords[i].zip; if educationRecords[i].zipDoesNotApply is true or absent → DOES NOT APPLY
     * Country / Region → educationRecords[i].country; if absent → N/A
     * Course of Study → educationRecords[i].courseOfStudy; if absent → ❗ MISSING
     * Attendance From → educationRecords[i].dateFrom; if absent → ❗ MISSING
@@ -981,40 +1007,94 @@ MEDICAL & HEALTH
 * Mental disorders posing danger
 * Drug abuse or addiction
 
-CRIMINAL
+PART 2 — CRIMINAL
 
-* Arrests or convictions
-  Rule: use arrestedOrConvicted field (yes/no). If YES, use arrestedOrConvictedExplanation as the explanation text.
-* Drug law violations
-* Prostitution-related activities
-* Money laundering
-* Human trafficking 
+Output exactly these 7 questions once, in this order, using the wording below
+unchanged. Do not shorten, combine, or paraphrase them. Use the named intake
+field for the Yes/No answer and its corresponding Explanation field when the
+answer is Yes.
+
+* Have you ever been arrested or convicted for any offense or crime, even though subject of a pardon, amnesty, or other similar action?
+  Field: arrestedOrConvicted
+* Have you ever violated, or engaged in a conspiracy to violate, any law relating to controlled substances?
+  Field: violatedControlledSubstances
+* Are you coming to the United States to engage in prostitution or unlawful commercialized vice or have you been engaged in prostitution or procuring prostitutes within the past 10 years?
+  Field: engagedInProstitution
+* Have you ever been involved in, or do you seek to engage in, money laundering?
+  Field: moneyLaundering
+* Have you ever committed or conspired to commit a human trafficking offense in the United States or outside the United States?
+  Field: humanTrafficking
+* Have you ever knowingly aided, abetted, assisted or colluded with an individual who has committed, or conspired to commit a severe human trafficking offense in the United States or outside the United States?
+  Field: aidedHumanTrafficking
+* Are you the spouse, son, or daughter of an individual who has committed or conspired to commit a human trafficking offense in the United States or outside the United States and have you within the last five years, knowingly benefited from the trafficking activities?
+  Field: spouseOfTrafficker
 
 
-SECURITY
+PART 3 — SECURITY & HUMAN RIGHTS
 
-* Espionage
-* Sabotage
-* Export violations
-* Terrorist activities
-* Support to terrorist organizations
-* Membership in terrorist organizations
+Output exactly these 12 questions once, in this order, using the wording below
+unchanged. Do not shorten, split, combine, or paraphrase them. Use the named
+intake field for the Yes/No answer and its corresponding Explanation field when
+the answer is Yes.
 
-HUMAN RIGHTS VIOLATIONS
+* Do you seek to engage in espionage, sabotage, export control violations, or any other illegal activity while in the United States?
+  Field: espionage
+* Do you seek to engage in terrorist activities while in the United States or have you ever engaged in terrorist activities?
+  Field: terroristActivities
+* Have you ever or do you intend to provide financial assistance or other support to terrorists or terrorist organizations?
+  Field: supportedTerrorists
+* Are you a member or representative of a terrorist organization?
+  Field: terroristMember
+* Are you the spouse, son, or daughter of an individual who has engaged in terrorist activity, including providing financial assistance or other support to terrorists or terrorist organizations, in the last five years?
+  Field: spouseOfTerrorist
+* Have you ever ordered, incited, committed, assisted, or otherwise participated in genocide?
+  Field: genocide
+* Have you ever committed, ordered, incited, assisted, or otherwise participated in torture?
+  Field: torture
+* Have you committed, ordered, incited, assisted, or otherwise participated in extrajudicial killings, political killings, or other acts of violence?
+  Field: extrajudicialKillings
+* Have you ever engaged in the recruitment or the use of child soldiers?
+  Field: childSoldiers
+* Have you, while serving as a government official, been responsible for or directly carried out, at any time, particularly severe violations of religious freedom?
+  Field: religiousFreedomViolations
+* Have you ever been directly involved in the establishment or enforcement of population controls forcing a woman to undergo an abortion against her free choice or a man or a woman to undergo sterilization against his or her free will?
+  Field: populationControls
+* Have you ever been directly involved in the coercive transplantation of human organs or bodily tissue?
+  Field: organTransplantation
 
-* Genocide
-* Torture
-* Extrajudicial killings
-* Religious freedom violations
+PART 4 — IMMIGRATION VIOLATIONS
 
-IMMIGRATION VIOLATIONS
+Output exactly these 5 questions once, in this order, using the wording below
+unchanged. Do not shorten, combine, or paraphrase them. Use the named intake
+field for the Yes/No answer and its corresponding Explanation field when the
+answer is Yes.
 
-* Visa fraud
-* Immigration fraud
-* Visa overstays
-* Deportation or removal
-* Illegal voting in the United States
-* Renouncing U.S. citizenship to avoid taxes
+* Have you ever been the subject of a removal or deportation hearing?
+  Field: removalHearing
+* Have you ever sought to obtain or assist others to obtain a visa, entry into the United States, or any other United States immigration benefit by fraud or willful misrepresentation or other unlawful means?
+  Field: immigrationFraud
+* Have you failed to attend a hearing on removability or inadmissibility within the last five years?
+  Field: failedToAttendHearing
+* Have you ever been unlawfully present, overstayed the amount of time granted by an immigration official or otherwise violated the terms of a U.S. visa?
+  Field: visaViolation
+* Have you ever been removed or deported from any country?
+  Field: deportedFromCountry
+
+PART 5 — OTHER
+
+Output exactly these 4 questions once, in this order, using the wording below
+unchanged. Do not shorten, combine, or paraphrase them. Use the named intake
+field for the Yes/No answer and its corresponding Explanation field when the
+answer is Yes.
+
+* Have you ever withheld custody of a U.S. citizen child outside the United States from a person granted legal custody by a U.S. court?
+  Field: withheldCustody
+* Have you voted in the United States in violation of any law or regulation?
+  Field: votedIllegally
+* Have you ever renounced United States citizenship for the purposes of avoiding taxation?
+  Field: renouncedCitizenship
+* Have you attended a public elementary school on student (F) status or a public secondary school after November 30, 1996 without reimbursing the school?
+  Field: publicSchoolWithoutReimbursement
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1190,6 +1270,17 @@ function jsonResponse(res, status, body) {
   res.end(JSON.stringify(body))
 }
 
+export function normalizeDs160SourceData(source) {
+  const data = { ...source }
+  const isIsraeliPassport = [data.passportIssuingCountry, data.nationality]
+    .some((value) => /^israel(?:i)?$/i.test(String(value || '').trim()))
+  if (isIsraeliPassport) {
+    data.passportBookNumber = ''
+    data.passportBookNumberDoesNotApply = true
+  }
+  return data
+}
+
 /**
  * @param {import('http').IncomingMessage} req
  * @param {import('http').ServerResponse} res
@@ -1207,10 +1298,11 @@ export default async function handler(req, res) {
 
   try {
     const body = await readBodyJson(req)
-    const data = body?.data
-    if (!data || typeof data !== 'object') {
+    const sourceData = body?.data
+    if (!sourceData || typeof sourceData !== 'object') {
       return jsonResponse(res, 400, { error: 'Missing data object' })
     }
+    const data = normalizeDs160SourceData(sourceData)
 
     const attachments = Array.isArray(body.attachments) ? body.attachments : []
     /** @type {{ field: string, fileName: string, mimeType: string, bytes: Uint8Array }[]} */
@@ -1250,7 +1342,7 @@ export default async function handler(req, res) {
       })
       content.push({
         type: 'image_url',
-        image_url: { url: `data:${mime};base64,${b64}` },
+        image_url: { url: `data:${mime};base64,${b64}`, detail: 'original' },
       })
       analyzedAttachments.push({
         field: String(att?.field || ''),
@@ -1299,7 +1391,7 @@ export default async function handler(req, res) {
       })
       content.push({
         type: 'image_url',
-        image_url: { url: `data:${mime};base64,${b64}`, detail: 'original' },
+        image_url: { url: `data:${mime};base64,${b64}` },
       })
       analyzedAttachments.push({ field, fileName })
       binaryAttachments.push({

@@ -38,7 +38,6 @@ const PASSPORT_OCR_FIELDS = [
   { key: 'passportExpirationDate', label: 'Passport expiration date', required: true, format: 'date', after: 'passportIssueDate' },
   { key: 'issuanceCity', label: 'Issuance city' },
   { key: 'issuanceCountry', label: 'Issuance country' },
-  { key: 'passportBookNumber', label: 'Passport book number' },
 ]
 
 const FOREIGN_PASSPORT_OCR_FIELDS = [
@@ -1109,8 +1108,16 @@ export default function DS160IsraelForm({
       votedIllegallyExplanation: '',
       renouncedCitizenship: 'no',
       renouncedCitizenshipExplanation: '',
+      publicSchoolWithoutReimbursement: 'no',
+      publicSchoolWithoutReimbursementExplanation: '',
+      removalHearing: 'no',
+      removalHearingExplanation: '',
       immigrationFraud: 'no',
       immigrationFraudExplanation: '',
+      failedToAttendHearing: 'no',
+      failedToAttendHearingExplanation: '',
+      visaViolation: 'no',
+      visaViolationExplanation: '',
       deportedFromCountry: 'no',
       deportedFromCountryExplanation: '',
       espionage: 'no',
@@ -1580,6 +1587,17 @@ export default function DS160IsraelForm({
         data.arrestedOrConvicted === 'yes' || legacyCriminalRecord === 'yes' ? 'yes' : 'no',
       arrestedOrConvictedExplanation:
         data.arrestedOrConvictedExplanation || legacyCriminalRecordExplanation || '',
+      // Part 4 fields added after older drafts were created.
+      removalHearing: data.removalHearing === 'yes' ? 'yes' : 'no',
+      removalHearingExplanation: data.removalHearingExplanation || '',
+      failedToAttendHearing: data.failedToAttendHearing === 'yes' ? 'yes' : 'no',
+      failedToAttendHearingExplanation: data.failedToAttendHearingExplanation || '',
+      visaViolation: data.visaViolation === 'yes' ? 'yes' : 'no',
+      visaViolationExplanation: data.visaViolationExplanation || '',
+      publicSchoolWithoutReimbursement:
+        data.publicSchoolWithoutReimbursement === 'yes' ? 'yes' : 'no',
+      publicSchoolWithoutReimbursementExplanation:
+        data.publicSchoolWithoutReimbursementExplanation || '',
       // The social-media question was previously missing, so infer YES for
       // drafts that already contain an account.
       hasSocialMedia:
@@ -1773,6 +1791,16 @@ export default function DS160IsraelForm({
     })
     reset({
       ...restData,
+      removalHearing: restData.removalHearing === 'yes' ? 'yes' : 'no',
+      removalHearingExplanation: restData.removalHearingExplanation || '',
+      failedToAttendHearing: restData.failedToAttendHearing === 'yes' ? 'yes' : 'no',
+      failedToAttendHearingExplanation: restData.failedToAttendHearingExplanation || '',
+      visaViolation: restData.visaViolation === 'yes' ? 'yes' : 'no',
+      visaViolationExplanation: restData.visaViolationExplanation || '',
+      publicSchoolWithoutReimbursement:
+        restData.publicSchoolWithoutReimbursement === 'yes' ? 'yes' : 'no',
+      publicSchoolWithoutReimbursementExplanation:
+        restData.publicSchoolWithoutReimbursementExplanation || '',
       travelCompanions: companions,
       previousUSVisits: restoredVisits,
       passportScan: undefined,
@@ -1838,7 +1866,9 @@ export default function DS160IsraelForm({
           if (result.sex === 'M') setValue('sex', 'male', { shouldDirty: true })
           else if (result.sex === 'F') setValue('sex', 'female', { shouldDirty: true })
           if (result.nationalId) setValue('idNumber', result.nationalId, { shouldDirty: true })
-          setValue('passportBookNumber', result.passportBookNumber || '', { shouldDirty: true })
+          // Israeli passports have an I.D. No., not a separate passport book number.
+          setValue('passportBookNumber', '', { shouldDirty: true })
+          setValue('passportBookNumberDoesNotApply', true, { shouldDirty: true })
         },
         setStatus: (message) => setPassportOcr({ status: 'idle', message }),
       })
@@ -2330,7 +2360,11 @@ export default function DS160IsraelForm({
     if (values.withheldCustody === 'yes') req('withheldCustodyExplanation')
     if (values.votedIllegally === 'yes') req('votedIllegallyExplanation')
     if (values.renouncedCitizenship === 'yes') req('renouncedCitizenshipExplanation')
+    if (values.publicSchoolWithoutReimbursement === 'yes') req('publicSchoolWithoutReimbursementExplanation')
+    if (values.removalHearing === 'yes') req('removalHearingExplanation')
     if (values.immigrationFraud === 'yes') req('immigrationFraudExplanation')
+    if (values.failedToAttendHearing === 'yes') req('failedToAttendHearingExplanation')
+    if (values.visaViolation === 'yes') req('visaViolationExplanation')
     if (values.deportedFromCountry === 'yes') req('deportedFromCountryExplanation')
     if (values.espionage === 'yes') req('espionageExplanation')
     if (values.terroristActivities === 'yes') req('terroristActivitiesExplanation')
@@ -2395,10 +2429,26 @@ export default function DS160IsraelForm({
     }
     if (values.hasCloseRelativesInUS === 'yes') {
       const relatives = values.usRelatives || []
+      const normalizedSpouseName = [
+        String(values.spouseSurnames ?? '').trim(),
+        String(values.spouseGivenNames ?? '').trim(),
+      ].join('|').toUpperCase()
       relatives.forEach((rel, i) => {
         if (!String(rel?.surnames ?? '').trim() && !String(rel?.givenNames ?? '').trim()) missing.add(`usRelatives.${i}.surnames`)
         if (!String(rel?.relationship ?? '').trim()) missing.add(`usRelatives.${i}.relationship`)
         if (!String(rel?.status ?? '').trim()) missing.add(`usRelatives.${i}.status`)
+        const relativeName = [
+          String(rel?.surnames ?? '').trim(),
+          String(rel?.givenNames ?? '').trim(),
+        ].join('|').toUpperCase()
+        if (
+          rel?.relationship === 'SPOUSE' &&
+          normalizedSpouseName !== '|' &&
+          relativeName !== '|' &&
+          relativeName !== normalizedSpouseName
+        ) {
+          missing.add('spouseRelationshipConflict')
+        }
       })
     }
     const employedOccupations = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
@@ -2627,7 +2677,11 @@ export default function DS160IsraelForm({
     withheldCustody: watch('withheldCustody'),
     votedIllegally: watch('votedIllegally'),
     renouncedCitizenship: watch('renouncedCitizenship'),
+    publicSchoolWithoutReimbursement: watch('publicSchoolWithoutReimbursement'),
+    removalHearing: watch('removalHearing'),
     immigrationFraud: watch('immigrationFraud'),
+    failedToAttendHearing: watch('failedToAttendHearing'),
+    visaViolation: watch('visaViolation'),
     deportedFromCountry: watch('deportedFromCountry'),
     espionage: watch('espionage'),
     terroristActivities: watch('terroristActivities'),
@@ -4474,6 +4528,12 @@ export default function DS160IsraelForm({
             {w.hasCloseRelativesInUS === 'yes' && (
               <div className="space-y-4 pl-2 border-r-4 border-blue-400 pr-4">
                 <p className="text-sm text-gray-600">אנא מסור/י את הפרטים הבאים:</p>
+                {translationErrors.has('spouseRelationshipConflict') && (
+                  <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                    קרוב/ת משפחה בארה״ב סומן/ה כבן/בת זוג, אך השם אינו תואם לפרטי בן/בת הזוג.
+                    יש לתקן את סוג הקרבה או את פרטי בן/בת הזוג לפני התרגום.
+                  </div>
+                )}
                 {usRelativeFields.map((field, index) => (
                   <div key={field.id} className="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -5184,7 +5244,10 @@ export default function DS160IsraelForm({
                   <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 4 — Immigration Violations</h3>
                   <div className="space-y-4">
                     {[
+                      { name: 'removalHearing', expl: 'removalHearingExplanation', watch: w.removalHearing, label: 'Have you ever been the subject of a removal or deportation hearing?' },
                       { name: 'immigrationFraud', expl: 'immigrationFraudExplanation', watch: w.immigrationFraud, label: 'Have you ever sought to obtain or assist others to obtain a visa, entry into the United States, or any other United States immigration benefit by fraud or willful misrepresentation or other unlawful means?' },
+                      { name: 'failedToAttendHearing', expl: 'failedToAttendHearingExplanation', watch: w.failedToAttendHearing, label: 'Have you failed to attend a hearing on removability or inadmissibility within the last five years?' },
+                      { name: 'visaViolation', expl: 'visaViolationExplanation', watch: w.visaViolation, label: 'Have you ever been unlawfully present, overstayed the amount of time granted by an immigration official or otherwise violated the terms of a U.S. visa?' },
                       { name: 'deportedFromCountry', expl: 'deportedFromCountryExplanation', watch: w.deportedFromCountry, label: 'Have you ever been removed or deported from any country?' },
                     ].map(q => (
                       <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
@@ -5205,6 +5268,7 @@ export default function DS160IsraelForm({
                       { name: 'withheldCustody', expl: 'withheldCustodyExplanation', watch: w.withheldCustody, label: 'Have you ever withheld custody of a U.S. citizen child outside the United States from a person granted legal custody by a U.S. court?' },
                       { name: 'votedIllegally', expl: 'votedIllegallyExplanation', watch: w.votedIllegally, label: 'Have you voted in the United States in violation of any law or regulation?' },
                       { name: 'renouncedCitizenship', expl: 'renouncedCitizenshipExplanation', watch: w.renouncedCitizenship, label: 'Have you ever renounced United States citizenship for the purposes of avoiding taxation?' },
+                      { name: 'publicSchoolWithoutReimbursement', expl: 'publicSchoolWithoutReimbursementExplanation', watch: w.publicSchoolWithoutReimbursement, label: 'Have you attended a public elementary school on student (F) status or a public secondary school after November 30, 1996 without reimbursing the school?' },
                     ].map(q => (
                       <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
                         <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
@@ -5599,7 +5663,9 @@ export default function DS160IsraelForm({
                     title="Download the translated text file, then run: npm run autofill -- --input ~/Downloads/translated.txt"
                     className="text-sm px-3 py-1.5 rounded-md border border-amber-500 text-amber-700 hover:bg-amber-50 flex items-center gap-1.5"
                     onClick={() => {
-                      const blob = new Blob([translateUi.text], { type: 'text/plain' })
+                      const autofillText =
+                        `# DS160_FORM_ID=${storageFormId}\n${translateUi.text}`
+                      const blob = new Blob([autofillText], { type: 'text/plain' })
                       const url = URL.createObjectURL(blob)
                       const a = document.createElement('a')
                       a.href = url
