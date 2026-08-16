@@ -165,10 +165,26 @@ function OptionalBadge() {
   return <span className="mr-1.5 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-normal text-gray-400 align-middle">אופציונלי</span>
 }
 
-function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError, optional, naGate, watch: watchFn, setValue: setVal }) {
+/**
+ * Wraps `register(name)` so non-digit characters are stripped as the user types/pastes.
+ * Used for every phone number field so only digits can ever be entered.
+ */
+function digitsOnlyRegister(register, name) {
+  const field = register(name)
+  return {
+    ...field,
+    onChange: (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '')
+      return field.onChange(e)
+    },
+  }
+}
+
+function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError, optional, naGate, watch: watchFn, setValue: setVal, digitsOnly }) {
   const fieldError = getFieldError(name)
   const naName = `${name}NA`
   const isDisabled = naGate && !!watchFn?.(naName)
+  const inputProps = digitsOnly ? digitsOnlyRegister(register, name) : register(name)
   return (
     <div id={`field-${name}`} className="flex flex-col mb-4">
       <div className="flex items-center justify-between mb-1">
@@ -194,7 +210,8 @@ function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, r
       ) : (
         <input
           type={type}
-          {...register(name)}
+          {...inputProps}
+          inputMode={digitsOnly ? 'numeric' : undefined}
           disabled={isDisabled}
           className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border disabled:bg-gray-100 disabled:text-gray-400 ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
           placeholder={placeholder}
@@ -3535,7 +3552,8 @@ export default function DS160IsraelForm({
                     <div className="flex flex-col flex-1">
                       <input
                         type="tel"
-                        {...register('phoneNumber')}
+                        inputMode="numeric"
+                        {...digitsOnlyRegister(register, 'phoneNumber')}
                         className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border ${getFieldError('phoneNumber') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                         placeholder="543344505"
                         dir="ltr"
@@ -3551,7 +3569,8 @@ export default function DS160IsraelForm({
                   <label className="block text-sm font-medium text-gray-700 mb-1">טלפון משני (Secondary Phone Number)<OptionalBadge /></label>
                   <input
                     type="tel"
-                    {...register('secondaryPhone')}
+                    inputMode="numeric"
+                    {...digitsOnlyRegister(register, 'secondaryPhone')}
                     placeholder="לדוגמה: 0523344505"
                     dir="ltr"
                     className="w-full rounded-md p-2 border border-gray-300 text-sm"
@@ -3563,7 +3582,8 @@ export default function DS160IsraelForm({
                   <label className="block text-sm font-medium text-gray-700 mb-1">טלפון עבודה (Work Phone Number)<OptionalBadge /></label>
                   <input
                     type="tel"
-                    {...register('workPhone')}
+                    inputMode="numeric"
+                    {...digitsOnlyRegister(register, 'workPhone')}
                     placeholder="לדוגמה: 0523344505"
                     dir="ltr"
                     className="w-full rounded-md p-2 border border-gray-300 text-sm"
@@ -3578,7 +3598,9 @@ export default function DS160IsraelForm({
                       {otherPhoneFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2 items-center">
                           <input
-                            {...register(`otherPhones.${index}.number`)}
+                            type="tel"
+                            inputMode="numeric"
+                            {...digitsOnlyRegister(register, `otherPhones.${index}.number`)}
                             placeholder="מספר טלפון"
                             dir="ltr"
                             className="flex-1 rounded-md p-2 border border-gray-300 text-sm"
@@ -3746,7 +3768,7 @@ export default function DS160IsraelForm({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <FormInput register={register} getFieldError={getFieldError} label="שם משפחה" name="tripPayerSurname" />
                       <FormInput register={register} getFieldError={getFieldError} label="שם פרטי" name="tripPayerGivenName" />
-                      <FormInput register={register} getFieldError={getFieldError} label="מספר טלפון" name="tripPayerPhone" type="tel" />
+                      <FormInput register={register} getFieldError={getFieldError} label="מספר טלפון" name="tripPayerPhone" type="tel" digitsOnly />
                       <FormInput register={register} getFieldError={getFieldError} label="דואר אלקטרוני" name="tripPayerEmail" type="email" optional naGate watch={watch} setValue={setValue} />
                       <div className="flex flex-col gap-1">
                         <label className="font-semibold text-sm text-gray-700">קרבה למבקש</label>
@@ -3780,7 +3802,7 @@ export default function DS160IsraelForm({
                     <p className="text-sm font-semibold text-blue-700">פרטי החברה / הארגון המממן</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <FormInput register={register} getFieldError={getFieldError} label="שם החברה / הארגון" name="tripPayerOrgName" />
-                      <FormInput register={register} getFieldError={getFieldError} label="מספר טלפון" name="tripPayerPhone" type="tel" />
+                      <FormInput register={register} getFieldError={getFieldError} label="מספר טלפון" name="tripPayerPhone" type="tel" digitsOnly />
                       <FormInput register={register} getFieldError={getFieldError} label="קרבה / זיקה למבקש" name="tripPayerOrgRelationship" />
                     </div>
                     <p className="text-sm font-semibold text-gray-700 mt-2">כתובת החברה / הארגון</p>
@@ -4336,7 +4358,7 @@ export default function DS160IsraelForm({
                       <FormSelect register={register} getFieldError={getFieldError} label="מדינה (State)" name="contactState" options={['- SELECT ONE -','AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC','AS','GU','MP','PR','VI']} />
                     </div>
                     <FormInput register={register} getFieldError={getFieldError} label="מיקוד (ZIP Code — if known)" name="contactZip" hint="לדוגמה: 33101 או 33101-5678" optional naGate watch={watch} setValue={setValue} />
-                    <FormInput register={register} getFieldError={getFieldError} label="טלפון (Phone Number)" name="contactPhone" hint="לדוגמה: 5555555555" />
+                    <FormInput register={register} getFieldError={getFieldError} label="טלפון (Phone Number)" name="contactPhone" hint="לדוגמה: 5555555555" type="tel" digitsOnly />
                     {/* Email + Does Not Apply */}
                     <div className="flex flex-col gap-1">
                       <label className="font-semibold text-sm text-gray-700">אימייל (Email Address)</label>
@@ -4712,7 +4734,7 @@ export default function DS160IsraelForm({
                       </label>
                     </div>
                   </div>
-                  <FormInput register={register} getFieldError={getFieldError} label="טלפון" name="employerPhone" />
+                  <FormInput register={register} getFieldError={getFieldError} label="טלפון" name="employerPhone" type="tel" digitsOnly />
                   <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name="employerCountry" />
                 </div>
 
@@ -4744,7 +4766,7 @@ export default function DS160IsraelForm({
                 <FormInput register={register} getFieldError={getFieldError} label="שם מוסד הלימודים" name="studentInstitutionName" />
                 <FormInput register={register} getFieldError={getFieldError} label="תחום לימוד / תואר" name="studentDegree" />
                 <DateSelectInput label="תאריך תחילת לימודים" name="studentStartDate" register={register} getFieldError={getFieldError} setValue={setValue} watch={watch} />
-                <FormInput register={register} getFieldError={getFieldError} label="טלפון המוסד" name="studentInstitutionPhone" />
+                <FormInput register={register} getFieldError={getFieldError} label="טלפון המוסד" name="studentInstitutionPhone" type="tel" digitsOnly />
                 <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב המוסד" name="studentInstitutionStreet" />
                 <FormInput register={register} getFieldError={getFieldError} label="עיר" name="studentInstitutionCity" />
                 <FormInput register={register} getFieldError={getFieldError} label="הכנסה חודשית" name="studentMonthlyIncome" optional naGate watch={watch} setValue={setValue} />
@@ -4804,7 +4826,7 @@ export default function DS160IsraelForm({
                         </div>
                       </div>
                       <CountrySelect register={register} setValue={setValue} watch={watch} getFieldError={getFieldError} label="מדינה" name={`previousEmployments.${i}.country`} optional />
-                      <FormInput register={register} getFieldError={getFieldError} label="טלפון" name={`previousEmployments.${i}.phone`} optional />
+                      <FormInput register={register} getFieldError={getFieldError} label="טלפון" name={`previousEmployments.${i}.phone`} type="tel" digitsOnly optional />
                     </div>
 
                     <FormInput register={register} getFieldError={getFieldError} label="תפקיד" name={`previousEmployments.${i}.jobTitle`} />
