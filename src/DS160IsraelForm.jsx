@@ -1401,10 +1401,19 @@ export default function DS160IsraelForm({
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
   const [securitySectionOpen, setSecuritySectionOpen] = useState(false)
   const WORK_OCCUPATIONS = ['AGRICULTURE','ARTIST/PERFORMER','BUSINESS','COMMUNICATIONS','COMPUTER SCIENCE','CULINARY/FOOD SERVICES','EDUCATION','ENGINEERING','GOVERNMENT','LEGAL PROFESSION','MEDICAL/HEALTH','MILITARY','NATURAL SCIENCE','PHYSICAL SCIENCES','RELIGIOUS VOCATION','RESEARCH','SOCIAL SCIENCE','OTHER']
-  const [occupationCategory, setOccupationCategory] = useState(() => {
-    const v = watch('currentOccupation')
-    return WORK_OCCUPATIONS.includes(v) ? '__WORKING__' : (v || '')
-  })
+  const watchedCurrentOccupation = watch('currentOccupation')
+  const [occupationCategory, setOccupationCategory] = useState(() =>
+    WORK_OCCUPATIONS.includes(watchedCurrentOccupation) ? '__WORKING__' : (watchedCurrentOccupation || '')
+  )
+  // currentOccupation can arrive after mount (draft load / copy from another form),
+  // so keep the category select in sync. An empty value is left alone because the
+  // user may have picked "עובד/ת" without choosing a work field yet.
+  useEffect(() => {
+    if (!watchedCurrentOccupation) return
+    setOccupationCategory(
+      WORK_OCCUPATIONS.includes(watchedCurrentOccupation) ? '__WORKING__' : watchedCurrentOccupation
+    )
+  }, [watchedCurrentOccupation])
   const [usLicenseOcr, setUsLicenseOcr] = useState({ status: 'idle', message: '' })
   const [previousVisaOcr, setPreviousVisaOcr] = useState({ status: 'idle', message: '' })
   const [ocrReview, setOcrReview] = useState(null)
