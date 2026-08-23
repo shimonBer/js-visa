@@ -2883,6 +2883,7 @@ export default function DS160IsraelForm({
             { label: 'משפחה', id: 'section-family', emoji: '👨‍👩‍👧' },
             { label: 'תעסוקה', id: 'section-employment', emoji: '💼' },
             { label: 'השכלה', id: 'section-education', emoji: '🎓' },
+            { label: 'שירות צבאי', id: 'section-military', emoji: '🎖️' },
             { label: 'ביטחון', id: 'section-security', emoji: '🛡️' },
             { label: 'רשתות חברתיות', id: 'section-social', emoji: '💬' },
             { label: 'ראיון', id: 'section-interview', emoji: '📍' },
@@ -5064,10 +5065,12 @@ export default function DS160IsraelForm({
             )}
 
             {/* Q: Military service — repeatable */}
-            <FormRadioGroup register={register} getFieldError={getFieldError}
-              label="האם שירתת בצבא?"
-              name="servedInMilitary"
-              options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
+            <div id="section-military" className="scroll-mt-24">
+              <FormRadioGroup register={register} getFieldError={getFieldError}
+                label="האם שירתת בצבא?"
+                name="servedInMilitary"
+                options={[{ label: 'כן', value: 'yes' }, { label: 'לא', value: 'no' }]} />
+            </div>
             {w.servedInMilitary === 'yes' && (
               <div className="space-y-4 pl-2 border-r-4 border-blue-400 pr-4">
                 <p className="text-sm text-gray-600">אנא מסור/י את פרטי השירות:</p>
