@@ -6,6 +6,7 @@
  * Response: { translated, analyzedAttachments, pdfBase64 }
  */
 
+import { answerSheetSchema, fieldCatalogue } from '../autofill/ds160-fields.js'
 import { buildTranslationPdf } from '../lib/buildTranslationPdf.js'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
 import { stripParentheticalAliasesFromPersonNames } from '../lib/personNameFormatting.js'
@@ -1403,6 +1404,80 @@ export default async function handler(req, res) {
       fieldsAttached.add(field)
     }
 
+    // ── extractAnswerSheet helper (defined per-request so it closes over apiKey) ──
+    /**
+     * Parse a completed DS-160 review document into a structured JSON answer sheet.
+     * Uses a cheap text-only call with json_schema output so parsing never fails.
+     *
+     * The schema and the prompt's field list are both generated from the DS-160
+     * field registry, so what the extractor is asked to produce is exactly what
+     * the autofill matcher looks up. Sections the registry has not mapped yet
+     * remain free-form.
+     */
+    async function extractAnswerSheet(reviewText, openaiApiKey) {
+      const systemMsg = `You are a DS-160 form data extractor.
+Given a completed DS-160 review document, extract all field values into a structured JSON object.
+Organize the output by DS-160 page sections using these keys:
+personal1, personal2, travel, companions, prev_travel, address, passport, contact, family, spouse,
+work_present, work_previous, work_additional, security.
+
+The sections below have fixed field keys. Use these exact keys — the autofill
+agent looks each one up by name, so a renamed or invented key is a field that
+silently never gets filled. Emit every listed key, using null when the document
+does not answer it.
+
+${fieldCatalogue()}
+
+For fields not listed above:
+- Boolean true/false for Yes/No answers
+- Plain strings for text fields
+- Arrays for repeated rows (companions, previous visits, employers, languages, social media accounts, etc.)
+
+Rules for every section:
+- Dates are ISO "YYYY-MM-DD". Never "DD/MM/YYYY" or "MM/DD/YYYY": a document
+  reading 03/04/1990 is ambiguous and guessing files the wrong date. If the
+  document's own order is genuinely unclear, use null rather than a guess.
+- null for N/A / DO NOT KNOW / MISSING fields.
+- Copy values as written; do not translate place names into other spellings or
+  expand abbreviations.
+
+Output ONLY valid JSON with no extra explanation.`
+
+      const extractRes = await fetch(OPENAI_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: OPENAI_MODELS.translation,
+          max_completion_tokens: 4096,
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'ds160_answer_sheet',
+              // Not strict: the sections the field registry does not cover yet
+              // still need to come through as free-form objects.
+              strict: false,
+              schema: answerSheetSchema(),
+            },
+          },
+          messages: [
+            { role: 'system', content: systemMsg },
+            { role: 'user', content: reviewText.slice(0, 40_000) },
+          ],
+        }),
+        signal: AbortSignal.timeout(30_000),
+      })
+      if (!extractRes.ok) {
+        throw new Error(`extractAnswerSheet HTTP ${extractRes.status}`)
+      }
+      const extractJson = await extractRes.json()
+      const raw = extractJson?.choices?.[0]?.message?.content?.trim()
+      if (!raw) throw new Error('extractAnswerSheet empty response')
+      return JSON.parse(raw)
+    }
+
     const controller = new AbortController()
     const t = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS)
     let openaiRes
@@ -1451,6 +1526,16 @@ export default async function handler(req, res) {
     }
     const translated = stripParentheticalAliasesFromPersonNames(translatedContent)
 
+    // ── Extract a machine-readable answerSheet from the review text ───────────
+    // This is done in a small, cheap second call so the main translation quality
+    // is not affected by the JSON output requirement. Falls back gracefully.
+    let answerSheet = null
+    try {
+      answerSheet = await extractAnswerSheet(translated, apiKey)
+    } catch (asErr) {
+      console.warn('[translate-form] answerSheet extraction skipped:', asErr.message)
+    }
+
     const orderIdx = (f) => {
       const i = UPLOAD_DOC_FIELDS.indexOf(String(f || ''))
       return i === -1 ? 99 : i
@@ -1466,7 +1551,13 @@ export default async function handler(req, res) {
       console.error('[translate-form] PDF assembly failed', pdfErr)
     }
 
-    return jsonResponse(res, 200, { translated, analyzedAttachments, pdfBase64 })
+    // Append the delimited answer sheet block to the translated text so the
+    // autofill CLI can load both in one file without breaking older workflows.
+    const translatedWithSheet = answerSheet
+      ? translated + '\n\n━━━ DS160_ANSWER_SHEET ━━━\n' + JSON.stringify(answerSheet)
+      : translated
+
+    return jsonResponse(res, 200, { translated: translatedWithSheet, analyzedAttachments, pdfBase64 })
   } catch (e) {
     const msg = e?.name === 'AbortError' ? 'OpenAI request timed out' : e?.message || 'translate-form error'
     console.error('[translate-form]', e)
