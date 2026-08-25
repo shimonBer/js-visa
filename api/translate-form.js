@@ -8,6 +8,7 @@
 
 import { answerSheetSchema, fieldCatalogue } from '../autofill/ds160-fields.js'
 import { buildTranslationPdf } from '../lib/buildTranslationPdf.js'
+import { resolveMissingInstitutionAddresses } from '../lib/institutionAddresses.js'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
 import { stripParentheticalAliasesFromPersonNames } from '../lib/personNameFormatting.js'
 import { fetchS3FormDocumentBytes } from '../lib/s3FormDocuments.js'
@@ -1534,6 +1535,34 @@ Output ONLY valid JSON with no extra explanation.`
       answerSheet = await extractAnswerSheet(translated, apiKey)
     } catch (asErr) {
       console.warn('[translate-form] answerSheet extraction skipped:', asErr.message)
+    }
+
+    // Every employer and school needs a street address the DS-160 will accept,
+    // and that field has no "Does Not Apply" checkbox to fall back on. When the
+    // document does not give one, look it up rather than leaving the autofill
+    // agent stuck on a page the form will not let it past.
+    if (answerSheet) {
+      try {
+        const { resolved, unresolved } = await resolveMissingInstitutionAddresses(
+          answerSheet,
+          apiKey,
+          { log: (message) => console.log('[translate-form]', message) },
+        )
+        if (resolved.length) {
+          console.log(
+            `[translate-form] Looked up ${resolved.length} institution address(es): ` +
+            resolved.map((entry) => `${entry.name} → ${entry.street}`).join('; '),
+          )
+        }
+        if (unresolved.length) {
+          console.warn(
+            '[translate-form] No verifiable address for: ' +
+            unresolved.map((entry) => `${entry.name} (${entry.city})`).join('; '),
+          )
+        }
+      } catch (addrErr) {
+        console.warn('[translate-form] institution address lookup skipped:', addrErr.message)
+      }
     }
 
     const orderIdx = (f) => {

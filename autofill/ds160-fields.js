@@ -146,6 +146,59 @@ export function fieldsByRef(pageContext) {
   return index
 }
 
+/**
+ * Answers that mean "leave it blank, or tick Does Not Apply" and must never be
+ * written into a field. The DS-160 validates its inputs, so a literal "N/A" in
+ * the ZIP box comes back as "ZIP Code is invalid", fails the page, and leaves
+ * the agent re-planning the same step until its budget is gone.
+ *
+ * A bare "No" is deliberately absent: it is a real surname, and this guard also
+ * covers name fields. Yes/No answers arrive as radio actions, not as fills.
+ */
+const FILL_MARKER_RE = new RegExp(
+  '^(?:' + [
+    'n\\.?/?a\\.?',                                  // N/A, NA, n.a.
+    'none', 'nil', 'null', 'nothing', 'tbd',
+    'unknown', 'irrelevant', 'n\\.?r\\.?',
+    'not\\s+(?:relevant|applicable|available|provided|specified|known|listed|given)',
+    'do(?:es)?\\s*n(?:o|\')?t\\s*(?:apply|know)',    // does not apply, doesn't know
+    'check\\s+does\\s+not\\s+apply',                 // source cells that say to tick the box
+    '(?:leave|left|leaves)\\s+(?:it\\s+)?blank', 'blank', 'empty',
+    'no\\s+(?:value|data|answer|info(?:rmation)?)',
+    'missing',
+    '[-–—?]+',
+  ].join('|') + ')$',
+  'i',
+)
+
+/**
+ * Strip the decoration source documents wrap these answers in, so that
+ * `*(leave blank)*` and `✅ Check "Does Not Apply"` are recognized as the same
+ * instruction as a plain "N/A".
+ */
+function bareValue(value) {
+  return String(value)
+    .replace(/[\u2705\u274C\u2757\u2714\u2611\uFE0F\u2049]/g, ' ')
+    .replace(/[*_`~]/g, '')
+    // Quotes are dropped wherever they sit, not just at the ends: the phrasing
+    // these documents use is `Check "Does Not Apply"`, where they are interior.
+    .replace(/["'\u2018\u2019\u201C\u201D]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^[([]+|[)\].,;:]+$/g, '')
+    .trim()
+}
+
+/**
+ * True when a value must not be written into a field — either because it is
+ * absent or because it is one of the "not applicable" phrasings above.
+ */
+export function isMarkerValue(value) {
+  if (value === null || value === undefined) return true
+  const bare = bareValue(value)
+  return bare === '' || FILL_MARKER_RE.test(bare)
+}
+
 /** Page sections the answer sheet carries that the registry does not yet cover. */
 const FREEFORM_SECTIONS = [
   'travel', 'companions', 'prev_travel',

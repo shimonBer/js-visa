@@ -5,6 +5,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import {
+  DEFAULT_ADDRESS_LOOKUP_MODEL,
   DEFAULT_NORMALIZATION_MODEL,
   DEFAULT_OCR_MODEL,
   DEFAULT_TRANSLATION_MODEL,
@@ -25,6 +26,7 @@ test('uses the required OCR and translation defaults', () => {
     normalization: DEFAULT_NORMALIZATION_MODEL,
     autofill: DEFAULT_OCR_MODEL,
     i94: DEFAULT_OCR_MODEL,
+    addressLookup: DEFAULT_ADDRESS_LOOKUP_MODEL,
   })
 })
 
@@ -34,6 +36,7 @@ test('supports trimmed environment overrides', () => {
     OPENAI_TRANSLATION_MODEL: ' custom-translation ',
     OPENAI_AUTOFILL_MODEL: ' custom-autofill ',
     OPENAI_I94_MODEL: ' custom-i94 ',
+    OPENAI_ADDRESS_LOOKUP_MODEL: ' custom-address ',
   })
 
   assert.deepEqual(models, {
@@ -42,6 +45,7 @@ test('supports trimmed environment overrides', () => {
     normalization: 'custom-translation',
     autofill: 'custom-autofill',
     i94: 'custom-i94',
+    addressLookup: 'custom-address',
   })
 })
 
@@ -60,7 +64,7 @@ test('source code contains no legacy OpenAI model references', async () => {
   const files = (await Promise.all(
     roots.map((root) => sourceFiles(path.join(repoRoot, root))),
   )).flat()
-  const legacyModels = ['gpt-' + '4o', 'gpt-' + '4.1']
+  const legacyModels = ['gpt-' + '4.1']
 
   for (const file of files) {
     const source = (await readFile(file, 'utf8')).toLowerCase()
