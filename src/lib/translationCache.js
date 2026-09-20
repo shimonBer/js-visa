@@ -51,6 +51,26 @@ export function buildTranslationFingerprint(values) {
 }
 
 /**
+ * Server-safe translation record stored on the form blob (no PDF bytes).
+ * @param {unknown} raw
+ * @returns {{ fingerprint: string, translated: string, attachmentLabels: string[], savedAt: string | null } | null}
+ */
+export function normalizeStoredTranslation(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const fingerprint = typeof raw.fingerprint === 'string' ? raw.fingerprint : ''
+  const translated = typeof raw.translated === 'string' ? raw.translated : ''
+  if (!fingerprint || !translated.trim()) return null
+  return {
+    fingerprint,
+    translated,
+    attachmentLabels: Array.isArray(raw.attachmentLabels)
+      ? raw.attachmentLabels.map((label) => String(label)).filter(Boolean)
+      : [],
+    savedAt: typeof raw.savedAt === 'string' && raw.savedAt ? raw.savedAt : null,
+  }
+}
+
+/**
  * @param {string} storageFormId
  * @returns {Promise<{ fingerprint: string, translated: string, attachmentLabels: string[], pdfBase64: string } | null>}
  */

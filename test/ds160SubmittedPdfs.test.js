@@ -60,7 +60,7 @@ test('submittedPdfsFromDocuments keeps only confirmation and application fields'
   assert.equal(docs[1].fileName, DS160_APPLICATION_FILE)
 })
 
-test('hasDs160AutofillSuccess requires the CEAC confirmation PDF', () => {
+test('hasDs160AutofillSuccess requires confirmation and full application PDFs', () => {
   const formId = 'form-1'
   assert.equal(hasDs160AutofillSuccess([], formId), false)
   assert.equal(
@@ -73,6 +73,16 @@ test('hasDs160AutofillSuccess requires the CEAC confirmation PDF', () => {
   assert.equal(
     hasDs160AutofillSuccess(
       [{ field: DS160_CONFIRMATION_FIELD, key: `${formId}/${DS160_CONFIRMATION_FILE}` }],
+      formId,
+    ),
+    false,
+  )
+  assert.equal(
+    hasDs160AutofillSuccess(
+      [
+        { field: DS160_CONFIRMATION_FIELD, key: `${formId}/${DS160_CONFIRMATION_FILE}` },
+        { field: DS160_APPLICATION_FIELD, key: `${formId}/${DS160_APPLICATION_FILE}` },
+      ],
       formId,
     ),
     true,

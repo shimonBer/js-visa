@@ -1,5 +1,5 @@
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { isDs160SubmittedPdfFileName } from '../lib/ds160SubmittedPdfs.js'
+import { isDs160SubmittedPdfFileName, siblingDs160SubmittedPdfFileName } from '../lib/ds160SubmittedPdfs.js'
 import { stampDs160FilledAt } from '../lib/formStatusIndex.js'
 
 const DEFAULT_BUCKET = 'js_visa'
@@ -326,9 +326,17 @@ export default async function handler(req, res) {
     console.log('[upload] PutObject success', { key, bucket, sizeBytes: body.length })
     if (isDs160SubmittedPdfFileName(fileName)) {
       try {
-        await stampDs160FilledAt(formId)
+        const sibling = siblingDs160SubmittedPdfFileName(fileName)
+        if (sibling) {
+          await client.send(new HeadObjectCommand({ Bucket: bucket, Key: `${formId}/${sibling}` }))
+          await stampDs160FilledAt(formId)
+        }
       } catch (err) {
-        console.warn('[upload] ds160FilledAt stamp failed', err?.message || err)
+        const status = err?.$metadata?.httpStatusCode
+        const code = err?.name || err?.Code
+        if (status !== 404 && code !== 'NotFound' && code !== 'NoSuchKey') {
+          console.warn('[upload] ds160FilledAt stamp failed', err?.message || err)
+        }
       }
     }
     res.status(200).json({ key, bucket })

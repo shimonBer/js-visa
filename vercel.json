@@ -3,6 +3,12 @@
   "framework": "vite",
   "buildCommand": "vite build",
   "outputDirectory": "dist",
+  "crons": [
+    {
+      "path": "/api/keep-alive",
+      "schedule": "0 8 * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/).*)",

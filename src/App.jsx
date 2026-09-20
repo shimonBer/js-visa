@@ -34,8 +34,32 @@ export default function App() {
   const [loadedBlob, setLoadedBlob] = useState(null)
   const [loadedBlobKey, setLoadedBlobKey] = useState(null)
   const [formUUID, setFormUUID] = useState(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [openingPathname, setOpeningPathname] = useState('')
   const [guestToken, setGuestToken] = useState(null)
   const didInitRef = useRef(false)
+  const unsavedCheckRef = useRef(() => false)
+
+  const bindUnsavedCheck = useCallback((fn) => {
+    unsavedCheckRef.current = typeof fn === 'function' ? fn : () => false
+  }, [])
+
+  const confirmLeaveForm = useCallback(() => {
+    if (!formOpen) return true
+    if (!unsavedCheckRef.current()) return true
+    return window.confirm('יש שינויים שלא נשמרו. להחליף טופס?')
+  }, [formOpen])
+
+  const applyLoadedForm = useCallback((pathname, payload, uuid) => {
+    setLoadedBlob(payload)
+    setLoadedBlobKey(pathname)
+    setFormUUID(uuid)
+    setFormMountKey((k) => k + 1)
+    setFormOpen(true)
+    if (uuid) {
+      window.history.pushState({}, '', `/forms/${uuid}`)
+    }
+  }, [])
 
   // On mount: determine which screen to show based on URL + auth state
   useEffect(() => {
@@ -44,13 +68,11 @@ export default function App() {
 
     const path = window.location.pathname
 
-    // /login — always public
     if (path === '/login') {
       setScreen('login')
       return
     }
 
-    // /fill/<token> — guest mini-form, always public
     const fillToken = parseFillRoute(path)
     if (fillToken) {
       setGuestToken(fillToken)
@@ -58,16 +80,16 @@ export default function App() {
       return
     }
 
-    // All other routes require authentication
     if (!isAuthenticated()) {
       window.history.replaceState({}, '', '/login')
       setScreen('login')
       return
     }
 
-    // /forms/<id> — load form from blob
     const formId = parseFormRoute(path)
     if (formId) {
+      setScreen('portal')
+      setOpeningPathname(formId)
       ;(async () => {
         try {
           const data = await listFormBlobsFromApi()
@@ -77,29 +99,24 @@ export default function App() {
 
           if (found) {
             const { payload } = await fetchFormBlobPayload(found.pathname)
-            setLoadedBlob(payload)
-            setLoadedBlobKey(found.pathname)
-            setFormUUID(formId)
-            setFormMountKey((k) => k + 1)
-            setScreen('form')
+            applyLoadedForm(found.pathname, payload, formId)
           } else {
-            setFormUUID(formId)
-            setFormMountKey((k) => k + 1)
-            setScreen('form')
+            applyLoadedForm(null, null, formId)
           }
         } catch {
-          setScreen('landing')
+          setFormOpen(false)
+        } finally {
+          setOpeningPathname('')
         }
       })()
       return
     }
 
-    // Default: landing
-    setScreen('landing')
-  }, [])
+    setScreen('portal')
+  }, [applyLoadedForm])
 
   const handleLogin = useCallback(() => {
-    setScreen('landing')
+    setScreen('portal')
     window.history.replaceState({}, '', '/')
   }, [])
 
@@ -111,13 +128,8 @@ export default function App() {
 
   const openNewForm = useCallback(() => {
     const uuid = generateFormUUID()
-    setLoadedBlob(null)
-    setLoadedBlobKey(null)
-    setFormUUID(uuid)
-    setFormMountKey((k) => k + 1)
-    window.history.pushState({}, '', `/forms/${uuid}`)
-    setScreen('form')
-  }, [])
+    applyLoadedForm(null, null, uuid)
+  }, [applyLoadedForm])
 
   const openFormFromBlob = useCallback((pathname, payload) => {
     const uuid =
@@ -127,23 +139,18 @@ export default function App() {
       extractUUIDFromPathname(pathname) ||
       (typeof payload?.formId === 'string' && payload.formId.trim() ? payload.formId.trim() : null)
 
-    setLoadedBlob(payload)
-    setLoadedBlobKey(pathname)
-    setFormUUID(uuid)
-    setFormMountKey((k) => k + 1)
-    if (uuid) {
-      window.history.pushState({}, '', `/forms/${uuid}`)
-    }
-    setScreen('form')
-  }, [])
+    applyLoadedForm(pathname, payload, uuid)
+  }, [applyLoadedForm])
 
-  const goLanding = useCallback(() => {
-    setScreen('landing')
+  const clearSelectedForm = useCallback(() => {
+    if (!confirmLeaveForm()) return
+    setFormOpen(false)
     setLoadedBlob(null)
     setLoadedBlobKey(null)
     setFormUUID(null)
+    unsavedCheckRef.current = () => false
     window.history.pushState({}, '', '/')
-  }, [])
+  }, [confirmLeaveForm])
 
   // Handle browser back/forward
   useEffect(() => {
@@ -168,8 +175,14 @@ export default function App() {
         return
       }
 
+      setScreen('portal')
       const formId = parseFormRoute(path)
-      if (!formId) setScreen('landing')
+      if (!formId) {
+        setFormOpen(false)
+        setLoadedBlob(null)
+        setLoadedBlobKey(null)
+        setFormUUID(null)
+      }
     }
     window.addEventListener('popstate', handler)
     return () => window.removeEventListener('popstate', handler)
@@ -177,8 +190,8 @@ export default function App() {
 
   if (screen === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-500 text-sm">טוען…</p>
+      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+        <p className="text-sm text-gray-500">טוען…</p>
       </div>
     )
   }
@@ -191,29 +204,47 @@ export default function App() {
     return <MiniFormGuest guestToken={guestToken} />
   }
 
-  if (screen === 'landing') {
-    return (
-      <>
-        <SessionExpiryGuard onExpiredLogout={handleLogout} />
-        <FormLanding
-          onNewForm={openNewForm}
-          onOpenForm={openFormFromBlob}
-          onLogout={handleLogout}
-        />
-      </>
-    )
-  }
-
   return (
     <>
       <SessionExpiryGuard onExpiredLogout={handleLogout} />
-      <DS160IsraelForm
-        key={formMountKey}
-        initialBlob={loadedBlob}
-        initialBlobKey={loadedBlobKey}
-        formUUID={formUUID}
-        onExitToHome={goLanding}
-      />
+      <div dir="rtl" className="min-h-screen bg-gray-100 font-sans md:flex">
+        <aside
+          className={`flex flex-col overflow-hidden border-b border-gray-200 bg-white md:sticky md:top-0 md:h-screen md:w-[22rem] md:shrink-0 md:border-b-0 md:border-s lg:w-[26rem] ${
+            formOpen ? 'h-[42vh] md:h-screen' : 'min-h-[70vh] md:min-h-0'
+          }`}
+        >
+          <FormLanding
+            onNewForm={openNewForm}
+            onOpenForm={openFormFromBlob}
+            onLogout={handleLogout}
+            selectedPathname={loadedBlobKey}
+            onCanLeave={confirmLeaveForm}
+          />
+        </aside>
+        <main className="min-w-0 flex-1 overflow-y-auto md:h-screen">
+          {openingPathname && !formOpen ? (
+            <div className="flex min-h-[40vh] items-center justify-center text-sm text-gray-500">
+              טוען טופס…
+            </div>
+          ) : formOpen ? (
+            <DS160IsraelForm
+              key={formMountKey}
+              initialBlob={loadedBlob}
+              initialBlobKey={loadedBlobKey}
+              formUUID={formUUID}
+              onExitToHome={clearSelectedForm}
+              onBindUnsavedCheck={bindUnsavedCheck}
+            />
+          ) : (
+            <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 px-6 py-16 text-center text-gray-500 md:min-h-full">
+              <p className="text-base font-medium text-gray-700">בחרו טופס מהרשימה</p>
+              <p className="max-w-sm text-sm">
+                הטופס נטען רק אחרי לחיצה על שם. במסך רחב הרשימה נשארת בצד ימין.
+              </p>
+            </div>
+          )}
+        </main>
+      </div>
     </>
   )
 }

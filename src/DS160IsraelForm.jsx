@@ -16,6 +16,7 @@ import { fetchI94TravelHistory } from './lib/i94Lookup.js'
 import { translateFormToEnglish } from './lib/translateForm.js'
 import {
   buildTranslationFingerprint,
+  normalizeStoredTranslation,
   saveTranslationCache,
 } from './lib/translationCache.js'
 import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
@@ -986,6 +987,7 @@ export default function DS160IsraelForm({
   initialBlobKey = null,
   formUUID = null,
   onExitToHome = null,
+  onBindUnsavedCheck = null,
 } = {}) {
   /** ISO date (YYYY-MM-DD) when this form session started; used for draft/S3 id, not user-editable. */
   const formStartedDateRef = useRef(new Date().toISOString().slice(0, 10))
@@ -993,6 +995,7 @@ export default function DS160IsraelForm({
   const formUUIDRef = useRef(formUUID || '')
   /** Blob pathname this form was loaded from; used to overwrite the same file on re-save. */
   const loadedBlobKeyRef = useRef(/** @type {string | null} */ (initialBlobKey))
+  const translationRef = useRef(normalizeStoredTranslation(initialBlob?.translation))
 
   const { register, watch, handleSubmit, getValues, setValue, reset, control, formState: { errors } } = useForm({
     defaultValues: {
@@ -1567,6 +1570,14 @@ export default function DS160IsraelForm({
     if (lastSavedSnapshotRef.current === null) return false
     return lastSavedSnapshotRef.current !== getSerializableSnapshot()
   }
+  const hasUnsavedChangesRef = useRef(hasUnsavedChanges)
+  hasUnsavedChangesRef.current = hasUnsavedChanges
+
+  useEffect(() => {
+    if (typeof onBindUnsavedCheck !== 'function') return undefined
+    onBindUnsavedCheck(() => hasUnsavedChangesRef.current())
+    return () => onBindUnsavedCheck(() => false)
+  }, [onBindUnsavedCheck])
 
   // For brand-new forms (no saved blob), capture the default empty-state snapshot on mount
   // so any user edits will trigger the unsaved-changes warning on exit.
@@ -1711,6 +1722,7 @@ export default function DS160IsraelForm({
 
   function buildN8nBody(event, values, s3Documents) {
     const { data, fileMeta } = serializeFormValuesForJson(values)
+    const translation = normalizeStoredTranslation(translationRef.current)
     return {
       event,
       formId: storageFormId,
@@ -1723,6 +1735,7 @@ export default function DS160IsraelForm({
       },
       fileMeta,
       s3Documents,
+      ...(translation ? { translation } : {}),
     }
   }
 
@@ -2621,20 +2634,44 @@ export default function DS160IsraelForm({
       return
     }
     setTranslationErrors(new Set())
-    setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
     if (withSave) {
       try { await onSaveDraft() } catch { /* non-blocking */ }
     }
+    const valuesForTranslate = getValues()
+    const fp = buildTranslationFingerprint(valuesForTranslate)
+    const cached = normalizeStoredTranslation(translationRef.current)
+    if (cached && cached.fingerprint === fp) {
+      setTranslateUi({
+        open: true,
+        text: cached.translated,
+        attachmentLabels: cached.attachmentLabels,
+        pdfBase64: '',
+        loading: false,
+        error: '',
+      })
+      return
+    }
+    setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
     try {
-      const values = getValues()
-      // Always translate with the current form values — never skip based on cache.
-      // The cache is only used to restore the last result on page load (below).
-      const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(values, {
+      const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(valuesForTranslate, {
         s3Documents: s3DocumentsRef.current,
       })
-      // Save to cache so the result can be restored if the user refreshes.
+      const record = {
+        fingerprint: fp,
+        translated,
+        attachmentLabels,
+        savedAt: new Date().toISOString(),
+      }
+      translationRef.current = record
       try {
-        const fp = buildTranslationFingerprint(values)
+        await saveFormBlobPayload(
+          buildN8nBody('draft', valuesForTranslate, s3DocumentsRef.current),
+          loadedBlobKeyRef.current ?? undefined,
+        )
+      } catch (e) {
+        console.warn('[translation blob] save failed', e)
+      }
+      try {
         await saveTranslationCache(storageFormId, {
           fingerprint: fp,
           translated,
@@ -2919,7 +2956,7 @@ export default function DS160IsraelForm({
                 onClick={() => hasUnsavedChanges() ? setShowExitConfirm(true) : onExitToHome()}
                 className="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
               >
-                ← רשימה
+                ← סגור טופס
               </button>
             )}
           </div>
@@ -2928,7 +2965,7 @@ export default function DS160IsraelForm({
 
       {/* ── Floating section navigation ── */}
       <nav
-        className="fixed right-3 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col w-[11.5rem] rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_8px_30px_rgba(15,23,42,0.12)] backdrop-blur-sm overflow-hidden"
+        className="fixed left-3 top-1/2 z-30 hidden max-h-[70vh] w-[11.5rem] -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 lg:flex"
         dir="rtl"
         aria-label="ניווט סקשנים"
       >
@@ -2938,7 +2975,6 @@ export default function DS160IsraelForm({
         <div className="flex flex-col gap-0.5 p-1.5 max-h-[70vh] overflow-y-auto">
           {[
             { label: 'מידע אישי', id: 'section-personal', emoji: '🪪' },
-            ...(submittedPdfs.length > 0 ? [{ label: 'קבצי DS-160', id: 'section-ds160-pdfs', emoji: '📄' }] : []),
             { label: 'כתובות', id: 'section-address', emoji: '🏠' },
             { label: 'פרטי קשר', id: 'section-contact', emoji: '📞' },
             { label: 'תכנון נסיעה', id: 'section-travel', emoji: '✈️' },
@@ -2951,6 +2987,7 @@ export default function DS160IsraelForm({
             { label: 'ביטחון', id: 'section-security', emoji: '🛡️' },
             { label: 'רשתות חברתיות', id: 'section-social', emoji: '💬' },
             { label: 'ראיון', id: 'section-interview', emoji: '📍' },
+            ...(submittedPdfs.length > 0 ? [{ label: 'קבצי DS-160', id: 'section-ds160-pdfs', emoji: '📄' }] : []),
           ].map((s) => (
             <button
               key={s.id}
@@ -2971,33 +3008,6 @@ export default function DS160IsraelForm({
 
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden mt-4">
         <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-10">
-
-          {submittedPdfs.length > 0 && (
-            <section id="section-ds160-pdfs" className="space-y-3 rounded-xl border border-teal-200 bg-teal-50/60 p-4">
-              <h2 className="text-xl font-bold text-gray-800">קבצי DS-160 שהוגשו</h2>
-              <p className="text-sm text-gray-600">
-                דף האישור והטופס המלא שנשמרו ל-S3 אחרי מילוי CEAC. אפשר להוריד אותם מכאן.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {submittedPdfs.map((doc) => {
-                  const copy = SUBMITTED_PDF_COPY[doc.field] || { title: doc.fileName, hint: '' }
-                  const busy = downloadingPdfField === doc.field
-                  return (
-                    <button
-                      key={doc.field}
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void handleDownloadSubmittedPdf(doc)}
-                      className="inline-flex items-center gap-2 rounded-md border border-teal-700 bg-white px-3 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-50 disabled:opacity-50"
-                    >
-                      {busy ? 'מוריד…' : `הורד ${copy.title}`}
-                      {copy.hint ? <span className="text-xs font-normal text-gray-500" dir="ltr">{copy.hint}</span> : null}
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-          )}
 
           <section id="section-personal" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שם הלקוח ומידע אישי</h2>
@@ -5594,6 +5604,33 @@ export default function DS160IsraelForm({
               }}
             />
           </section>
+
+          {submittedPdfs.length > 0 && (
+            <section id="section-ds160-pdfs" className="space-y-3 rounded-xl border border-teal-200 bg-teal-50/60 p-4">
+              <h2 className="text-xl font-bold text-gray-800">קבצי DS-160 שהוגשו</h2>
+              <p className="text-sm text-gray-600">
+                דף האישור והטופס המלא שנשמרו ל-S3 אחרי מילוי CEAC. אפשר להוריד אותם מכאן.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {submittedPdfs.map((doc) => {
+                  const copy = SUBMITTED_PDF_COPY[doc.field] || { title: doc.fileName, hint: '' }
+                  const busy = downloadingPdfField === doc.field
+                  return (
+                    <button
+                      key={doc.field}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleDownloadSubmittedPdf(doc)}
+                      className="inline-flex items-center gap-2 rounded-md border border-teal-700 bg-white px-3 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-50 disabled:opacity-50"
+                    >
+                      {busy ? 'מוריד…' : `הורד ${copy.title}`}
+                      {copy.hint ? <span className="text-xs font-normal text-gray-500" dir="ltr">{copy.hint}</span> : null}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
           <div className="pt-6 border-t flex flex-col items-end gap-2">
             {translationErrors.size > 0 && (
