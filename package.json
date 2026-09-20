@@ -13,6 +13,9 @@
     "test": "node --test test/*.test.js",
     "preview": "vite preview",
     "autofill": "node autofill/fill-ds160.js --input",
+    "fill-ds160": "node scripts/fill-ui/server.js --open",
+    "fill-easy": "node scripts/fill-ds160-easy.js",
+    "pack-fill-kit": "node scripts/pack-fill-kit.js",
     "crawl-dom": "node autofill/crawl-dom.js --input",
     "test-page": "node autofill/test-page.js",
     "fetch-i94": "node autofill/fetch-i94.js"

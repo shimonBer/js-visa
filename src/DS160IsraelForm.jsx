@@ -32,6 +32,7 @@ import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
 import CopyFromFormButton, { SectionCopyHeader } from './CopyFromFormButton.jsx'
 import OcrReviewDialog from './OcrReviewDialog.jsx'
 import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
+import { translatedDownloadFileName } from '../../lib/translatedFileName.js'
 
 const PASSPORT_OCR_FIELDS = [
   { key: 'firstName', label: 'Given names', required: true },
@@ -5837,16 +5838,21 @@ export default function DS160IsraelForm({
                 {translateUi.text ? (
                   <button
                     type="button"
-                    title="Download translated.txt, then double-click Fill DS-160 on your Desktop and choose that file"
+                    title="Download first_last.txt, then double-click fill-ds160 on your Desktop"
                     className="text-sm px-3 py-1.5 rounded-md border border-amber-500 text-amber-700 hover:bg-amber-50 flex items-center gap-1.5"
                     onClick={() => {
+                      const values = getValues()
                       const autofillText =
                         `# DS160_FORM_ID=${storageFormId}\n${translateUi.text}`
                       const blob = new Blob([autofillText], { type: 'text/plain' })
                       const url = URL.createObjectURL(blob)
                       const a = document.createElement('a')
                       a.href = url
-                      a.download = 'translated.txt'
+                      a.download = translatedDownloadFileName({
+                        firstName: values.firstNameEnglish || values.firstName,
+                        lastName: values.lastNameEnglish || values.lastName,
+                        translatedText: translateUi.text,
+                      })
                       a.click()
                       URL.revokeObjectURL(url)
                     }}
