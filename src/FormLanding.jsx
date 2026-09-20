@@ -19,6 +19,8 @@ export default function FormLanding({
   const [guestPanels, setGuestPanels] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const [openingPathname, setOpeningPathname] = useState('')
+  /** 'incomplete' | 'completed' */
+  const [activeTab, setActiveTab] = useState('incomplete')
   const PAGE_SIZE = 12
 
   const filteredForms = useMemo(() => {
@@ -32,7 +34,25 @@ export default function FormLanding({
     return fuse.search(q).map((r) => r.item)
   }, [forms, searchQuery])
 
-  useEffect(() => { setCurrentPage(1) }, [searchQuery])
+  const completedForms = useMemo(
+    () => filteredForms.filter((f) => f.isComplete === true),
+    [filteredForms],
+  )
+  const incompleteForms = useMemo(
+    () => filteredForms.filter((f) => f.isComplete !== true),
+    [filteredForms],
+  )
+
+  useEffect(() => {
+    if (!searchQuery.trim()) return
+    const hasInCurrent = activeTab === 'completed' ? completedForms.length > 0 : incompleteForms.length > 0
+    const hasInOther = activeTab === 'completed' ? incompleteForms.length > 0 : completedForms.length > 0
+    if (!hasInCurrent && hasInOther) {
+      setActiveTab((t) => (t === 'completed' ? 'incomplete' : 'completed'))
+    }
+  }, [searchQuery, completedForms.length, incompleteForms.length, activeTab])
+
+  useEffect(() => { setCurrentPage(1) }, [activeTab, searchQuery])
 
   useEffect(() => {
     let cancelled = false
@@ -138,9 +158,12 @@ export default function FormLanding({
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(filteredForms.length / PAGE_SIZE))
+  const activeList = activeTab === 'completed' ? completedForms : incompleteForms
+  const totalCompleted = forms.filter((f) => f.isComplete === true).length
+  const totalIncomplete = forms.filter((f) => f.isComplete !== true).length
+  const totalPages = Math.max(1, Math.ceil(activeList.length / PAGE_SIZE))
   const safePage = Math.min(currentPage, totalPages)
-  const pagedList = filteredForms.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const pagedList = activeList.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
   const busy = !!deletingPathname || !!openingPathname
 
   return (
@@ -150,7 +173,7 @@ export default function FormLanding({
           <div>
             <h1 className="text-lg font-bold text-gray-900">טפסי DS-160</h1>
             <p className="mt-1 text-xs text-gray-500">
-              כל הטפסים. לחיצה פותחת את הטופס בצד השני.
+              לחיצה פותחת את הטופס בצד השני.
             </p>
           </div>
           {onLogout && (
@@ -187,6 +210,41 @@ export default function FormLanding({
             disabled={loading}
           />
         </div>
+
+        <div className="-mx-4 -mb-4 flex px-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab('incomplete')}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'incomplete'
+                ? 'border-b-2 border-blue-600 text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            🔴 לא הושלמו
+            {!loading && (
+              <span className="mr-1.5 text-xs bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">
+                {searchQuery.trim() ? incompleteForms.length : totalIncomplete}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('completed')}
+            className={`flex-1 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'completed'
+                ? 'border-b-2 border-green-600 text-green-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            🟢 הושלמו
+            {!loading && (
+              <span className="mr-1.5 text-xs bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5">
+                {searchQuery.trim() ? completedForms.length : totalCompleted}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
@@ -204,8 +262,14 @@ export default function FormLanding({
         {!loading && forms.length === 0 && !error && (
           <p className="text-sm text-gray-500">אין טפסים שמורים עדיין.</p>
         )}
-        {!loading && forms.length > 0 && filteredForms.length === 0 && (
-          <p className="text-sm text-gray-500">לא נמצאו תוצאות לחיפוש.</p>
+        {!loading && forms.length > 0 && activeList.length === 0 && (
+          <p className="text-sm text-gray-500">
+            {searchQuery.trim()
+              ? 'לא נמצאו תוצאות לחיפוש בלשונית זו.'
+              : activeTab === 'completed'
+                ? 'אין טפסים שהושלמו עדיין.'
+                : 'אין טפסים שלא הושלמו.'}
+          </p>
         )}
 
         <ul className="space-y-2">

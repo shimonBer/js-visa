@@ -1566,7 +1566,14 @@ export default function DS160IsraelForm({
     return JSON.stringify(data)
   }
 
+  function captureCleanSnapshot() {
+    lastSavedSnapshotRef.current = getSerializableSnapshot()
+  }
+
+  const hydratingRef = useRef(true)
+
   function hasUnsavedChanges() {
+    if (hydratingRef.current) return false
     if (lastSavedSnapshotRef.current === null) return false
     return lastSavedSnapshotRef.current !== getSerializableSnapshot()
   }
@@ -1578,15 +1585,6 @@ export default function DS160IsraelForm({
     onBindUnsavedCheck(() => hasUnsavedChangesRef.current())
     return () => onBindUnsavedCheck(() => false)
   }, [onBindUnsavedCheck])
-
-  // For brand-new forms (no saved blob), capture the default empty-state snapshot on mount
-  // so any user edits will trigger the unsaved-changes warning on exit.
-  useEffect(() => {
-    if (initialBlob == null) {
-      lastSavedSnapshotRef.current = getSerializableSnapshot()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   /** Latest uploaded S3 keys per field — sent with translate so server can fetch bytes for GPT + PDF appendix. */
   const s3DocumentsRef = useRef(/** @type {{ field: string, key: string, bucket?: string }[]} */ ([]))
@@ -1601,7 +1599,15 @@ export default function DS160IsraelForm({
   }, [initialBlobKey, initialBlob])
 
   useEffect(() => {
-    if (!initialBlob?.data || typeof initialBlob.data !== 'object') return
+    hydratingRef.current = true
+    if (!initialBlob?.data || typeof initialBlob.data !== 'object') {
+      captureCleanSnapshot()
+      const emptyTimer = window.setTimeout(() => {
+        captureCleanSnapshot()
+        hydratingRef.current = false
+      }, 750)
+      return () => window.clearTimeout(emptyTimer)
+    }
     const {
       passportDate: _omitBlobPd,
       usSocialSecurityNumber: legacySocialSecurityNumber,
@@ -1681,9 +1687,13 @@ export default function DS160IsraelForm({
     reset(resetValues)
     // Highlight missing fields immediately so the user sees what needs filling on open
     setTranslationErrors(validateForTranslation(resetValues))
-    // Snapshot the loaded state so we can detect unsaved changes on exit
-    const { data: cleanData } = serializeFormValuesForJson(resetValues)
-    lastSavedSnapshotRef.current = JSON.stringify(cleanData)
+    // Snapshot after RHF applies values, then again after load-time setValue effects.
+    captureCleanSnapshot()
+    const loadTimer = window.setTimeout(() => {
+      captureCleanSnapshot()
+      hydratingRef.current = false
+    }, 750)
+    return () => window.clearTimeout(loadTimer)
   }, [initialBlobKey, initialBlob, reset])
 
   useEffect(() => {
@@ -1693,6 +1703,7 @@ export default function DS160IsraelForm({
     ;(async () => {
       const { restored, failed } = await restoreS3DocumentsIntoForm(docs, setValue)
       if (cancelled) return
+      if (hydratingRef.current) captureCleanSnapshot()
       if (restored > 0) {
         const extra = failed > 0 ? ` (${failed} לא הורדו)` : ''
         setAsyncFlow({ phase: 'idle', message: `שוחזרו ${restored} מסמכים${extra}.` })
@@ -2185,11 +2196,11 @@ export default function DS160IsraelForm({
     const existingVisits = getValues('previousUSVisits')
     if (Array.isArray(existingVisits) && existingVisits.some((v) => String(v?.visit ?? '').trim() || String(v?.arrivalDate ?? '').trim())) return
     i94AutoRanRef.current = true
-    void handleI94Lookup()
+    void handleI94Lookup({ silent: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canRunI94])
 
-  async function handleI94Lookup() {
+  async function handleI94Lookup(opts = {}) {
     const existingVisits = getValues('previousUSVisits')
     if (Array.isArray(existingVisits) && existingVisits.some((v) => String(v?.visit ?? '').trim() || String(v?.arrivalDate ?? '').trim())) {
       return
@@ -2216,6 +2227,7 @@ export default function DS160IsraelForm({
         if (visitRows.length > 0) {
           setValue('visitedUSBefore', 'yes', { shouldDirty: true })
           setValue('previousUSVisits', visitRows, { shouldDirty: true })
+          if (opts.silent) queueMicrotask(() => captureCleanSnapshot())
         }
       }
     } catch (e) {
@@ -2907,7 +2919,7 @@ export default function DS160IsraelForm({
   const contactOrganizationError = getFieldError('contactOrganization')
 
   return (
-    <div dir="rtl" className="min-h-screen bg-gray-100 font-sans text-right pb-10">
+    <div dir="rtl" className="min-h-screen bg-gray-100 font-sans text-right pb-10 lg:pl-56">
       <LoadingOverlay
         message={
           translateUi.loading ? 'מתרגם את הטופס… עשוי לקחת עד דקה' :

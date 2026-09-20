@@ -9,6 +9,7 @@ export function serializeFormValuesForJson(values) {
 
   for (const key of [
     'passportScan',
+    'photoScan',
     'existingVisaScan',
     'socialSecurityScan',
     'americanLicenseScan',
