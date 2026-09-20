@@ -7,6 +7,9 @@ import {
   DS160_CONFIRMATION_FIELD,
   DS160_CONFIRMATION_FILE,
   ds160SubmittedPdfKeys,
+  hasDs160AutofillSuccess,
+  isDs160SubmittedPdfFileName,
+  pathnameMatchesFormId,
   resolveS3UploadApiUrl,
   submittedPdfsFromDocuments,
 } from '../lib/ds160SubmittedPdfs.js'
@@ -55,4 +58,37 @@ test('submittedPdfsFromDocuments keeps only confirmation and application fields'
   assert.equal(docs.length, 2)
   assert.equal(docs[0].fileName, DS160_CONFIRMATION_FILE)
   assert.equal(docs[1].fileName, DS160_APPLICATION_FILE)
+})
+
+test('hasDs160AutofillSuccess requires the CEAC confirmation PDF', () => {
+  const formId = 'form-1'
+  assert.equal(hasDs160AutofillSuccess([], formId), false)
+  assert.equal(
+    hasDs160AutofillSuccess(
+      [{ field: DS160_APPLICATION_FIELD, key: `${formId}/${DS160_APPLICATION_FILE}` }],
+      formId,
+    ),
+    false,
+  )
+  assert.equal(
+    hasDs160AutofillSuccess(
+      [{ field: DS160_CONFIRMATION_FIELD, key: `${formId}/${DS160_CONFIRMATION_FILE}` }],
+      formId,
+    ),
+    true,
+  )
+  assert.equal(isDs160SubmittedPdfFileName(DS160_CONFIRMATION_FILE), true)
+  assert.equal(isDs160SubmittedPdfFileName('passportScan.jpg'), false)
+})
+
+test('pathnameMatchesFormId matches readable blob keys', () => {
+  const formId = '5ec455c8-2024-4cbc-ac1a-f9e601f44618'
+  assert.equal(
+    pathnameMatchesFormId(`forms/shimi_berko_${formId}.json`, formId),
+    true,
+  )
+  assert.equal(
+    pathnameMatchesFormId('forms/shimi_berko_other.json', formId),
+    false,
+  )
 })

@@ -1,6 +1,7 @@
 import { put, list, get } from '@vercel/blob'
 import { verifyRequest } from '../lib/verifyToken.js'
 import { calculateCompleteness } from '../src/lib/formCompleteness.js'
+import { hasDs160AutofillSuccess } from '../lib/ds160SubmittedPdfs.js'
 
 const PREFIX = 'forms/'
 const STATUS_PATH = 'forms-meta/status.json'
@@ -243,6 +244,10 @@ export default async function handler(req, res) {
               const { isComplete, missingFields } = calculateCompleteness(formData)
               const prev = statusIndex[f.pathname] || {}
               const mondayItemId = typeof formData.mondayItemId === 'string' ? formData.mondayItemId.trim() : ''
+              const formKey =
+                (typeof formData.formUUID === 'string' && formData.formUUID.trim()) ||
+                f.formId ||
+                ''
               statusIndex[f.pathname] = {
                 isComplete,
                 missingCount: missingFields.length,
@@ -250,6 +255,8 @@ export default async function handler(req, res) {
                 completedAt: isComplete ? (prev.completedAt || null) : null,
                 mondayItemId: mondayItemId || prev.mondayItemId || null,
                 mondaySentAt: mondayItemId ? (prev.mondaySentAt || null) : (prev.mondaySentAt || null),
+                ds160FilledAt: prev.ds160FilledAt
+                  || (hasDs160AutofillSuccess(payload.s3Documents, formKey) ? new Date().toISOString() : null),
               }
               return f.pathname
             } catch {
@@ -273,6 +280,7 @@ export default async function handler(req, res) {
           completedAt: status?.completedAt ?? null,
           mondayItemId: status?.mondayItemId ?? null,
           mondaySentAt: status?.mondaySentAt ?? null,
+          ds160FilledAt: status?.ds160FilledAt ?? null,
         }
       })
 
@@ -311,6 +319,10 @@ export default async function handler(req, res) {
       const prev = statusIndex[pathname] || {}
       const nowIso = new Date().toISOString()
       const mondayItemId = typeof formData.mondayItemId === 'string' ? formData.mondayItemId.trim() : ''
+      const formKey =
+        (typeof formData.formUUID === 'string' && formData.formUUID.trim()) ||
+        (typeof payload.formId === 'string' && payload.formId.trim()) ||
+        ''
       statusIndex[pathname] = {
         isComplete: completeness.isComplete,
         missingCount: completeness.missingFields.length,
@@ -320,6 +332,8 @@ export default async function handler(req, res) {
           : null,
         mondayItemId: mondayItemId || prev.mondayItemId || null,
         mondaySentAt: mondayItemId ? (prev.mondaySentAt || nowIso) : (prev.mondaySentAt || null),
+        ds160FilledAt: prev.ds160FilledAt
+          || (hasDs160AutofillSuccess(payload.s3Documents, formKey) ? nowIso : null),
       }
       await writeStatusIndex(token, statusIndex)
 

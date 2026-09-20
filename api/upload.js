@@ -1,4 +1,6 @@
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { isDs160SubmittedPdfFileName } from '../lib/ds160SubmittedPdfs.js'
+import { stampDs160FilledAt } from '../lib/formStatusIndex.js'
 
 const DEFAULT_BUCKET = 'js_visa'
 const DEFAULT_REGION = 'eu-north-1'
@@ -322,6 +324,13 @@ export default async function handler(req, res) {
       }),
     )
     console.log('[upload] PutObject success', { key, bucket, sizeBytes: body.length })
+    if (isDs160SubmittedPdfFileName(fileName)) {
+      try {
+        await stampDs160FilledAt(formId)
+      } catch (err) {
+        console.warn('[upload] ds160FilledAt stamp failed', err?.message || err)
+      }
+    }
     res.status(200).json({ key, bucket })
   } catch (e) {
     console.error('[upload] PutObject failed', {

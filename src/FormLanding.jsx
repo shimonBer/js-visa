@@ -273,6 +273,9 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                         ) : (
                           <span title="סטטוס לא ידוע">🟡</span>
                         )}
+                        {f.ds160FilledAt && (
+                          <span title="DS-160 מולא אוטומטית">📄</span>
+                        )}
                         {f.displayName}
                       </span>
                       <span className="text-xs text-gray-500 font-mono" dir="ltr">
@@ -288,6 +291,12 @@ export default function FormLanding({ onNewForm, onOpenForm, onLogout }) {
                         <span className="text-xs text-blue-700 font-medium mt-0.5">
                           ✓ הועבר ל-Monday:{' '}
                           <span dir="ltr">{new Date(f.mondaySentAt).toLocaleString('he-IL')}</span>
+                        </span>
+                      )}
+                      {f.ds160FilledAt && (
+                        <span className="text-xs text-teal-700 font-medium mt-0.5">
+                          ✓ DS-160 מולא אוטומטית:{' '}
+                          <span dir="ltr">{new Date(f.ds160FilledAt).toLocaleString('he-IL')}</span>
                         </span>
                       )}
                       {!isCompleted && f.isComplete === false && (
