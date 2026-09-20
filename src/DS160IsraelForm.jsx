@@ -32,7 +32,7 @@ import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
 import CopyFromFormButton, { SectionCopyHeader } from './CopyFromFormButton.jsx'
 import OcrReviewDialog from './OcrReviewDialog.jsx'
 import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
-import { translatedDownloadFileName } from '../../lib/translatedFileName.js'
+import { translatedDownloadFileName } from './lib/translatedFileName.js'
 
 const PASSPORT_OCR_FIELDS = [
   { key: 'firstName', label: 'Given names', required: true },
