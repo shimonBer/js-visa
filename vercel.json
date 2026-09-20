@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "crons": [
     {
-      "path": "/api/keep-alive",
+      "path": "/api/guest-form",
       "schedule": "0 8 * * *"
     }
   ],

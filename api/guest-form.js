@@ -9,6 +9,9 @@
  *   Body: { pathname: string }
  *   → Adds a guestToken to the blob, updates the status index, returns { guestLink, guestToken }
  *
+ * GET ?action=keepalive  (Vercel Cron / CRON_SECRET)
+ *   → Pings Supabase so the free project is not paused
+ *
  * GET ?token=<guestToken>  (public)
  *   → Returns { formContext: { name }, missingFields: [{field, label, type, options?}] }
  *
@@ -132,14 +135,32 @@ async function findPathnameByToken(guestToken, token) {
 
 /** @param {import('http').IncomingMessage} req */
 export default async function handler(req, res) {
-  const token = blobToken()
-  if (!token) return res.status(503).json({ error: 'Blob not configured' })
-
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
   const action = url.searchParams.get('action')
   const guestToken = url.searchParams.get('token')
 
   try {
+    // ── GET keepalive (Vercel Cron: GET /api/guest-form with CRON_SECRET) ─
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      const cronSecret = process.env.CRON_SECRET?.trim()
+      const cronAuthOk =
+        Boolean(cronSecret) && String(req.headers.authorization || '') === `Bearer ${cronSecret}`
+      if (action === 'keepalive' || cronAuthOk) {
+        if (cronSecret && !cronAuthOk) {
+          return res.status(401).json({ error: 'Unauthorized' })
+        }
+        const { error } = await supabase().from('users').select('user_id').limit(1)
+        if (error) {
+          console.error('[guest-form] keepalive', error.message)
+          return res.status(500).json({ error: 'Supabase ping failed' })
+        }
+        return res.status(200).json({ ok: true })
+      }
+    }
+
+    const token = blobToken()
+    if (!token) return res.status(503).json({ error: 'Blob not configured' })
+
     // ── POST ?action=login ────────────────────────────────────────────────
     if (req.method === 'POST' && action === 'login') {
       const body = await readBodyJson(req)
