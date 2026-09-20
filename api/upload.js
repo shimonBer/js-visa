@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 
 const DEFAULT_BUCKET = 'js_visa'
 const DEFAULT_REGION = 'eu-north-1'
@@ -91,6 +91,25 @@ function sanitizeS3ObjectKeyFromQuery(raw) {
 
 const MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024
 
+function attachmentFileName(key) {
+  const name = key.includes('/') ? key.slice(key.lastIndexOf('/') + 1) : key
+  const safe = String(name || 'document.bin').replace(/["\\]/g, '')
+  return safe.slice(0, 180) || 'document.bin'
+}
+
+function applyUploadCors(req, res) {
+  const origin = String(req.headers.origin || '')
+  const allowed =
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+    /^https:\/\/([a-z0-9-]+\.)?vercel\.app$/.test(origin) ||
+    origin === 'https://js-visa.vercel.app'
+  if (!allowed) return
+  res.setHeader('Access-Control-Allow-Origin', origin)
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Form-Id, X-File-Name, Authorization')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, POST, OPTIONS')
+  res.setHeader('Vary', 'Origin')
+}
+
 function makeS3Client(accessKeyId, secretAccessKey, sessionToken) {
   const region = resolveS3Region()
   return new S3Client({
@@ -107,18 +126,28 @@ function makeS3Client(accessKeyId, secretAccessKey, sessionToken) {
 /**
  * POST raw file body. Headers: X-Form-Id, X-File-Name; Content-Type = file MIME type.
  * GET ?key=formId/fileName — download same object (for restoring drafts).
+ * GET ?key=&exists=1 — HeadObject only, JSON { exists }.
+ * GET ?key=&download=1 — same download with Content-Disposition: attachment.
  * Uploads with AWS credentials from env (never exposed to the browser).
  * Region: S3_REGION → AWS_S3_REGION → AWS_REGION → default. On Vercel, set S3_REGION to the bucket region.
  */
 export default async function handler(req, res) {
+  applyUploadCors(req, res)
+  if (req.method === 'OPTIONS') {
+    res.status(204).end()
+    return
+  }
+
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim()
   const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim()
   const sessionToken = process.env.AWS_SESSION_TOKEN?.trim()
 
-  if (req.method === 'GET') {
+  if (req.method === 'GET' || req.method === 'HEAD') {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
     const rawKeyParam = url.searchParams.get('key')
     const wantsDownload = rawKeyParam != null && String(rawKeyParam).trim() !== ''
+    const existsOnly = url.searchParams.get('exists') === '1' || req.method === 'HEAD'
+    const asAttachment = url.searchParams.get('download') === '1'
 
     if (wantsDownload) {
       if (!accessKeyId || !secretAccessKey) {
@@ -144,6 +173,23 @@ export default async function handler(req, res) {
       maybeLogAwsEnvSnapshot(bucket, resolveS3Region(), accessKeyId, secretAccessKey)
       const client = makeS3Client(accessKeyId, secretAccessKey, sessionToken)
 
+      if (existsOnly) {
+        try {
+          await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }))
+          res.status(200).json({ exists: true, key, bucket })
+        } catch (e) {
+          const status = e?.$metadata?.httpStatusCode
+          const code = e?.name || e?.Code
+          if (status === 404 || code === 'NotFound' || code === 'NoSuchKey') {
+            res.status(404).json({ exists: false, key })
+            return
+          }
+          console.error('[upload] HeadObject', e)
+          res.status(500).json({ error: 'S3 lookup failed', code: 'HEAD_FAILED' })
+        }
+        return
+      }
+
       try {
         const out = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
         const stream = out.Body
@@ -166,6 +212,9 @@ export default async function handler(req, res) {
         const ct = sanitizeContentType(ctRaw)
         res.setHeader('Content-Type', ct)
         res.setHeader('Cache-Control', 'private, no-store')
+        if (asAttachment) {
+          res.setHeader('Content-Disposition', `attachment; filename="${attachmentFileName(key)}"`)
+        }
         res.status(200).send(buf)
       } catch (e) {
         const status = e?.$metadata?.httpStatusCode
@@ -200,7 +249,7 @@ export default async function handler(req, res) {
       return
     }
 
-    res.setHeader('Allow', 'GET, POST')
+    res.setHeader('Allow', 'GET, HEAD, POST, OPTIONS')
     res.status(400).json({
       error: 'Missing or invalid key query parameter (use ?key=formId/fileName, or DEBUG_UPLOAD=1 for diagnostics)',
     })
@@ -208,7 +257,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'GET, POST')
+    res.setHeader('Allow', 'GET, HEAD, POST, OPTIONS')
     res.status(405).json({ error: 'Method not allowed' })
     return
   }

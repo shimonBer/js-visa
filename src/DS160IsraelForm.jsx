@@ -20,6 +20,13 @@ import {
 } from './lib/translationCache.js'
 import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
 import { getS3UploadApiBase } from './lib/uploadFormDocuments.js'
+import {
+  DS160_APPLICATION_FIELD,
+  DS160_CONFIRMATION_FIELD,
+  downloadS3FormDocument,
+  probeDs160SubmittedPdfs,
+  submittedPdfsFromDocuments,
+} from './lib/ds160SubmittedPdfs.js'
 import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
 import CopyFromFormButton, { SectionCopyHeader } from './CopyFromFormButton.jsx'
 import OcrReviewDialog from './OcrReviewDialog.jsx'
@@ -78,6 +85,17 @@ function mergeS3DocumentsByField(prev, next) {
     if (f && k) map.set(f, { field: f, key: k, ...(d.bucket ? { bucket: d.bucket } : {}) })
   }
   return [...map.values()]
+}
+
+const SUBMITTED_PDF_COPY = {
+  [DS160_CONFIRMATION_FIELD]: {
+    title: 'דף אישור CEAC',
+    hint: 'Confirmation',
+  },
+  [DS160_APPLICATION_FIELD]: {
+    title: 'טופס DS-160 המלא',
+    hint: 'Print Application',
+  },
 }
 
 /**
@@ -1396,6 +1414,10 @@ export default function DS160IsraelForm({
     [formId],
   )
   const [asyncFlow, setAsyncFlow] = useState({ phase: 'idle', message: '' })
+  const [submittedPdfs, setSubmittedPdfs] = useState(
+    () => submittedPdfsFromDocuments(initialBlob?.s3Documents, formUUID || ''),
+  )
+  const [downloadingPdfField, setDownloadingPdfField] = useState('')
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
   const [foreignPassportOcr, setForeignPassportOcr] = useState({}) // keyed by index
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
@@ -1669,6 +1691,23 @@ export default function DS160IsraelForm({
       cancelled = true
     }
   }, [initialBlobKey, initialBlob, setValue])
+
+  useEffect(() => {
+    const formKey = formUUIDRef.current || storageFormId
+    if (!formKey || formKey === 'incomplete') return undefined
+    const fromBlob = submittedPdfsFromDocuments(s3DocumentsRef.current, formKey)
+    if (fromBlob.length > 0) setSubmittedPdfs(fromBlob)
+    let cancelled = false
+    ;(async () => {
+      const found = await probeDs160SubmittedPdfs(formKey)
+      if (cancelled || found.length === 0) return
+      s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, found)
+      setSubmittedPdfs(submittedPdfsFromDocuments(s3DocumentsRef.current, formKey))
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [initialBlobKey, storageFormId])
 
   function buildN8nBody(event, values, s3Documents) {
     const { data, fileMeta } = serializeFormValuesForJson(values)
@@ -2018,6 +2057,18 @@ export default function DS160IsraelForm({
       }
     } catch (e) {
       console.warn(`[upload] immediate upload of ${fieldName} failed:`, e?.message)
+    }
+  }
+
+  async function handleDownloadSubmittedPdf(doc) {
+    if (!doc?.key) return
+    setDownloadingPdfField(doc.field)
+    try {
+      await downloadS3FormDocument(doc.key, doc.fileName)
+    } catch (e) {
+      setAsyncFlow({ phase: 'error', message: `הורדת הקובץ נכשלה: ${e?.message || 'שגיאה'}` })
+    } finally {
+      setDownloadingPdfField('')
     }
   }
 
@@ -2551,7 +2602,19 @@ export default function DS160IsraelForm({
       return
     }
     const values = getValues()
-    const missing = validateForTranslation(values)
+    const hasContactPerson =
+      String(values.contactSurnames ?? '').trim() &&
+      String(values.contactGivenNames ?? '').trim()
+    const hasContactOrganization = String(values.contactOrganization ?? '').trim()
+    if (hasContactOrganization && !hasContactPerson) {
+      setValue('contactNameDoNotKnow', true)
+      setValue('contactSurnames', '')
+      setValue('contactGivenNames', '')
+    } else if (hasContactPerson && !hasContactOrganization) {
+      setValue('contactOrganizationDoNotKnow', true)
+      setValue('contactOrganization', '')
+    }
+    const missing = validateForTranslation(getValues())
     if (missing.size > 0) {
       setTranslationErrors(missing)
       setTranslateUi((s) => ({ ...s, loading: false, error: '' }))
@@ -2875,6 +2938,7 @@ export default function DS160IsraelForm({
         <div className="flex flex-col gap-0.5 p-1.5 max-h-[70vh] overflow-y-auto">
           {[
             { label: 'מידע אישי', id: 'section-personal', emoji: '🪪' },
+            ...(submittedPdfs.length > 0 ? [{ label: 'קבצי DS-160', id: 'section-ds160-pdfs', emoji: '📄' }] : []),
             { label: 'כתובות', id: 'section-address', emoji: '🏠' },
             { label: 'פרטי קשר', id: 'section-contact', emoji: '📞' },
             { label: 'תכנון נסיעה', id: 'section-travel', emoji: '✈️' },
@@ -2907,6 +2971,33 @@ export default function DS160IsraelForm({
 
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden mt-4">
         <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-10">
+
+          {submittedPdfs.length > 0 && (
+            <section id="section-ds160-pdfs" className="space-y-3 rounded-xl border border-teal-200 bg-teal-50/60 p-4">
+              <h2 className="text-xl font-bold text-gray-800">קבצי DS-160 שהוגשו</h2>
+              <p className="text-sm text-gray-600">
+                דף האישור והטופס המלא שנשמרו ל-S3 אחרי מילוי CEAC. אפשר להוריד אותם מכאן.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {submittedPdfs.map((doc) => {
+                  const copy = SUBMITTED_PDF_COPY[doc.field] || { title: doc.fileName, hint: '' }
+                  const busy = downloadingPdfField === doc.field
+                  return (
+                    <button
+                      key={doc.field}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleDownloadSubmittedPdf(doc)}
+                      className="inline-flex items-center gap-2 rounded-md border border-teal-700 bg-white px-3 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-50 disabled:opacity-50"
+                    >
+                      {busy ? 'מוריד…' : `הורד ${copy.title}`}
+                      {copy.hint ? <span className="text-xs font-normal text-gray-500" dir="ltr">{copy.hint}</span> : null}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
           <section id="section-personal" className="space-y-4">
             <h2 className="text-2xl font-bold border-b pb-2 text-gray-800">שם הלקוח ומידע אישי</h2>
@@ -4286,6 +4377,7 @@ export default function DS160IsraelForm({
               <>
                 <p className="text-sm text-gray-600">
                   חובה להזין פרטים מלאים של איש קשר או שם ארגון בארה״ב, וכן כתובת ומספר טלפון.
+                  בטופס DS-160 זה אחד מהשניים: אם ממלאים ארגון בלבד (למשל HOTELS) יש לסמן Do Not Know ליד Contact Person — אסור להשאיר את השמות ריקים. אם ממלאים שם אדם בלבד, סמנו Do Not Know ליד Organization Name.
                 </p>
                 <div className="space-y-4 bg-gray-50 p-4 rounded border border-gray-200">
 
@@ -4320,6 +4412,7 @@ export default function DS160IsraelForm({
                   <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                     <input type="checkbox" {...register('contactNameDoNotKnow')} className="rounded" />
                     Do Not Know
+                    <span className="text-gray-400">(חובה אם יש ארגון ואין אדם)</span>
                   </label>
                 </div>
 
@@ -4339,6 +4432,7 @@ export default function DS160IsraelForm({
                   <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                     <input type="checkbox" {...register('contactOrganizationDoNotKnow')} className="rounded" />
                     Do Not Know
+                    <span className="text-gray-400">(חובה אם יש אדם ואין ארגון)</span>
                   </label>
                 </div>
 
@@ -5694,7 +5788,7 @@ export default function DS160IsraelForm({
                 {translateUi.text ? (
                   <button
                     type="button"
-                    title="Download the translated text file, then run: npm run autofill -- --input ~/Downloads/translated.txt"
+                    title="Download translated.txt, then double-click Fill DS-160 on your Desktop and choose that file"
                     className="text-sm px-3 py-1.5 rounded-md border border-amber-500 text-amber-700 hover:bg-amber-50 flex items-center gap-1.5"
                     onClick={() => {
                       const autofillText =

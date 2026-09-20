@@ -7,6 +7,7 @@
 import { get, del } from '@vercel/blob'
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { verifyRequest } from '../lib/verifyToken.js'
+import { ds160SubmittedPdfKeys } from '../lib/ds160SubmittedPdfs.js'
 
 const PREFIX = 'forms/'
 
@@ -145,7 +146,8 @@ export default async function handler(req, res) {
       const bucket = resolveBucket()
       const client = makeS3Client(accessKeyId, secretAccessKey, sessionToken)
       const docs = Array.isArray(payload?.s3Documents) ? payload.s3Documents : []
-
+      const seen = new Set()
+      const keysToDelete = []
       for (const doc of docs) {
         const rawKey = doc && typeof doc.key === 'string' ? doc.key : ''
         const key = sanitizeS3ObjectKey(rawKey)
@@ -153,6 +155,22 @@ export default async function handler(req, res) {
           if (rawKey) s3Errors.push({ key: rawKey, error: 'Invalid S3 key in payload' })
           continue
         }
+        if (seen.has(key)) continue
+        seen.add(key)
+        keysToDelete.push(key)
+      }
+      const formId =
+        (typeof payload?.data?.formUUID === 'string' && payload.data.formUUID.trim()) ||
+        (typeof payload?.formId === 'string' && payload.formId.trim()) ||
+        ''
+      for (const item of ds160SubmittedPdfKeys(formId)) {
+        const key = sanitizeS3ObjectKey(item.key)
+        if (!key || seen.has(key)) continue
+        seen.add(key)
+        keysToDelete.push(key)
+      }
+
+      for (const key of keysToDelete) {
         try {
           await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }))
           s3Deleted.push(key)
