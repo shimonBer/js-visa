@@ -33,6 +33,7 @@ import CopyFromFormButton, { SectionCopyHeader } from './CopyFromFormButton.jsx'
 import OcrReviewDialog from './OcrReviewDialog.jsx'
 import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
 import { autofillDownloadFileName } from './lib/translatedFileName.js'
+import { startLocalAutofill } from './lib/localAutofill.js'
 
 const PASSPORT_OCR_FIELDS = [
   { key: 'firstName', label: 'Given names', required: true },
@@ -1455,6 +1456,7 @@ export default function DS160IsraelForm({
     attachmentLabels: /** @type {string[]} */ ([]),
     pdfBase64: '',
   })
+  const [localFillNote, setLocalFillNote] = useState('')
 
   /** Monday.com multi-step UI state (search → confirm → upload). */
   const [mondayUi, setMondayUi] = useState({
@@ -2638,6 +2640,29 @@ export default function DS160IsraelForm({
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
+  }
+
+  async function handleLocalAutofill() {
+    const text = translateUi.text
+    if (!String(text || '').trim()) return
+    setLocalFillNote('')
+    const values = getValues()
+    const result = await startLocalAutofill({
+      text,
+      formId: storageFormId,
+      fileName: autofillDownloadFileName({
+        firstName: values.firstNameEnglish || values.firstName,
+        lastName: values.lastNameEnglish || values.lastName,
+        translatedText: text,
+      }),
+    })
+    if (result.started) {
+      setLocalFillNote(result.alreadyRunning
+        ? 'המילוי כבר רץ בחלון המקומי במחשב הזה.'
+        : 'המילוי התחיל בחלון המקומי במחשב הזה.')
+      return
+    }
+    downloadAutofillFile(text)
   }
 
   async function handleTranslateToEnglish({ withSave = false } = {}) {
@@ -5862,13 +5887,16 @@ export default function DS160IsraelForm({
                 {translateUi.text ? (
                   <button
                     type="button"
-                    title="Downloads first_last_auto_fill.txt. fill-ds160 picks these up from Downloads."
+                    title="Starts fill-ds160 on this computer when that window is open. Otherwise downloads the file."
                     className="text-sm px-3 py-1.5 rounded-md border border-amber-500 text-amber-700 hover:bg-amber-50 flex items-center gap-1.5"
-                    onClick={() => downloadAutofillFile(translateUi.text)}
+                    onClick={handleLocalAutofill}
                   >
                     <span className="text-xs font-semibold uppercase tracking-wide bg-amber-100 text-amber-600 border border-amber-400 rounded px-1 py-0.5 leading-none">Experimental</span>
                     Auto-fill DS-160
                   </button>
+                ) : null}
+                {localFillNote ? (
+                  <span className="text-xs text-emerald-700 self-center">{localFillNote}</span>
                 ) : null}
                 {translateUi.text ? (
                   <button
