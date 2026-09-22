@@ -178,30 +178,29 @@ export default function FormLanding({
               לחיצה פותחת את הטופס בצד השני.
             </p>
           </div>
-          {onLogout && (
-            <button
-              type="button"
-              onClick={onLogout}
-              className="mt-0.5 shrink-0 text-xs text-gray-500 underline hover:text-gray-800"
-            >
-              יציאה
-            </button>
-          )}
+          <div className="mt-0.5 flex shrink-0 items-center gap-2">
+            {onToggleMonitoring && (
+              <button
+                type="button"
+                onClick={onToggleMonitoring}
+                className={`text-xs underline ${
+                  monitoringOpen ? 'font-semibold text-gray-900' : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                Autofill Monitoring
+              </button>
+            )}
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="text-xs text-gray-500 underline hover:text-gray-800"
+              >
+                יציאה
+              </button>
+            )}
+          </div>
         </div>
-
-        {onToggleMonitoring && (
-          <button
-            type="button"
-            onClick={onToggleMonitoring}
-            className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold ${
-              monitoringOpen
-                ? 'border-gray-900 bg-gray-900 text-white'
-                : 'border-gray-300 bg-white text-gray-800 hover:bg-gray-50'
-            }`}
-          >
-            Autofill Monitoring
-          </button>
-        )}
 
         <button
           type="button"

@@ -63,7 +63,7 @@ async function fetchRuns(url, options) {
   return Array.isArray(data.runs) ? data.runs : []
 }
 
-export default function AutofillMonitoring() {
+export default function AutofillMonitoring({ onBack }) {
   const [runs, setRuns] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -141,7 +141,18 @@ export default function AutofillMonitoring() {
   return (
     <div dir="rtl" className="min-h-full bg-gray-100 px-4 py-6 text-right sm:px-8">
       <div className="mx-auto max-w-3xl">
-        <h1 className="text-xl font-bold text-gray-900">Autofill Monitoring</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-bold text-gray-900">Autofill Monitoring</h1>
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+            >
+              חזרה לטופס
+            </button>
+          )}
+        </div>
         <p className="mt-1 text-sm text-gray-500">
           היסטוריית ריצות המילוי. התראת מערכת קופצת בכל הצלחה או כשל, ומייל נשלח לכתובת שהוגדרה למילוי.
           {localOnline ? ' חלון המילוי במחשב הזה מחובר.' : ' חלון המילוי המקומי לא זמין כרגע — מוצג מה שנשמר בענן.'}

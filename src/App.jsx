@@ -237,7 +237,7 @@ export default function App() {
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto md:h-screen">
           {monitorOpen ? (
-            <AutofillMonitoring />
+            <AutofillMonitoring onBack={() => setMonitorOpen(false)} />
           ) : openingPathname && !formOpen ? (
             <div className="flex min-h-[40vh] items-center justify-center text-sm text-gray-500">
               טוען טופס…
