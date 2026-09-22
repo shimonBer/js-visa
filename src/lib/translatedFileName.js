@@ -1,1 +1,6 @@
-export { translatedDownloadFileName, slugNamePart, namesFromTranslatedText } from '../../lib/translatedFileName.js'
+export {
+  autofillDownloadFileName,
+  translatedDownloadFileName,
+  slugNamePart,
+  namesFromTranslatedText,
+} from '../../lib/translatedFileName.js'

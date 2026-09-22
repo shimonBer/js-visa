@@ -9,6 +9,8 @@ export default function FormLanding({
   onLogout,
   selectedPathname = null,
   onCanLeave,
+  monitoringOpen = false,
+  onToggleMonitoring,
 }) {
   const [forms, setForms] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -186,6 +188,20 @@ export default function FormLanding({
             </button>
           )}
         </div>
+
+        {onToggleMonitoring && (
+          <button
+            type="button"
+            onClick={onToggleMonitoring}
+            className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold ${
+              monitoringOpen
+                ? 'border-gray-900 bg-gray-900 text-white'
+                : 'border-gray-300 bg-white text-gray-800 hover:bg-gray-50'
+            }`}
+          >
+            Autofill Monitoring
+          </button>
+        )}
 
         <button
           type="button"

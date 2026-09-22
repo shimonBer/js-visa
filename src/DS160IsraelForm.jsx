@@ -32,7 +32,7 @@ import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
 import CopyFromFormButton, { SectionCopyHeader } from './CopyFromFormButton.jsx'
 import OcrReviewDialog from './OcrReviewDialog.jsx'
 import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
-import { translatedDownloadFileName } from './lib/translatedFileName.js'
+import { autofillDownloadFileName } from './lib/translatedFileName.js'
 
 const PASSPORT_OCR_FIELDS = [
   { key: 'firstName', label: 'Given names', required: true },
@@ -2618,6 +2618,28 @@ export default function DS160IsraelForm({
     return missing
   }
 
+  function downloadAutofillFile(text) {
+    const source = String(text || '').trim()
+    if (!source) return
+    const values = getValues()
+    const autofillText = source.startsWith('# DS160_FORM_ID=')
+      ? source
+      : `# DS160_FORM_ID=${storageFormId}\n${source}`
+    const blob = new Blob([autofillText], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = autofillDownloadFileName({
+      firstName: values.firstNameEnglish || values.firstName,
+      lastName: values.lastNameEnglish || values.lastName,
+      translatedText: source,
+    })
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
   async function handleTranslateToEnglish({ withSave = false } = {}) {
     if (ocrReview) {
       setTranslateUi((state) => ({
@@ -2662,6 +2684,7 @@ export default function DS160IsraelForm({
         loading: false,
         error: '',
       })
+      downloadAutofillFile(cached.translated)
       return
     }
     setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
@@ -2702,6 +2725,7 @@ export default function DS160IsraelForm({
         loading: false,
         error: '',
       })
+      downloadAutofillFile(translated)
     } catch (e) {
       setTranslateUi((s) => ({ ...s, loading: false, error: e?.message || 'שגיאת תרגום' }))
     }
@@ -5838,24 +5862,9 @@ export default function DS160IsraelForm({
                 {translateUi.text ? (
                   <button
                     type="button"
-                    title="Download first_last.txt, then double-click fill-ds160 on your Desktop"
+                    title="Downloads first_last_auto_fill.txt. fill-ds160 picks these up from Downloads."
                     className="text-sm px-3 py-1.5 rounded-md border border-amber-500 text-amber-700 hover:bg-amber-50 flex items-center gap-1.5"
-                    onClick={() => {
-                      const values = getValues()
-                      const autofillText =
-                        `# DS160_FORM_ID=${storageFormId}\n${translateUi.text}`
-                      const blob = new Blob([autofillText], { type: 'text/plain' })
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = translatedDownloadFileName({
-                        firstName: values.firstNameEnglish || values.firstName,
-                        lastName: values.lastNameEnglish || values.lastName,
-                        translatedText: translateUi.text,
-                      })
-                      a.click()
-                      URL.revokeObjectURL(url)
-                    }}
+                    onClick={() => downloadAutofillFile(translateUi.text)}
                   >
                     <span className="text-xs font-semibold uppercase tracking-wide bg-amber-100 text-amber-600 border border-amber-400 rounded px-1 py-0.5 leading-none">Experimental</span>
                     Auto-fill DS-160

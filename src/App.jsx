@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import AutofillMonitoring from './AutofillMonitoring.jsx'
 import DS160IsraelForm from './DS160IsraelForm.jsx'
 import FormLanding from './FormLanding.jsx'
 import LoginPage from './LoginPage.jsx'
@@ -35,6 +36,7 @@ export default function App() {
   const [loadedBlobKey, setLoadedBlobKey] = useState(null)
   const [formUUID, setFormUUID] = useState(null)
   const [formOpen, setFormOpen] = useState(false)
+  const [monitorOpen, setMonitorOpen] = useState(false)
   const [openingPathname, setOpeningPathname] = useState('')
   const [guestToken, setGuestToken] = useState(null)
   const didInitRef = useRef(false)
@@ -56,6 +58,7 @@ export default function App() {
     setFormUUID(uuid)
     setFormMountKey((k) => k + 1)
     setFormOpen(true)
+    setMonitorOpen(false)
     if (uuid) {
       window.history.pushState({}, '', `/forms/${uuid}`)
     }
@@ -142,6 +145,15 @@ export default function App() {
     applyLoadedForm(pathname, payload, uuid)
   }, [applyLoadedForm])
 
+  const openMonitoring = useCallback(() => {
+    if (monitorOpen) {
+      setMonitorOpen(false)
+      return
+    }
+    if (!confirmLeaveForm()) return
+    setMonitorOpen(true)
+  }, [monitorOpen, confirmLeaveForm])
+
   const clearSelectedForm = useCallback(() => {
     if (!confirmLeaveForm()) return
     setFormOpen(false)
@@ -219,10 +231,14 @@ export default function App() {
             onLogout={handleLogout}
             selectedPathname={loadedBlobKey}
             onCanLeave={confirmLeaveForm}
+            monitoringOpen={monitorOpen}
+            onToggleMonitoring={openMonitoring}
           />
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto md:h-screen">
-          {openingPathname && !formOpen ? (
+          {monitorOpen ? (
+            <AutofillMonitoring />
+          ) : openingPathname && !formOpen ? (
             <div className="flex min-h-[40vh] items-center justify-center text-sm text-gray-500">
               טוען טופס…
             </div>

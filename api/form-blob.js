@@ -1,5 +1,6 @@
 import { put, list, get } from '@vercel/blob'
 import { verifyRequest } from '../lib/verifyToken.js'
+import { serveFillRunRequest } from '../lib/fillRuns.js'
 import { calculateCompleteness } from '../src/lib/formCompleteness.js'
 import { hasDs160AutofillSuccess } from '../lib/ds160SubmittedPdfs.js'
 
@@ -174,6 +175,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+      if (await serveFillRunRequest(res, token, url)) return
       const rawPath = url.searchParams.get('pathname')
       if (rawPath) {
         let pathname = rawPath
