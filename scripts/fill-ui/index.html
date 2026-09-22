@@ -1,138 +1,270 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>fill-ds160</title>
   <style>
     :root {
-      --bg: #f4f5f7;
+      --bg: #f3f4f6;
       --card: #fff;
-      --ink: #1f2937;
+      --ink: #111827;
       --muted: #6b7280;
       --line: #e5e7eb;
-      --amber: #d97706;
-      --amber-bg: #fffbeb;
-      --green: #047857;
-      --red: #b91c1c;
+      --play: #047857;
+      --stop: #b91c1c;
+      --wait: #d97706;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
       background: var(--bg);
     }
-    header {
-      padding: 14px 16px 10px;
-      background: #111827;
-      color: #fff;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 16px;
-      letter-spacing: 0.04em;
-    }
-    header p {
-      margin: 4px 0 0;
-      color: #d1d5db;
-      font-size: 12px;
-    }
-    main { padding: 12px 16px 16px; }
+    header { padding: 16px 16px 0; }
+    h1 { margin: 0; font-size: 20px; }
+    .sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; min-height: 1.2em; }
+    main { padding: 8px 16px 16px; }
     .drop {
-      border: 1.5px dashed #c4c4c4;
-      border-radius: 10px;
-      padding: 18px 12px;
+      border: 1.5px dashed #cfd3d8;
+      border-radius: 12px;
+      padding: 22px 12px;
       text-align: center;
       background: var(--card);
       color: var(--muted);
-    }
-    .drop.over { border-color: var(--amber); background: var(--amber-bg); color: var(--ink); }
-    .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-    button {
-      border: 0;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-weight: 600;
       cursor: pointer;
     }
-    button:disabled { opacity: 0.45; cursor: default; }
-    .primary { background: var(--amber); color: #fff; }
-    .ghost { background: #fff; border: 1px solid var(--line); color: var(--ink); }
-    .danger { background: #fff; border: 1px solid #fecaca; color: var(--red); }
+    .drop.over { border-color: var(--wait); background: #fffbeb; color: var(--ink); }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-inline-start: auto;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+    .check input { accent-color: var(--wait); }
+    .ghost {
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--ink);
+    }
+    .delete { background: #4b5563; }
     ul { list-style: none; margin: 12px 0 0; padding: 0; }
     li {
-      display: grid;
-      grid-template-columns: 1fr auto auto;
+      display: flex;
+      flex-direction: column;
       gap: 8px;
-      align-items: center;
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px 10px;
-      margin-bottom: 6px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
     }
-    .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .status { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
-    .queued { color: var(--muted); }
-    .filling { color: var(--amber); }
-    .done { color: var(--green); }
-    .failed, .stopped { color: var(--red); }
-    .x {
+    .item-main {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    li.section, li.empty {
+      display: block;
       background: transparent;
       border: 0;
+      padding: 12px 2px 4px;
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
       color: var(--muted);
-      padding: 0 4px;
-      font-size: 16px;
     }
-    pre {
-      margin: 12px 0 0;
-      height: 220px;
-      overflow: auto;
-      background: #111827;
-      color: #e5e7eb;
-      border-radius: 8px;
-      padding: 10px;
-      font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-      white-space: pre-wrap;
+    li.done { background: #f8faf9; }
+    li.done .name { color: #4b5563; font-weight: 600; }
+    .pick {
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+    .pick input { width: 16px; height: 16px; accent-color: var(--play); cursor: pointer; }
+    .pick input:disabled { cursor: default; }
+    .name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .appid {
+      font: 700 12px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #111827;
+      letter-spacing: 0.03em;
+      direction: ltr;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+    .appid.empty { background: transparent; color: var(--muted); font-weight: 500; }
+    .status { font-size: 13px; color: var(--muted); min-width: 4.5em; }
+    .filling { color: var(--wait); font-weight: 700; }
+    .succeeded { color: var(--play); font-weight: 700; }
+    .failed, .stopped { color: var(--stop); font-weight: 700; }
+    .blocked { color: var(--wait); font-weight: 700; }
+    .queued { color: var(--wait); }
+    button.act {
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      min-width: 4.5em;
+    }
+    .play { background: var(--play); }
+    .stop { background: var(--stop); }
+    button.act.forget {
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--ink);
+    }
+    button.act.ghost {
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--ink);
+    }
+    button:disabled { opacity: 0.35; cursor: default; }
+    button.act.forget:disabled {
+      opacity: 1;
+      color: #6b7280;
+      background: #f3f4f6;
+      border-color: #d1d5db;
+    }
+    .empty { color: var(--muted); padding: 18px 8px; text-align: center; }
   </style>
 </head>
 <body>
   <header>
     <h1>fill-ds160</h1>
-    <p>Load one or more translated files, then fill them in order.</p>
+    <p class="sub" id="sub"></p>
   </header>
   <main>
-    <div id="drop" class="drop">Drop <code>first_last.txt</code> files here, or add from Downloads.</div>
+    <div id="drop" class="drop">הוסף או גרור קובץ חדש</div>
     <div class="row">
-      <button class="ghost" id="add">Add files</button>
-      <button class="primary" id="start">Fill queue</button>
-      <button class="danger" id="stop" disabled>Stop</button>
-      <button class="ghost" id="clear">Clear finished</button>
+      <button class="act play" id="playAll">הפעל מסומנים</button>
+      <button class="act stop" id="stopAll">עצור הכל</button>
+      <button class="act ghost" id="clearDone">מחק שהסתיימו</button>
+      <label class="check">
+        <input type="checkbox" id="parallel" autocomplete="off" />
+        הרץ במקביל
+      </label>
     </div>
     <ul id="queue"></ul>
-    <pre id="log">Ready.</pre>
   </main>
   <script>
+    const LABELS = {
+      idle: 'ממתין',
+      queued: 'בתור',
+      filling: 'ממלא',
+      succeeded: 'הצליח',
+      failed: 'נכשל',
+      blocked: 'לבדיקה',
+      stopped: 'נעצר',
+    }
     const $ = (id) => document.getElementById(id)
     const drop = $('drop')
-    let state = { queue: [], running: false, log: 'Ready.\n' }
+    let state = { queue: [], parallel: false }
+    $('parallel').checked = false
+
+    function esc(value) {
+      return String(value || '').replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[ch]))
+    }
 
     function render() {
-      $('start').disabled = state.running || !state.queue.some((item) => item.status === 'queued')
-      $('stop').disabled = !state.running
-      $('queue').innerHTML = state.queue.map((item) => `
-        <li>
-          <div class="name" title="${item.path || item.name}">${item.name}</div>
-          <div class="status ${item.status}">${item.status}</div>
-          <button class="x" data-remove="${item.id}" ${state.running ? 'disabled' : ''}>&times;</button>
-        </li>
-      `).join('') || '<li style="color:#6b7280">No files yet.</li>'
-      const log = $('log')
-      const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 24
-      log.textContent = state.log || 'Ready.'
-      if (atBottom) log.scrollTop = log.scrollHeight
+      const counts = state.queue.reduce((acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1
+        return acc
+      }, {})
+      const bits = []
+      if (counts.filling) bits.push(`ממלא ${counts.filling}`)
+      if (counts.queued) bits.push(`בתור ${counts.queued}`)
+      if (counts.succeeded) bits.push(`הצליח ${counts.succeeded}`)
+      if (counts.failed) bits.push(`נכשל ${counts.failed}`)
+      if (counts.blocked) bits.push(`לבדיקה ${counts.blocked}`)
+      $('sub').textContent = bits.join(' · ')
+      if (document.activeElement !== $('parallel')) {
+        $('parallel').checked = !!state.parallel
+      }
+
+      const sections = [
+        { id: 'todo', label: 'לביצוע' },
+        { id: 'succeeded', label: 'הצליח' },
+        { id: 'failed', label: 'נכשל' },
+        { id: 'blocked', label: 'לבדיקה' },
+        { id: 'stopped', label: 'נעצר' },
+      ]
+      function sectionOf(item) {
+        if (['idle', 'queued', 'filling'].includes(item.status)) return 'todo'
+        return item.status
+      }
+      const grouped = Object.fromEntries(sections.map((section) => [section.id, []]))
+      for (const item of state.queue) {
+        const id = grouped[sectionOf(item)] ? sectionOf(item) : 'todo'
+        grouped[id].push(item)
+      }
+      const todoSelectable = grouped.todo.filter((item) => item.status !== 'filling')
+      const allSelected = todoSelectable.length > 0 && todoSelectable.every((item) => item.selected !== false)
+      const runnable = state.queue.filter((item) => item.selected !== false && !['filling', 'queued'].includes(item.status))
+      $('playAll').disabled = runnable.length === 0
+      $('playAll').textContent = runnable.length ? `הפעל מסומנים (${runnable.length})` : 'הפעל מסומנים'
+
+      function row(item) {
+        const canPlay = !['filling', 'queued'].includes(item.status)
+        const canStop = item.status === 'filling' || item.status === 'queued'
+        const canDelete = item.status !== 'filling'
+        const checked = item.selected !== false
+        const doneRow = item.status === 'succeeded' && !checked
+        const canForget = canPlay && (item.appId || ['succeeded', 'failed', 'blocked', 'stopped'].includes(item.status))
+        return `
+          <li class="${doneRow ? 'done' : ''}">
+            <div class="item-main">
+              <label class="pick" title="כלול בריצה הבאה">
+                <input type="checkbox" data-select="${esc(item.id)}" ${checked ? 'checked' : ''} ${item.status === 'filling' ? 'disabled' : ''} />
+              </label>
+              <div class="name" title="${esc(item.path || item.name)}">${esc(item.name)}</div>
+              <div class="appid${item.appId ? '' : ' empty'}" title="Application ID">${esc(item.appId || '—')}</div>
+              <div class="status ${esc(item.status)}">${LABELS[item.status] || item.status}</div>
+            </div>
+            <div class="actions">
+              <button class="act play" data-play="${esc(item.id)}" ${canPlay ? '' : 'disabled'}>הפעל</button>
+              <button class="act forget" data-forget="${esc(item.id)}" title="מוחק את מספר הבקשה השמור. ההפעלה הבאה תתחיל בקשה חדשה." ${canForget ? '' : 'disabled'}>שכח בקשה</button>
+              <button class="act stop" data-stop="${esc(item.id)}" ${canStop ? '' : 'disabled'}>עצור</button>
+              <button class="act delete" data-remove="${esc(item.id)}" ${canDelete ? '' : 'disabled'}>מחק</button>
+            </div>
+          </li>`
+      }
+
+      const blocks = []
+      for (const section of sections) {
+        const items = grouped[section.id]
+        if (!items.length) continue
+        const heading = section.id === 'todo'
+          ? `<label class="pick" style="display:inline-flex;gap:6px;font-weight:700"><input type="checkbox" data-select-all="1" ${allSelected ? 'checked' : ''} /> ${section.label} · ${items.length}</label>`
+          : `${section.label} · ${items.length}`
+        blocks.push(`<li class="section">${heading}</li>`)
+        blocks.push(items.map(row).join(''))
+      }
+      $('queue').innerHTML = blocks.length ? blocks.join('') : '<li class="empty">אין קבצים עדיין</li>'
     }
 
     async function refresh() {
@@ -152,7 +284,7 @@
       return data
     }
 
-    $('add').onclick = async () => {
+    async function addFiles() {
       try {
         await post('/api/pick-files')
         await refresh()
@@ -160,12 +292,41 @@
         if (!/cancel/i.test(String(err.message))) alert(err.message)
       }
     }
-    $('start').onclick = () => post('/api/start').then(refresh).catch((err) => alert(err.message))
-    $('stop').onclick = () => post('/api/stop').then(refresh).catch((err) => alert(err.message))
-    $('clear').onclick = () => post('/api/clear-done').then(refresh)
-    $('queue').onclick = (event) => {
-      const id = event.target.dataset.remove
-      if (id) post('/api/remove', { id }).then(refresh)
+
+    drop.onclick = addFiles
+    $('playAll').onclick = () => post('/api/play-all').then(refresh).catch((err) => alert(err.message))
+    $('stopAll').onclick = () => post('/api/stop-all').then(refresh).catch((err) => alert(err.message))
+    $('clearDone').onclick = () => post('/api/clear-done').then(refresh).catch((err) => alert(err.message))
+    $('parallel').onchange = () => {
+      post('/api/parallel', { enabled: $('parallel').checked })
+        .then((data) => { state = data; render() })
+        .catch((err) => alert(err.message))
+    }
+    $('queue').onclick = async (event) => {
+      const play = event.target.dataset.play
+      const forget = event.target.dataset.forget
+      const stop = event.target.dataset.stop
+      const remove = event.target.dataset.remove
+      try {
+        if (play) await post('/api/play', { id: play })
+        if (forget) await post('/api/forget', { id: forget })
+        if (stop) await post('/api/stop', { id: stop })
+        if (remove) await post('/api/remove', { id: remove })
+        if (play || forget || stop || remove) await refresh()
+      } catch (err) {
+        alert(err.message)
+      }
+    }
+    $('queue').onchange = async (event) => {
+      const select = event.target.dataset.select
+      const selectAll = event.target.dataset.selectAll
+      try {
+        if (select) await post('/api/select', { id: select, selected: event.target.checked })
+        if (selectAll) await post('/api/select-all', { selected: event.target.checked })
+        await refresh()
+      } catch (err) {
+        alert(err.message)
+      }
     }
 
     ;['dragenter', 'dragover'].forEach((type) => {
@@ -184,15 +345,13 @@
       const files = [...(event.dataTransfer?.files || [])]
       if (!files.length) return
       const payload = []
-      for (const file of files) {
-        payload.push({ name: file.name, text: await file.text() })
-      }
+      for (const file of files) payload.push({ name: file.name, text: await file.text() })
       await post('/api/add-uploads', { files: payload })
       await refresh()
     })
 
     refresh()
-    setInterval(refresh, 600)
+    setInterval(refresh, 700)
   </script>
 </body>
 </html>
