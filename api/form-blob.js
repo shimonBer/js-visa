@@ -3,6 +3,7 @@ import { verifyRequest } from '../lib/verifyToken.js'
 import { serveFillRunRequest } from '../lib/fillRuns.js'
 import { calculateCompleteness } from '../src/lib/formCompleteness.js'
 import { hasDs160AutofillSuccess } from '../lib/ds160SubmittedPdfs.js'
+import { resolveCreatedAt, resolveUpdatedAt } from '../lib/formTimestamps.js'
 
 const PREFIX = 'forms/'
 const STATUS_PATH = 'forms-meta/status.json'
@@ -144,6 +145,52 @@ async function readStatusIndex(token) {
   }
 }
 
+async function readPayload(token, pathname) {
+  const result = await get(pathname, { access: 'private', token })
+  if (!result || result.statusCode !== 200 || !result.stream) return null
+  const text = await streamToUtf8(result.stream)
+  return JSON.parse(text)
+}
+
+/**
+ * Fill createdAt for forms that predate the timestamp index.
+ * Newest forms first. Stops after a few seconds so the list request still returns.
+ */
+async function backfillCreatedAt(token, forms, statusIndex) {
+  const deadline = Date.now() + 4000
+  const pending = forms.filter(
+    (f) => !statusIndex[f.pathname]?.createdAt && !statusIndex[f.pathname]?.createdAtChecked,
+  )
+  let changed = false
+  const CHUNK = 20
+  for (let i = 0; i < pending.length && Date.now() < deadline; i += CHUNK) {
+    const slice = pending.slice(i, i + CHUNK)
+    const rows = await Promise.all(
+      slice.map(async (f) => {
+        try {
+          const payload = await readPayload(token, f.pathname)
+          const createdAt = payload ? resolveCreatedAt(statusIndex[f.pathname], payload, null) : null
+          return { pathname: f.pathname, createdAt, uploadedAt: f.uploadedAt, checked: true }
+        } catch {
+          return { pathname: f.pathname, createdAt: null, uploadedAt: f.uploadedAt, checked: false }
+        }
+      }),
+    )
+    for (const row of rows) {
+      if (!row || statusIndex[row.pathname]?.createdAt) continue
+      const prev = statusIndex[row.pathname] || {}
+      statusIndex[row.pathname] = {
+        ...prev,
+        ...(row.createdAt ? { createdAt: row.createdAt } : {}),
+        ...(row.checked && !row.createdAt ? { createdAtChecked: true } : {}),
+        updatedAt: resolveUpdatedAt(prev, { uploadedAt: row.uploadedAt }),
+      }
+      changed = true
+    }
+  }
+  return changed
+}
+
 /** Write the forms-meta/status.json index. Failures are non-fatal. */
 async function writeStatusIndex(token, index) {
   try {
@@ -232,6 +279,7 @@ export default async function handler(req, res) {
 
       // Backfill completeness for forms missing from the status index (up to 15, in parallel).
       const missing = blobPage.filter((f) => statusIndex[f.pathname] === undefined)
+      let statusDirty = false
       if (missing.length > 0) {
         const toFetch = missing.slice(0, 15)
         const backfilled = await Promise.allSettled(
@@ -251,6 +299,7 @@ export default async function handler(req, res) {
                 f.formId ||
                 ''
               statusIndex[f.pathname] = {
+                ...prev,
                 isComplete,
                 missingCount: missingFields.length,
                 guestToken: prev.guestToken ?? null,
@@ -259,6 +308,8 @@ export default async function handler(req, res) {
                 mondaySentAt: mondayItemId ? (prev.mondaySentAt || null) : (prev.mondaySentAt || null),
                 ds160FilledAt: prev.ds160FilledAt
                   || (hasDs160AutofillSuccess(payload.s3Documents, formKey) ? new Date().toISOString() : null),
+                createdAt: resolveCreatedAt(prev, payload, null),
+                updatedAt: resolveUpdatedAt(prev, { uploadedAt: f.uploadedAt }),
               }
               return f.pathname
             } catch {
@@ -267,10 +318,11 @@ export default async function handler(req, res) {
           }),
         )
         const anyUpdated = backfilled.some((r) => r.status === 'fulfilled' && r.value != null)
-        if (anyUpdated) {
-          await writeStatusIndex(token, statusIndex)
-        }
+        if (anyUpdated) statusDirty = true
       }
+
+      if (await backfillCreatedAt(token, blobPage, statusIndex)) statusDirty = true
+      if (statusDirty) await writeStatusIndex(token, statusIndex)
 
       const forms = blobPage.map((f) => {
         const status = statusIndex[f.pathname]
@@ -283,6 +335,8 @@ export default async function handler(req, res) {
           mondayItemId: status?.mondayItemId ?? null,
           mondaySentAt: status?.mondaySentAt ?? null,
           ds160FilledAt: status?.ds160FilledAt ?? null,
+          createdAt: status?.createdAt ?? null,
+          updatedAt: resolveUpdatedAt(status, { uploadedAt: f.uploadedAt }),
         }
       })
 
@@ -306,7 +360,12 @@ export default async function handler(req, res) {
       // Calculate completeness and attach to payload
       const formData = payload?.data && typeof payload.data === 'object' ? payload.data : {}
       const completeness = calculateCompleteness(formData)
-      const enriched = { ...payload, completeness }
+      const nowIso = new Date().toISOString()
+      const statusIndex = await readStatusIndex(token)
+      const prev = statusIndex[pathname] || {}
+      const createdAt = resolveCreatedAt(prev, payload, nowIso)
+      const updatedAt = nowIso
+      const enriched = { ...payload, completeness, createdAt, updatedAt }
 
       const json = JSON.stringify(enriched)
       await put(pathname, json, {
@@ -316,10 +375,6 @@ export default async function handler(req, res) {
         allowOverwrite: true,
       })
 
-      // Update status index (non-blocking on failure)
-      const statusIndex = await readStatusIndex(token)
-      const prev = statusIndex[pathname] || {}
-      const nowIso = new Date().toISOString()
       const mondayItemId = typeof formData.mondayItemId === 'string' ? formData.mondayItemId.trim() : ''
       const formKey =
         (typeof formData.formUUID === 'string' && formData.formUUID.trim()) ||
@@ -336,6 +391,8 @@ export default async function handler(req, res) {
         mondaySentAt: mondayItemId ? (prev.mondaySentAt || nowIso) : (prev.mondaySentAt || null),
         ds160FilledAt: prev.ds160FilledAt
           || (hasDs160AutofillSuccess(payload.s3Documents, formKey) ? nowIso : null),
+        createdAt,
+        updatedAt,
       }
       await writeStatusIndex(token, statusIndex)
 

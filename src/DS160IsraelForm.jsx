@@ -16,6 +16,8 @@ import { fetchI94TravelHistory } from './lib/i94Lookup.js'
 import { translateFormToEnglish } from './lib/translateForm.js'
 import {
   buildTranslationFingerprint,
+  cleanSignaturesForFiles,
+  loadTranslationCache,
   normalizeStoredTranslation,
   saveTranslationCache,
 } from './lib/translationCache.js'
@@ -34,6 +36,11 @@ import OcrReviewDialog from './OcrReviewDialog.jsx'
 import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
 import { autofillDownloadFileName } from './lib/translatedFileName.js'
 import { startLocalAutofill } from './lib/localAutofill.js'
+import {
+  downloadPdfBase64,
+  fetchTranslationPdfBase64,
+  uploadTranslationPdf,
+} from './lib/translationPdf.js'
 
 const PASSPORT_OCR_FIELDS = [
   { key: 'firstName', label: 'Given names', required: true },
@@ -998,6 +1005,9 @@ export default function DS160IsraelForm({
   /** Blob pathname this form was loaded from; used to overwrite the same file on re-save. */
   const loadedBlobKeyRef = useRef(/** @type {string | null} */ (initialBlobKey))
   const translationRef = useRef(normalizeStoredTranslation(initialBlob?.translation))
+  const translationPersistedRef = useRef(!!translationRef.current)
+  /** File signatures that already match the stored S3 object, so they do not change the translation fingerprint. */
+  const cleanDocSigRef = useRef(/** @type {Record<string, string>} */ ({}))
 
   const { register, watch, handleSubmit, getValues, setValue, reset, control, formState: { errors } } = useForm({
     defaultValues: {
@@ -1708,6 +1718,13 @@ export default function DS160IsraelForm({
       if (cancelled) return
       if (hydratingRef.current) captureCleanSnapshot()
       if (restored > 0) {
+        const restoredFields = docs
+          .map((doc) => (doc && typeof doc.field === 'string' ? doc.field : ''))
+          .filter(Boolean)
+        cleanDocSigRef.current = {
+          ...cleanDocSigRef.current,
+          ...cleanSignaturesForFiles(getValues(), restoredFields),
+        }
         const extra = failed > 0 ? ` (${failed} לא הורדו)` : ''
         setAsyncFlow({ phase: 'idle', message: `שוחזרו ${restored} מסמכים${extra}.` })
       }
@@ -1733,6 +1750,21 @@ export default function DS160IsraelForm({
       cancelled = true
     }
   }, [initialBlobKey, storageFormId])
+
+  useEffect(() => {
+    if (normalizeStoredTranslation(translationRef.current)) return undefined
+    let cancelled = false
+    loadTranslationCache(storageFormId)
+      .then((row) => {
+        if (cancelled || normalizeStoredTranslation(translationRef.current)) return
+        const normalized = normalizeStoredTranslation(row)
+        if (normalized) translationRef.current = normalized
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [storageFormId])
 
   function buildN8nBody(event, values, s3Documents) {
     const { data, fileMeta } = serializeFormValuesForJson(values)
@@ -1840,8 +1872,11 @@ export default function DS160IsraelForm({
           setAsyncFlow({ phase: 'error', message: 'שמירה הצליחה, אבל קבצי הסריקה לא הועלו (נסה לשמור שוב).' })
         }
         s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
-        // Re-save blob with merged s3Documents (new uploads + previously known refs).
         if (uploads.length > 0) {
+          cleanDocSigRef.current = {
+            ...cleanDocSigRef.current,
+            ...cleanSignaturesForFiles(values, uploads.map((item) => item.field)),
+          }
           const fullBody = buildN8nBody('draft', values, s3DocumentsRef.current)
           await saveFormBlobPayload(fullBody, loadedBlobKeyRef.current ?? undefined)
         }
@@ -2081,6 +2116,10 @@ export default function DS160IsraelForm({
       }
       if (uploads.length > 0) {
         s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, uploads)
+        cleanDocSigRef.current = {
+          ...cleanDocSigRef.current,
+          ...cleanSignaturesForFiles({ [fieldName]: file }, [fieldName]),
+        }
       }
     } catch (e) {
       console.warn(`[upload] immediate upload of ${fieldName} failed:`, e?.message)
@@ -2698,7 +2737,11 @@ export default function DS160IsraelForm({
       try { await onSaveDraft() } catch { /* non-blocking */ }
     }
     const valuesForTranslate = getValues()
-    const fp = buildTranslationFingerprint(valuesForTranslate)
+    const fp = buildTranslationFingerprint(
+      valuesForTranslate,
+      s3DocumentsRef.current,
+      cleanDocSigRef.current,
+    )
     const cached = normalizeStoredTranslation(translationRef.current)
     if (cached && cached.fingerprint === fp) {
       setTranslateUi({
@@ -2708,8 +2751,28 @@ export default function DS160IsraelForm({
         pdfBase64: '',
         loading: false,
         error: '',
+        reused: true,
       })
       downloadAutofillFile(cached.translated)
+      void fetchTranslationPdfBase64(storageFormId)
+        .then((pdfBase64) => {
+          if (!pdfBase64) return
+          setTranslateUi((state) => (
+            state.reused && state.text === cached.translated ? { ...state, pdfBase64 } : state
+          ))
+        })
+        .catch((e) => console.warn('[translation pdf] load failed', e))
+      if (!translationPersistedRef.current) {
+        try {
+          await saveFormBlobPayload(
+            buildN8nBody('draft', valuesForTranslate, s3DocumentsRef.current),
+            loadedBlobKeyRef.current ?? undefined,
+          )
+          translationPersistedRef.current = true
+        } catch (e) {
+          console.warn('[translation blob] save failed', e)
+        }
+      }
       return
     }
     setTranslateUi((s) => ({ ...s, loading: true, error: '' }))
@@ -2717,6 +2780,16 @@ export default function DS160IsraelForm({
       const { translated, attachmentLabels, pdfBase64 } = await translateFormToEnglish(valuesForTranslate, {
         s3Documents: s3DocumentsRef.current,
       })
+      if (pdfBase64) {
+        try {
+          const pdfDoc = await uploadTranslationPdf(storageFormId, pdfBase64)
+          if (pdfDoc) {
+            s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, [pdfDoc])
+          }
+        } catch (e) {
+          console.warn('[translation pdf] upload failed', e)
+        }
+      }
       const record = {
         fingerprint: fp,
         translated,
@@ -2729,6 +2802,7 @@ export default function DS160IsraelForm({
           buildN8nBody('draft', valuesForTranslate, s3DocumentsRef.current),
           loadedBlobKeyRef.current ?? undefined,
         )
+        translationPersistedRef.current = true
       } catch (e) {
         console.warn('[translation blob] save failed', e)
       }
@@ -2749,6 +2823,7 @@ export default function DS160IsraelForm({
         pdfBase64,
         loading: false,
         error: '',
+        reused: false,
       })
       downloadAutofillFile(translated)
     } catch (e) {
@@ -5880,9 +5955,14 @@ export default function DS160IsraelForm({
         >
           <div className="max-w-3xl w-full max-h-[85vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden" dir="ltr">
             <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-              <h2 id="translate-title" className="text-lg font-bold text-gray-900">
-                English translation
-              </h2>
+              <div>
+                <h2 id="translate-title" className="text-lg font-bold text-gray-900">
+                  English translation
+                </h2>
+                {translateUi.reused ? (
+                  <p className="text-xs text-gray-500">Saved translation — the form has not changed.</p>
+                ) : null}
+              </div>
               <div className="flex gap-2 flex-wrap">
                 {translateUi.text ? (
                   <button
@@ -5906,6 +5986,12 @@ export default function DS160IsraelForm({
                     onClick={async () => {
                       setDownloadingPdf(true)
                       try {
+                        let savedPdf = translateUi.pdfBase64
+                        if (!savedPdf) {
+                          savedPdf = await fetchTranslationPdfBase64(storageFormId)
+                          if (savedPdf) setTranslateUi((state) => ({ ...state, pdfBase64: savedPdf }))
+                        }
+                        if (savedPdf && downloadPdfBase64(savedPdf)) return
                         const { buildTranslationPdf } = await import('./lib/buildTranslationPdf.js')
                         const DOC_FIELDS = [
                           'passportScan', 'photoScan', 'existingVisaScan', 'socialSecurityScan',

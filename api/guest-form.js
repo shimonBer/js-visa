@@ -24,6 +24,7 @@ import { put, list, get } from '@vercel/blob'
 import { createClient } from '@supabase/supabase-js'
 import { verifyRequest } from '../lib/verifyToken.js'
 import { calculateCompleteness } from '../src/lib/formCompleteness.js'
+import { resolveCreatedAt } from '../lib/formTimestamps.js'
 
 // ── Auth helpers (formerly api/auth.js) ──────────────────────────────────────
 
@@ -304,10 +305,14 @@ export default async function handler(req, res) {
       }
 
       const newCompleteness = calculateCompleteness(mergedData)
+      const nowIso = new Date().toISOString()
+      const createdAt = resolveCreatedAt(payload, { ...payload, data: mergedData }, null)
       const updatedPayload = {
         ...payload,
         data: { ...payload.data, ...mergedData },
         completeness: newCompleteness,
+        ...(createdAt ? { createdAt } : {}),
+        updatedAt: nowIso,
         // Remove guestToken if form is now complete
         ...(newCompleteness.isComplete ? { guestToken: null } : {}),
       }
@@ -321,11 +326,14 @@ export default async function handler(req, res) {
 
       // Update status index
       const statusIndex = await readStatusIndex(token)
+      const prevStatus = statusIndex[found.pathname] || {}
       statusIndex[found.pathname] = {
-        ...(statusIndex[found.pathname] || {}),
+        ...prevStatus,
         isComplete: newCompleteness.isComplete,
         missingCount: newCompleteness.missingFields.length,
         guestToken: newCompleteness.isComplete ? null : guestToken,
+        createdAt: resolveCreatedAt(prevStatus, updatedPayload, null),
+        updatedAt: nowIso,
       }
       await writeStatusIndex(token, statusIndex)
 

@@ -4,7 +4,7 @@ import { firstFile } from './uploadFormDocuments.js'
 const DB_NAME = 'ds160_form_app'
 const DB_VERSION = 1
 const STORE = 'translation_cache'
-const TRANSLATION_SCHEMA_VERSION = 'israeli-passport-book-na-v4'
+const TRANSLATION_SCHEMA_VERSION = 'israeli-passport-book-na-v5'
 
 const DOC_FIELDS = [
   'passportScan',
@@ -35,19 +35,70 @@ function openDb() {
   return dbPromise
 }
 
-/**
- * Fingerprint of form JSON + file metadata so we skip re-translating when unchanged.
- * @param {Record<string, unknown>} values
- */
-export function buildTranslationFingerprint(values) {
-  const { data, fileMeta } = serializeFormValuesForJson(values)
-  const parts = [TRANSLATION_SCHEMA_VERSION, JSON.stringify(data), JSON.stringify(fileMeta ?? {})]
-  for (const field of DOC_FIELDS) {
-    const f = firstFile(values[field])
-    if (f instanceof File) parts.push(`${field}:${f.name}:${f.size}:${f.lastModified}`)
-    else parts.push(`${field}:`)
+function sortForJson(value) {
+  if (Array.isArray(value)) return value.map(sortForJson)
+  if (value && typeof value === 'object') {
+    const out = {}
+    for (const key of Object.keys(value).sort()) {
+      if (value[key] !== undefined) out[key] = sortForJson(value[key])
+    }
+    return out
   }
-  return parts.join('\x1e')
+  return value
+}
+
+function isBrowserFile(value) {
+  return typeof File !== 'undefined' && value instanceof File
+}
+
+/** Stable id for a file the user picked. Restored copies must not use this. */
+export function fileSignature(file) {
+  if (!isBrowserFile(file)) return ''
+  return `${file.name}:${file.size}:${file.lastModified}`
+}
+
+/**
+ * Signatures for files that already match the stored S3 object
+ * (just uploaded, or restored from S3). Those fields fingerprint as the S3 key.
+ * @param {Record<string, unknown>} values
+ * @param {string[]} [fields]
+ */
+export function cleanSignaturesForFiles(values, fields = DOC_FIELDS) {
+  const out = {}
+  for (const field of fields) {
+    const sig = fileSignature(firstFile(values?.[field]))
+    if (sig) out[field] = sig
+  }
+  return out
+}
+
+/**
+ * Fingerprint of form JSON + document identity.
+ * A file marked clean (uploaded or restored) is identified by its S3 key, so
+ * reloading the form does not look like a change. A newly picked file uses
+ * its local signature until it is uploaded.
+ * @param {Record<string, unknown>} values
+ * @param {{ field?: string, key?: string }[]} [s3Documents]
+ * @param {Record<string, string>} [cleanFileSigs]
+ */
+export function buildTranslationFingerprint(values, s3Documents = [], cleanFileSigs = {}) {
+  const { data } = serializeFormValuesForJson(values)
+  const keys = new Map()
+  for (const doc of s3Documents || []) {
+    if (doc && typeof doc.field === 'string' && typeof doc.key === 'string' && doc.key) {
+      keys.set(doc.field, doc.key)
+    }
+  }
+  const docs = DOC_FIELDS.map((field) => {
+    const key = keys.get(field) || ''
+    const file = firstFile(values?.[field])
+    const sig = fileSignature(file)
+    const base = key.includes('/') ? key.slice(key.lastIndexOf('/') + 1) : key
+    const matchesStoredObject = !!(file && base && file.name === base)
+    if (sig && cleanFileSigs?.[field] !== sig && !matchesStoredObject) return `${field}:local:${sig}`
+    return `${field}:s3:${key}`
+  })
+  return [TRANSLATION_SCHEMA_VERSION, JSON.stringify(sortForJson(data)), ...docs].join('\x1e')
 }
 
 /**

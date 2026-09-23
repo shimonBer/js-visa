@@ -3,6 +3,21 @@ import Fuse from 'fuse.js'
 import { listFormBlobsFromApi, fetchFormBlobPayload, deleteFormFromCloud } from './lib/formBlob.js'
 import { authHeaders } from './lib/auth.js'
 
+function formatWhen(iso) {
+  if (!iso) return ''
+  const raw = String(iso).trim()
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+  const date = new Date(dateOnly ? `${raw}T00:00:00+03:00` : raw)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('he-IL', {
+    timeZone: 'Asia/Jerusalem',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    ...(dateOnly ? {} : { hour: '2-digit', minute: '2-digit' }),
+  }).format(date)
+}
+
 export default function FormLanding({
   onNewForm,
   onOpenForm,
@@ -323,6 +338,13 @@ export default function FormLanding({
                     <span className="font-mono text-[11px] text-gray-500" dir="ltr">
                       {opening ? 'טוען…' : (f.formId || '—')}
                     </span>
+                    {(f.createdAt || f.updatedAt) && (
+                      <span className="text-[11px] leading-snug text-gray-500">
+                        {f.createdAt ? <span>נוצר {formatWhen(f.createdAt)}</span> : null}
+                        {f.createdAt && f.updatedAt ? <span> · </span> : null}
+                        {f.updatedAt ? <span>עודכן {formatWhen(f.updatedAt)}</span> : null}
+                      </span>
+                    )}
                     {isCompleted && f.completedAt && (
                       <span className="text-[11px] font-medium text-green-700">
                         ✓ הושלם

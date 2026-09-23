@@ -8,6 +8,7 @@ import { get, del } from '@vercel/blob'
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { verifyRequest } from '../lib/verifyToken.js'
 import { ds160SubmittedPdfKeys } from '../lib/ds160SubmittedPdfs.js'
+import { translationPdfKey } from '../lib/translationPdf.js'
 
 const PREFIX = 'forms/'
 
@@ -168,6 +169,11 @@ export default async function handler(req, res) {
         if (!key || seen.has(key)) continue
         seen.add(key)
         keysToDelete.push(key)
+      }
+      const translationKey = sanitizeS3ObjectKey(translationPdfKey(formId))
+      if (translationKey && !seen.has(translationKey)) {
+        seen.add(translationKey)
+        keysToDelete.push(translationKey)
       }
 
       for (const key of keysToDelete) {
