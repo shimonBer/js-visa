@@ -80,6 +80,8 @@ Apply these rules throughout every section:
 - **N/A values**: If the translated document shows `N/A` for a field that has a "Does Not Apply" checkbox, check that checkbox. If there is no checkbox and the field is optional, leave it blank
 - **❗ MISSING values**: Leave the field blank if it is optional; if the field is required, stop and flag the issue before proceeding
 - **Navigation**: Use the form's own **Next** / **Save** / **Continue** buttons — never use the browser Back button
+- **Validation errors**: If a visible validation summary lists rejected or unanswered fields, resolve those messages first using the applicant data, then retry the same navigation action. Do not continue normal field order while an uncorrected validation error is present.
+- **Testing continuity / defer for review**: If an optional field or an extra repeatable-row action remains blocked after a failed attempt, output `{"type":"defer","reason":"<reason>","fieldLabel":"<field/action>"}` and continue testing the next field. Never defer required fields, unanswered Yes/No questions, or anything listed in visible validation errors. Deferred items must remain clearly flagged for later human review and must not be retried in the same run.
 
 ---
 
@@ -165,6 +167,10 @@ Work through the left-side navigation menu from top to bottom. Do not skip secti
 | Traveling as part of a group/organization? | `Are you traveling as part of a group or organization?` |
 | → Group Name | Fill if Yes |
 
+For repeated companions, use a 1-based `occurrence` on surname, given name, and
+relationship. Before occurrence 2 or later, use
+`{"type":"click","text":"Add Another Travel Companion"}` exactly once.
+
 ---
 
 ### SECTION: PREVIOUS U.S. TRAVEL
@@ -174,19 +180,32 @@ Work through the left-side navigation menu from top to bottom. Do not skip secti
 | Have you ever been in the United States? | `Have you ever been in the United States?` |
 | → Arrival Date / Length of Stay | Fill for each trip (repeatable) |
 | Do you hold a U.S. Driver's License? | `Do you or did you ever hold a U.S. Driver's License?` |
-| Have you ever been issued a U.S. visa? | `Have you ever been issued a U.S. visa?` |
-| → Visa Issue Date | `Visa Issue Date` |
-| → Visa Expiration Date | `Visa Expiration Date` |
+| → Driver's License Number / State | Fill if Yes (repeatable) |
+| Have you ever been issued a U.S. Visa? | `Have you ever been issued a U.S. Visa?` |
+| → Date Last Visa Was Issued | `Date Last Visa Was Issued` |
 | → Visa Number | `Visa Number` |
-| → Same Visa Type? | `Same Visa Type?` |
-| → Applying in same country? | `Are you applying in the same country...?` |
+| → Same Visa Type? | `Are you applying for the same type of visa?` |
+| → Applying in same country? | `Are you applying in the same country or location...?` |
 | → Have you been ten-printed? | `Have you been ten-printed?` |
 | → Visa lost or stolen? | `Has your U.S. Visa ever been lost or stolen?` |
 | → Visa cancelled or revoked? | `Has your U.S. Visa ever been cancelled or revoked?` |
-| Have you ever been refused a U.S. visa? | `Have you ever been refused a U.S. visa or denied admission?` |
+| Have you ever been refused a U.S. Visa? | `Have you ever been refused a U.S. Visa, or been refused admission...` |
 | → Full Explanation | Fill if Yes |
-| Has anyone filed an immigrant petition? | `Has anyone ever filed an immigrant petition on your behalf?` |
-| → Petition Type / Number | Fill if Yes |
+| Has anyone filed an immigrant petition? | `Has anyone ever filed an immigrant petition on your behalf with USCIS?` |
+| → Explain | Fill if Yes |
+
+For repeated previous visits, use a 1-based `occurrence` on every action for
+that row. Fill each date using the same split-date mechanism as other dates:
+
+```json
+{"type":"fill","label":"Previous Visit Arrival Date","value":"13/12/2018","occurrence":1}
+{"type":"fill","label":"Previous Visit Length of Stay","value":"3","occurrence":1}
+{"type":"selectOption","label":"Previous Visit Length of Stay","value":"Month(s)","occurrence":1}
+```
+
+Before every additional visit, output `{"type":"click","text":"Add Another"}` and
+wait for the new row. Then use `occurrence: 2`, and so on. Never fill an
+occurrence before adding its row.
 
 ---
 
@@ -202,18 +221,35 @@ Work through the left-side navigation menu from top to bottom. Do not skip secti
 | Postal/ZIP Code | `Postal Zone/ZIP Code` — check "Does Not Apply" if `N/A` |
 | Country | `Country` |
 
+Keep the home street address and postal code as separate actions:
+
+```json
+{"type":"fill","label":"Street Address (Line 1)","value":"<street address only>"}
+{"type":"fill","label":"Postal Zone/ZIP Code","value":"<postal code only>"}
+```
+
+Never fill the postal code into `Street Address (Line 1)`.
+
 **Mailing Address:**
 - If `Is your mailing address the same as your home address?: Yes` → check "Same as Home Address"
 - If No → fill the separate mailing address fields
 
-**Contact Information:**
+**Phone:**
 
 | Form Field | Source |
 |---|---|
 | Primary Phone Number | `Primary Phone Number` |
 | Secondary Phone Number | `Secondary Phone Number` — check "Does Not Apply" if `N/A` |
 | Work Phone Number | `Work Phone Number` — check "Does Not Apply" if `N/A` |
-| Other phone numbers (last 5 years) | Fill each additional number listed (repeatable) |
+| Other phone numbers (last 5 years) | Answer Yes/No, then fill each `Additional Phone Number` (repeatable) |
+
+For repeated additional phone numbers, use `occurrence: 1`, then click **Add Another**
+before filling `occurrence: 2`, and so on.
+
+**Email Address:**
+
+| Form Field | Source |
+|---|---|
 | Email Address | `Email Address` |
 | Other email addresses (last 5 years) | Fill each additional email listed (repeatable) |
 
@@ -231,14 +267,18 @@ Work through the left-side navigation menu from top to bottom. Do not skip secti
 | Passport/Travel Document Type | `Passport/Travel Document Type` (usually REGULAR) |
 | Passport Number | `Passport Number` |
 | Passport Book Number | `Passport Book Number` — if `No`, select "No" option |
-| Country of Issuance | `Country of Issuance` |
-| City of Issuance | `City of Issuance` |
-| Issuing Authority | `Issuing Authority` |
-| State/Province of Issuance | `State/Province of Issuance` — check "Does Not Apply" if `N/A` |
-| Passport Issue Date | `Passport Issue Date` |
-| Passport Expiration Date | `Passport Expiration Date` |
+| Country/Authority that Issued Passport/Travel Document | Select from the country dropdown |
+| City | `Passport Issuance City` |
+| State/Province | `Passport Issuance State/Province` |
+| Country/Region | `Passport Issuance Country/Region` |
+| Issuance Date | `Issuance Date` |
+| Expiration Date | `Expiration Date`; check `No Expiration` only when applicable |
 | Have you ever lost a passport or had one stolen? | `Have you ever lost a passport or had one stolen?` |
-| → Lost Passport Number / Country / Explanation | Fill if Yes |
+| → Lost Passport Number / Country / Explanation | Fill each repeated lost-passport entry if Yes |
+
+For Israeli passports, `Passport Book Number` is always **No / Does Not Apply**.
+The printed Israeli `I.D. No.` is the national identification number, not a
+passport book number, and must never be copied into that field.
 
 ---
 
@@ -298,6 +338,9 @@ If a required source value is `❗ MISSING`, stop rather than filling a placehol
 ---
 
 ### SECTION: SPOUSE INFORMATION (shown when Marital Status = Married)
+
+Use values only from the `🟦 SPOUSE INFORMATION` section. Never copy a spouse
+name from U.S. relatives, U.S. contact, or travel companions.
 
 | Form Field | Source |
 |---|---|
@@ -374,13 +417,13 @@ If Yes (repeatable group for each previous job):
 | Employer Name | `Employer Name` |
 | Job Title | `Job Title` |
 | Employer Address | `Employer Address` |
-| Employer City | `Employer City` |
-| State/Province | Check "Does Not Apply" if `N/A` |
-| ZIP Code | Leave blank if unknown |
+| Employer City | `Employer City` — never the education `City` line; both sit on this page |
+| State/Province | Check "Does Not Apply" with fieldLabel `Previous Employer State/Province` if `N/A`/`DOES NOT APPLY` |
+| ZIP Code | Check "Does Not Apply" with fieldLabel `Previous Employer Postal Zone/ZIP Code` if `N/A`/`DOES NOT APPLY` |
 | Country/Region | `Country / Region` |
 | Employer Phone Number | `Employer Phone Number` |
-| Supervisor Surname | `Supervisor surname` |
-| Supervisor Given Name | `Supervisor given name` |
+| Supervisor Surname | If `N/A`/`DO NOT KNOW`, check "Do Not Know" with fieldLabel `Previous Employer Supervisor Surname` |
+| Supervisor Given Name | If `N/A`/`DO NOT KNOW`, check "Do Not Know" with fieldLabel `Previous Employer Supervisor Given Names` |
 | Start Date | `Start Date` |
 | End Date | `End Date` |
 | Job Duties | `Job Duties` |
@@ -399,9 +442,9 @@ If Yes (repeatable group for each school/institution):
 |---|---|
 | School / Institution Name | `School / Institution Name` |
 | Address | `Address` |
-| City | `City` |
-| State/Province | Check "Does Not Apply" if `N/A` (e.g. Israel) |
-| ZIP Code | Leave blank if unknown |
+| City | Fill using label `Education City` and source `City` |
+| State/Province | Check "Does Not Apply" with fieldLabel `Education State/Province` if `N/A`/`DOES NOT APPLY` |
+| ZIP Code | Check "Does Not Apply" with fieldLabel `Education Postal Zone/ZIP Code` if `N/A`/`DOES NOT APPLY` |
 | Country/Region | `Country / Region` |
 | Course of Study | `Course of Study` |
 | Attendance From | `Attendance From` |
@@ -415,22 +458,26 @@ If Yes (repeatable group for each school/institution):
 - `Do you belong to a clan or tribe?` → answer from document (typically No)
 
 **Languages:**
-- Enter each language listed under `Languages spoken` (repeatable)
+- Fill the first language with `{"type":"fill","label":"Language Name","value":"<language>","occurrence":1}`.
+- Before every later language, output `{"type":"click","text":"Add Another Language"}`, then fill `Language Name` with occurrence 2, 3, etc.
+- Never use the generic `Add Another` action for languages.
 
 **Travel History:**
-- Enter each country listed under `Countries visited in the last 5 years` (repeatable)
+- Answer `Have you traveled to any countries/regions within the last five years?`.
+- If Yes, select the first country with label `Country Visited`; before later countries use `Add Another Visited Country`.
 
 **Organizations:**
 - `Have you belonged to... any professional, social, or charitable organizations?` → answer from document
-- If Yes: enter Organization Name + Organization Type for each entry (repeatable)
+- If Yes: fill each `Organization Name`; before later entries use `Add Another Organization`.
 
 **Specialized Skills:**
-- `Do you possess specialized skills or training involving firearms, explosives, nuclear, biological, or chemical experience?` → answer from document (typically No)
-- If Yes: enter full description
+- `Do you possess specialized skills or training involving firearms, explosives, nuclear, biological, or chemical experience?` → answer from document
+- If Yes: enter the Full Description (typically `FIREARMS MILITARY TRAINING` when the applicant served in the military)
 
 **Military Service:**
 - `Have you served in the military?` → answer from document
-- If Yes: fill Country, Branch of Service, Rank/Position, Military Specialty, Service From, Service To
+- If Yes: use labels `Military Service Country`, `Branch of Service`, `Rank/Position`, `Military Specialty`, `Service From`, and `Service To`, with the same occurrence.
+- Before later service records use `Add Another Military Service`.
 - `Have you ever served in... a paramilitary unit, vigilante unit, rebel group...?` → answer from document (typically No)
 
 ---
@@ -467,8 +514,15 @@ The questions cover:
 
 | Form Field | Source |
 |---|---|
-| Did anyone assist you in filling out this application? | `Did anyone assist you in filling out this application?` |
-| → Name / Relationship / Address / City / State / ZIP / Country | Fill if Yes |
+| Did anyone assist you in filling out this application? | Always **Yes** — do not use the source sheet's No |
+| Organization Name | `JVISA` |
+| Street Address | `27 HERMON STREET` |
+| City | `NAHARIYA` |
+| State/Province | Check Does Not Apply |
+| Postal Zone/ZIP Code | `2220527` |
+| Country/Region | `ISRAEL` |
+| Relationship to You | `CLERK` |
+| Preparer Names | Check Does Not Apply |
 | E-Signature — Passport/Travel Document Number | `Passport Number` from the document |
 
 After completing the signature, click **Submit**.

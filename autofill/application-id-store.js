@@ -13,6 +13,11 @@ export function parseApplicationId(value = '') {
   return APP_ID_RE.test(id) ? id : ''
 }
 
+/** True once a fill log shows Personal Information 1 was saved. */
+export function logShowsPersonal1Saved(text) {
+  return /PERSONAL1_SAVED\b/.test(String(text || ''))
+}
+
 /** Last Application ID mentioned in fill logs — including failure / retrieve lines. */
 export function extractApplicationIdFromLog(text) {
   const raw = String(text || '')
@@ -69,7 +74,8 @@ function writeStore(repoRoot, store) {
 
 function entryAppId(entry) {
   if (!entry || entry.forgotten) return ''
-  if (typeof entry === 'string') return parseApplicationId(entry)
+  if (typeof entry === 'string') return ''
+  if (!entry.personal1Saved) return ''
   return parseApplicationId(entry.appId)
 }
 
@@ -105,7 +111,7 @@ function lookupFromEvents(repoRoot, { filePath = '', name = '', formId = '' } = 
     try {
       const event = JSON.parse(line)
       const id = parseApplicationId(event.appId) || extractApplicationIdFromLog(event.logExcerpt)
-      if (!id) continue
+      if (!id || !logShowsPersonal1Saved(event.logExcerpt)) continue
       if (formId && event.formId && event.formId === formId) return id
       if (resolved && event.path && path.resolve(event.path) === resolved) return id
       if (base && event.name === base) return id
@@ -126,19 +132,19 @@ export function lookupApplicationId(repoRoot, keys = {}) {
   if (stored) return stored
   const fromEvents = lookupFromEvents(repoRoot, keys)
   if (fromEvents) {
-    rememberApplicationId(repoRoot, { ...keys, appId: fromEvents })
+    rememberApplicationId(repoRoot, { ...keys, appId: fromEvents, personal1Saved: true })
     return fromEvents
   }
   return ''
 }
 
-export function rememberApplicationId(repoRoot, { filePath = '', name = '', formId = '', appId = '' } = {}) {
+export function rememberApplicationId(repoRoot, { filePath = '', name = '', formId = '', appId = '', personal1Saved = false } = {}) {
   const id = parseApplicationId(appId)
-  if (!id) return ''
+  if (!id || !personal1Saved) return ''
   const store = loadAppIdStore(repoRoot)
   const resolved = filePath ? path.resolve(filePath) : ''
   const base = name || (resolved ? path.basename(resolved) : '')
-  const entry = { appId: id, updatedAt: new Date().toISOString() }
+  const entry = { appId: id, personal1Saved: true, updatedAt: new Date().toISOString() }
   if (resolved) store.byPath[resolved] = entry
   if (base) store.byName[base] = entry
   if (formId) store.byFormId[formId] = entry

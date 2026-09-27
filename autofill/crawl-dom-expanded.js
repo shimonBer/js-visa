@@ -30,6 +30,7 @@ import {
   askAgent,
   executeAction,
   detectAndLogSection,
+  clickStartApplication,
   log,
   logSection,
   logError,
@@ -40,6 +41,7 @@ import {
 
 const SNAPSHOTS_DIR = path.join(process.cwd(), 'dom-snapshots')
 const MANIFEST_FILE = path.join(SNAPSHOTS_DIR, 'manifest.json')
+const DS160_SECURITY_QUESTION = 'WHAT WAS YOUR HOME PHONE NUMBER WHEN YOU WERE A CHILD?'
 
 const PAGE_NAMES = {
   captcha:           'Landing / CAPTCHA',
@@ -54,6 +56,9 @@ const PAGE_NAMES = {
   passport:          'Passport',
   contact:           'Contact People in the U.S.',
   family:            'Family Information',
+  work_present:      'Present Work / Education / Training',
+  work_previous:     'Previous Work / Education / Training',
+  work_additional:   'Additional Work / Education / Training',
   work_edu:          'Work / Education / Training',
   security:          'Security & Background',
   review:            'Review',
@@ -67,6 +72,14 @@ function safeWait(page, ms) {
 
 function safeLoad(page, state = 'domcontentloaded', timeout = 12000) {
   return page.waitForLoadState(state, { timeout }).catch(() => {})
+}
+
+function normalizeSecurityQuestion(value = '') {
+  return value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
 }
 
 function ensureSnapshotsDir() {
@@ -196,15 +209,20 @@ async function detectPageContext(page) {
         node === 'personalinfo2')                              return 'personal2'
     if (node === 'travel'     || node === 'travelinfo')       return 'travel'
     if (node === 'travelcompanions' || node === 'companion')  return 'companions'
-    if (node === 'previoustravel'   || node === 'prevtravel') return 'prev_travel'
+    if (node === 'previoustravel' || node === 'previousustravel' || node === 'prevtravel') return 'prev_travel'
     if (node === 'addressphone'     || node === 'address')    return 'address'
     if (node === 'passport')                                   return 'passport'
     if (node === 'contactpeople'    || node === 'contact')    return 'contact'
     if (node === 'familyinfo'       || node === 'family')     return 'family'
+    if (node === 'workeducation1')                             return 'work_present'
+    if (node === 'workeducation2')                             return 'work_previous'
+    if (node === 'workeducation3')                             return 'work_additional'
     if (node === 'workeducationtraining' || node === 'work')  return 'work_edu'
-    if (node === 'securityandbackground' || node === 'security') return 'security'
+    if (node.startsWith('securityandbackground') || node === 'security') return 'security'
     if (node === 'review'           || node === 'preview')    return 'review'
-    if (node === 'securequestion'   || node.includes('secur'))return 'security_question'
+    if (node === 'securequestion' || node.includes('securityquestion')) {
+      return 'security_question'
+    }
 
     if (url.includes('default.aspx'))                                   return 'captcha'
     if (url.includes('disclaimer'))                                     return 'disclaimer'
@@ -215,7 +233,7 @@ async function detectPageContext(page) {
         url.includes('personal_info1'))                                 return 'personal1'
     if (url.includes('personalinfo2') || url.includes('personal_info2'))return 'personal2'
     if (url.includes('travelcompanion') || url.includes('travel_companion')) return 'companions'
-    if (url.includes('previoustravel') || url.includes('previous_travel'))   return 'prev_travel'
+    if (url.includes('previousustravel') || url.includes('previoustravel') || url.includes('previous_travel')) return 'prev_travel'
     if (url.includes('complete_travel') || url.includes('travelinfo') ||
         url.includes('travel_info'))                                    return 'travel'
     if (url.includes('addressphone') || url.includes('address_phone') ||
@@ -223,6 +241,9 @@ async function detectPageContext(page) {
     if (url.includes('passport'))                                       return 'passport'
     if (url.includes('contactpeople') || url.includes('complete_contact')) return 'contact'
     if (url.includes('familyinfo') || url.includes('complete_family'))  return 'family'
+    if (url.includes('workeducation1') || url.includes('work_education1'))    return 'work_present'
+    if (url.includes('workeducation2') || url.includes('work_education2'))    return 'work_previous'
+    if (url.includes('workeducation3') || url.includes('work_education3'))    return 'work_additional'
     if (url.includes('workeducation') || url.includes('work_education') ||
         url.includes('complete_work'))                                  return 'work_edu'
     if (url.includes('securityandbackground') || url.includes('security_background') ||
@@ -242,6 +263,9 @@ async function detectPageContext(page) {
         if (text.includes('passport'))                  return 'passport'
         if (text.includes('contact'))                   return 'contact'
         if (text.includes('family'))                    return 'family'
+        if (text.includes('additional work') || text.includes('additional education')) return 'work_additional'
+        if (text.includes('previous work') || text.includes('previous education')) return 'work_previous'
+        if (text.includes('present work') || text.includes('present education')) return 'work_present'
         if (text.includes('work') || text.includes('education')) return 'work_edu'
         if (text.includes('security') && text.includes('background')) return 'security'
         if (text.includes('review') || text.includes('preview'))      return 'review'
@@ -308,7 +332,8 @@ const MAX_STEPS = 600
 const MAX_CONSECUTIVE_ERRORS = 5
 
 const PAGE_STALL_LIMITS = {
-  travel: 60, security: 60, work_edu: 50, family: 50,
+  travel: 60, security: 60, work_present: 40, work_previous: 60,
+  work_additional: 60, work_edu: 60, family: 50,
   address: 40, personal1: 35, personal2: 35, prev_travel: 35,
   passport: 35, contact: 30, companions: 25,
   security_question: 20, captcha: 15, disclaimer: 10, review: 20, unknown: 40,
@@ -531,11 +556,8 @@ async function setupApplication(page, apiKey) {
       } catch { /* try next */ }
     }
 
-    try {
-      await page.getByRole('button', { name: /start an application/i }).click()
-    } catch {
-      try { await page.getByText('Start an Application', { exact: false }).click() } catch {}
-    }
+    const started = await clickStartApplication(page)
+    if (!started) log('⚠️  Could not find "Start an Application" button')
 
     await safeLoad(page, 'domcontentloaded', 15000)
     await safeWait(page, 1500)
@@ -562,21 +584,33 @@ async function setupApplication(page, apiKey) {
     'select[name*="SecurityQuestion"]', 'select[id*="SecurityQuestion"]',
     'select[id*="ddlQuestions"]', 'select',
   ]
+  let questionSet = false
+  const normalizedTargetQuestion = normalizeSecurityQuestion(DS160_SECURITY_QUESTION)
   for (const sel of sqSelectors) {
     try {
       const el = page.locator(sel).first()
       await el.waitFor({ state: 'visible', timeout: 5000 })
       const options = await el.locator('option').all()
       for (const opt of options) {
-        const txt = (await opt.textContent())?.toUpperCase() || ''
-        if (txt.includes('HOME PHONE') || txt.includes('CHILD')) {
+        const optionText = (await opt.textContent()) || ''
+        if (normalizeSecurityQuestion(optionText) === normalizedTargetQuestion) {
           const val = await opt.getAttribute('value')
-          if (val) { await el.selectOption(val); log('✅ Security question set'); break }
+          if (val) {
+            await el.selectOption(val)
+            const selectedText = await el.locator('option:checked').textContent()
+            questionSet =
+              normalizeSecurityQuestion(selectedText || '') === normalizedTargetQuestion
+            break
+          }
         }
       }
-      break
+      if (questionSet) break
     } catch { /* try next */ }
   }
+  if (!questionSet) {
+    throw new Error(`Could not select and verify exact security question: "${DS160_SECURITY_QUESTION}"`)
+  }
+  log(`✅ Security question selected and verified: "${DS160_SECURITY_QUESTION}"`)
   const answerSelectors = [
     'input[name*="SecurityAnswer"]', 'input[id*="SecurityAnswer"]',
     'input[id*="txtAnswer"]', 'input[type="text"]',

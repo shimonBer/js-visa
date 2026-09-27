@@ -1,0 +1,23 @@
+body {
+  font: 13px/1.4 system-ui, sans-serif;
+  width: 360px;
+  margin: 0;
+  padding: 12px;
+  color: #111;
+}
+h1 { font-size: 15px; margin: 0 0 8px; }
+.hint { color: #444; margin: 0 0 12px; }
+label { display: block; margin-bottom: 8px; }
+.row { display: flex; gap: 8px; margin: 8px 0; }
+button { flex: 1; padding: 8px; cursor: pointer; }
+button.primary { background: #1a56db; color: #fff; border: 0; }
+button.stop { width: 100%; margin: 0 0 8px; padding: 6px; }
+.status { margin: 0 0 8px; color: #333; }
+pre {
+  max-height: 240px;
+  overflow: auto;
+  background: #f4f4f5;
+  padding: 8px;
+  white-space: pre-wrap;
+  font-size: 11px;
+}

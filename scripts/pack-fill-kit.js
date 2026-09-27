@@ -26,6 +26,11 @@ const FILL_ENV_KEYS = [
   'S3_REGION',
   'AWS_ACCESS_KEY_ID',
   'AWS_SECRET_ACCESS_KEY',
+  'DS160_FILL_EMAIL_TO',
+  'DS160_FILL_EMAIL_FROM',
+  'DS160_FILL_EMAIL_EVENTS',
+  'RESEND_API_KEY',
+  'DS160_FILL_WEBHOOK_URL',
 ]
 
 function run(command, args, opts = {}) {
@@ -72,12 +77,21 @@ function writeFillEnv(dest, sourceEnv) {
 const readme = `fill-ds160 — worker kit
 =======================
 
-1. Unzip this folder onto the worker Mac.
+Mac
+1. Unzip this folder.
 2. Double-click: scripts/Install Fill DS-160 on Desktop.command
-   First install downloads Node packages and Chromium (needs internet).
-3. A Desktop app named fill-ds160 appears.
-4. In the visa form, translate and download first_last.txt.
-5. Double-click fill-ds160, add one or more of those files, click Fill queue.
+3. Desktop app: fill-ds160
+4. Add translation files and press play on each. They run one after another.
+
+Windows
+0. Install Node 20 LTS (https://nodejs.org) and Google Chrome.
+1. Unzip this folder. Keep it on the PC (do not run from the zip).
+2. Double-click: scripts\Install-fill-ds160.bat
+   First install needs internet (Node packages + Chromium fallback).
+3. Desktop shortcut: fill-ds160
+4. Same Hebrew window: add files, play / stop per file. Fills run one after another.
+
+In the visa form, translate and download first_last.txt, then drop those files into fill-ds160.
 
 Keep this folder private — it includes API keys in .env.
 `
@@ -103,6 +117,12 @@ run('rsync', [
   `${kitDir}/`,
 ])
 
+const batPath = path.join(kitDir, 'scripts', 'Install-fill-ds160.bat')
+if (fs.existsSync(batPath)) {
+  const crlf = fs.readFileSync(batPath, 'utf8').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')
+  fs.writeFileSync(batPath, crlf)
+}
+
 writeFillEnv(path.join(kitDir, '.env'), {
   ...readDotenv(path.join(repoRoot, 'env.example')),
   ...readDotenv(path.join(repoRoot, '.env')),
@@ -114,4 +134,4 @@ run('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', kitDir, zipPath])
 
 console.log(`Worker folder: ${kitDir}`)
 console.log(`Worker zip:    ${zipPath}`)
-console.log('Copy the zip to the worker Mac, unzip, then run the installer.')
+console.log('Copy the zip to the worker computer, unzip, then run the Mac or Windows installer.')

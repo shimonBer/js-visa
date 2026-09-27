@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "DS-160 Fill (employee)",
+  "version": "0.1.29",
+  "description": "Fill CEAC DS-160 pages in the tab the employee already opened. Does not bypass Cloudflare.",
+  "action": {
+    "default_title": "DS-160 Fill",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://ceac.state.gov/*"],
+      "js": ["disarm-unload.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["activeTab", "scripting", "storage", "offscreen", "debugger"],
+  "host_permissions": [
+    "https://ceac.state.gov/*",
+    "https://*.state.gov/*",
+    "http://127.0.0.1:8787/*"
+  ]
+}

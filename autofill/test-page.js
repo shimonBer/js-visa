@@ -113,9 +113,11 @@ function printSummary(results) {
 
   const ok  = results.filter((r) => r.status === 'ok')
   const err = results.filter((r) => r.status === 'error')
+  const skipped = results.filter((r) => r.status === 'skipped')
   const nav = results.filter((r) => r.status === 'nav-stop')
 
   console.log(`✅ Filled:     ${ok.length}`)
+  console.log(`⏭️  Skipped:    ${skipped.length}`)
   console.log(`❌ Failed:     ${err.length}`)
   console.log(`🛑 Nav-stop:   ${nav.length}`)
   console.log(bar)
@@ -125,6 +127,13 @@ function printSummary(results) {
     err.forEach((r) => {
       console.log(`  ❌ ${r.action.type} label="${r.action.label || ''}" text="${r.action.text || ''}"`)
       console.log(`     → ${r.error}`)
+    })
+  }
+
+  if (skipped.length) {
+    console.log('\nSkipped actions (target absent from UI):')
+    skipped.forEach((r) => {
+      console.log(`  ⏭️  ${r.action.type} label="${r.action.label || ''}"`)
     })
   }
 
@@ -208,6 +217,17 @@ async function runTest(page, translatedText, pageContext, apiKey) {
       actionHistory.push(action)
       results.push({ status: 'ok', action })
     } catch (err) {
+      if (err.code === 'UI_TARGET_NOT_FOUND') {
+        logWarn(`Skipped missing UI target: ${err.message}`)
+        actionHistory.push({
+          type: '_skipped_missing_ui',
+          attemptedAction: action,
+          reason: err.message,
+        })
+        results.push({ status: 'skipped', action, reason: err.message })
+        consecutiveErrors = 0
+        continue
+      }
       consecutiveErrors++
       logError(`Action failed: ${err.message}`)
       results.push({ status: 'error', action, error: err.message })
@@ -259,8 +279,39 @@ async function main() {
   // an external page load (up to 2 min).  Making __doPostBack a no-op keeps
   // all conditional-field JS working while blocking navigation.
   await page.evaluate(() => {
+    function simulateRepeatedRowPostBack(target) {
+      const addLink = Array.from(document.querySelectorAll('a[href*="__doPostBack"]'))
+        .find((link) => (link.getAttribute('href') || '').includes(`'${target}'`))
+      const sourceRow = addLink?.closest('tr')
+      const table = sourceRow?.closest('table')
+      if (!sourceRow || !table || !/InsertButton/i.test(target)) return false
+
+      const nextIndex = table.querySelectorAll(':scope > tbody > tr').length
+      const nextToken = `ctl${String(nextIndex).padStart(2, '0')}`
+      const clone = sourceRow.cloneNode(true)
+      for (const element of [clone, ...clone.querySelectorAll('*')]) {
+        for (const attribute of Array.from(element.attributes || [])) {
+          const updated = attribute.value
+            .replace(/_ctl\d{2}_/g, `_${nextToken}_`)
+            .replace(/\$ctl\d{2}\$/g, `$${nextToken}$`)
+          if (updated !== attribute.value) element.setAttribute(attribute.name, updated)
+        }
+      }
+      clone.querySelectorAll('input:not([type="hidden"]), textarea').forEach((field) => {
+        if ('checked' in field) field.checked = false
+        if ('value' in field) field.value = ''
+      })
+      clone.querySelectorAll('select').forEach((select) => {
+        select.selectedIndex = 0
+      })
+      sourceRow.after(clone)
+      return true
+    }
+
     if (typeof window.__doPostBack === 'function') {
-      window.__doPostBack = function() {}
+      window.__doPostBack = function(target) {
+        simulateRepeatedRowPostBack(target)
+      }
     }
     document.querySelectorAll('form').forEach(f => {
       f.submit = function() {}

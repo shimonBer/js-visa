@@ -2989,6 +2989,15 @@ export default function DS160IsraelForm({
     setValue('contactEmailDoesNotApply', true)
   }, [w.hasUSContact, w.accommodationCity, w.accommodationState, setValue])
 
+  const felonyAnswerRef = useRef(undefined)
+  useEffect(() => {
+    const answer = w.arrestedOrConvicted
+    if (answer === 'yes' && felonyAnswerRef.current !== 'yes') {
+      setSecuritySectionOpen(true)
+    }
+    felonyAnswerRef.current = answer
+  }, [w.arrestedOrConvicted])
+
   const allFormValues = watch()
 
   function getFieldError(path) {
@@ -5363,7 +5372,7 @@ export default function DS160IsraelForm({
           {/* Security and Background — collapsible */}
           <section id="section-security" className="space-y-4">
             <SectionCopyHeader
-              title="Security and Background"
+              title="ביטחון ורקע"
               sectionId="security"
               setValue={setValue}
               excludePathname={loadedBlobKeyRef.current}
@@ -5371,7 +5380,7 @@ export default function DS160IsraelForm({
               onCopied={() => setSecuritySectionOpen(true)}
             />
             <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
-              NOTE: Provide the following security and background information. A visa may not be issued to persons who are within specific categories defined by law as inadmissible to the United States. While a YES answer does not automatically signify ineligibility for a visa, if you answer YES you may be required to personally appear before a consular officer.
+              יש למסור את פרטי הביטחון והרקע הבאים. ייתכן שלא תונפק ויזה למי שנכלל בקטגוריות המוגדרות בחוק כבלתי קביל לארצות הברית. תשובת "כן" אינה שוללת אוטומטית את הזכאות לוויזה, אך אם התשובה היא "כן" ייתכן שתידרש התייצבות אישית בפני פקיד קונסולרי.
             </p>
 
             {/* Priority questions — shown in Hebrew outside the toggle */}
@@ -5395,7 +5404,7 @@ export default function DS160IsraelForm({
             </div>
 
             {/* Toggle */}
-            <div className="flex items-center gap-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-center gap-6 flex-wrap bg-amber-50 border border-amber-200 rounded-lg p-4">
               <span className="font-semibold text-gray-700 text-sm">האם אחת מהשאלות הבאות מתאימה לך?</span>
               <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
                 <input
@@ -5405,7 +5414,7 @@ export default function DS160IsraelForm({
                   onChange={() => setSecuritySectionOpen(false)}
                   className="accent-green-600 w-4 h-4"
                 />
-                לא — תשובתי לכל השאלות היא "No"
+                לא — תשובתי לכל השאלות היא "לא"
               </label>
               <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
                 <input
@@ -5423,42 +5432,42 @@ export default function DS160IsraelForm({
               <div className="space-y-8">
                 {/* Part 1 */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 1 — Medical & Health</h3>
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">חלק 1 — רפואה ובריאות</h3>
                   <div className="space-y-4">
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
                       <FormRadioGroup
                         register={register}
                         getFieldError={getFieldError}
-                        label="Do you have a communicable disease of public health significance? (Communicable diseases of public significance include chancroid, gonorrhea, granuloma inguinale, infectious leprosy, lymphogranuloma venereum, infectious stage syphilis, active tuberculosis, and other diseases as determined by the Department of Health and Human Services.)"
+                        label='האם יש לך מחלה מדבקת בעלת חשיבות לבריאות הציבור? (כולל שחין רך, זיבה, גרנולומה מפשעתית, צרעת מדבקת, לימפוגרנולומה ונראום, עגבת בשלב מדבק, שחפת פעילה, ומחלות נוספות כפי שנקבעו על ידי משרד הבריאות ושירותי האנוש של ארצות הברית.)'
                         name="communicableDisease"
-                        options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
+                        options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]}
                       />
                       {w.communicableDisease === 'yes' && (
-                        <FormInput register={register} getFieldError={getFieldError} label="Explain" name="communicableDiseaseExplanation" type="textarea" />
+                        <FormInput register={register} getFieldError={getFieldError} label="הסבר" name="communicableDiseaseExplanation" type="textarea" />
                       )}
                     </div>
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
                       <FormRadioGroup
                         register={register}
                         getFieldError={getFieldError}
-                        label="Do you have a mental or physical disorder that poses or is likely to pose a threat to the safety or welfare of yourself or others?"
+                        label="האם יש לך הפרעה נפשית או גופנית המהווה, או העלולה להוות, איום על הבטיחות או הרווחה שלך או של אחרים?"
                         name="mentalDisorder"
-                        options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
+                        options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]}
                       />
                       {w.mentalDisorder === 'yes' && (
-                        <FormInput register={register} getFieldError={getFieldError} label="Explain" name="mentalDisorderExplanation" type="textarea" />
+                        <FormInput register={register} getFieldError={getFieldError} label="הסבר" name="mentalDisorderExplanation" type="textarea" />
                       )}
                     </div>
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
                       <FormRadioGroup
                         register={register}
                         getFieldError={getFieldError}
-                        label="Are you or have you ever been a drug abuser or addict?"
+                        label="האם אתה מכור לסמים, או שהיית מכור לסמים בעבר?"
                         name="drugAbuser"
-                        options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]}
+                        options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]}
                       />
                       {w.drugAbuser === 'yes' && (
-                        <FormInput register={register} getFieldError={getFieldError} label="Explain" name="drugAbuserExplanation" type="textarea" />
+                        <FormInput register={register} getFieldError={getFieldError} label="הסבר" name="drugAbuserExplanation" type="textarea" />
                       )}
                     </div>
                   </div>
@@ -5466,20 +5475,20 @@ export default function DS160IsraelForm({
 
                 {/* Part 2 */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 2 — Criminal</h3>
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">חלק 2 — עבירות פליליות</h3>
                   <div className="space-y-4">
                     {[
-                      { name: 'violatedControlledSubstances', expl: 'violatedControlledSubstancesExplanation', watch: w.violatedControlledSubstances, label: 'Have you ever violated, or engaged in a conspiracy to violate, any law relating to controlled substances?' },
-                      { name: 'engagedInProstitution', expl: 'engagedInProstitutionExplanation', watch: w.engagedInProstitution, label: 'Are you coming to the United States to engage in prostitution or unlawful commercialized vice or have you been engaged in prostitution or procuring prostitutes within the past 10 years?' },
-                      { name: 'moneyLaundering', expl: 'moneyLaunderingExplanation', watch: w.moneyLaundering, label: 'Have you ever been involved in, or do you seek to engage in, money laundering?' },
-                      { name: 'humanTrafficking', expl: 'humanTraffickingExplanation', watch: w.humanTrafficking, label: 'Have you ever committed or conspired to commit a human trafficking offense in the United States or outside the United States?' },
-                      { name: 'aidedHumanTrafficking', expl: 'aidedHumanTraffickingExplanation', watch: w.aidedHumanTrafficking, label: 'Have you ever knowingly aided, abetted, assisted or colluded with an individual who has committed, or conspired to commit a severe human trafficking offense in the United States or outside the United States?' },
-                      { name: 'spouseOfTrafficker', expl: 'spouseOfTraffickerExplanation', watch: w.spouseOfTrafficker, label: 'Are you the spouse, son, or daughter of an individual who has committed or conspired to commit a human trafficking offense in the United States or outside the United States and have you within the last five years, knowingly benefited from the trafficking activities?' },
+                      { name: 'violatedControlledSubstances', expl: 'violatedControlledSubstancesExplanation', watch: w.violatedControlledSubstances, label: 'האם הפרת אי פעם, או השתתפת בקשירת קשר להפר, חוק כלשהו הנוגע לחומרים מפוקחים?' },
+                      { name: 'engagedInProstitution', expl: 'engagedInProstitutionExplanation', watch: w.engagedInProstitution, label: 'האם אתה מגיע לארצות הברית כדי לעסוק בזנות או בפעילות בלתי חוקית למטרות רווח, או שעסקת בזנות או בסרסרות ב-10 השנים האחרונות?' },
+                      { name: 'moneyLaundering', expl: 'moneyLaunderingExplanation', watch: w.moneyLaundering, label: 'האם היית מעורב אי פעם בהלבנת הון, או שאתה מבקש לעסוק בכך?' },
+                      { name: 'humanTrafficking', expl: 'humanTraffickingExplanation', watch: w.humanTrafficking, label: 'האם ביצעת אי פעם, או קשרת קשר לבצע, עבירת סחר בבני אדם בארצות הברית או מחוצה לה?' },
+                      { name: 'aidedHumanTrafficking', expl: 'aidedHumanTraffickingExplanation', watch: w.aidedHumanTrafficking, label: 'האם סייעת ביודעין, עודדת, עזרת או שיתפת פעולה עם אדם שביצע, או שקשר קשר לבצע, עבירת סחר חמורה בבני אדם בארצות הברית או מחוצה לה?' },
+                      { name: 'spouseOfTrafficker', expl: 'spouseOfTraffickerExplanation', watch: w.spouseOfTrafficker, label: 'האם אתה בן או בת הזוג, הבן או הבת של אדם שביצע או קשר קשר לבצע עבירת סחר בבני אדם, והאם בחמש השנים האחרונות נהנית ביודעין מפעילות הסחר?' },
                     ].map(q => (
                       <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                         {q.watch === 'yes' && (
-                          <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
+                          <FormInput register={register} getFieldError={getFieldError} label="הסבר" name={q.expl} type="textarea" />
                         )}
                       </div>
                     ))}
@@ -5488,26 +5497,26 @@ export default function DS160IsraelForm({
 
                 {/* Part 3 */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 3 — Security & Human Rights</h3>
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">חלק 3 — ביטחון וזכויות אדם</h3>
                   <div className="space-y-4">
                     {[
-                      { name: 'espionage', expl: 'espionageExplanation', watch: w.espionage, label: 'Do you seek to engage in espionage, sabotage, export control violations, or any other illegal activity while in the United States?' },
-                      { name: 'terroristActivities', expl: 'terroristActivitiesExplanation', watch: w.terroristActivities, label: 'Do you seek to engage in terrorist activities while in the United States or have you ever engaged in terrorist activities?' },
-                      { name: 'supportedTerrorists', expl: 'supportedTerroristsExplanation', watch: w.supportedTerrorists, label: 'Have you ever or do you intend to provide financial assistance or other support to terrorists or terrorist organizations?' },
-                      { name: 'terroristMember', expl: 'terroristMemberExplanation', watch: w.terroristMember, label: 'Are you a member or representative of a terrorist organization?' },
-                      { name: 'spouseOfTerrorist', expl: 'spouseOfTerroristExplanation', watch: w.spouseOfTerrorist, label: 'Are you the spouse, son, or daughter of an individual who has engaged in terrorist activity, including providing financial assistance or other support to terrorists or terrorist organizations, in the last five years?' },
-                      { name: 'genocide', expl: 'genocideExplanation', watch: w.genocide, label: 'Have you ever ordered, incited, committed, assisted, or otherwise participated in genocide?' },
-                      { name: 'torture', expl: 'tortureExplanation', watch: w.torture, label: 'Have you ever committed, ordered, incited, assisted, or otherwise participated in torture?' },
-                      { name: 'extrajudicialKillings', expl: 'extrajudicialKillingsExplanation', watch: w.extrajudicialKillings, label: 'Have you committed, ordered, incited, assisted, or otherwise participated in extrajudicial killings, political killings, or other acts of violence?' },
-                      { name: 'childSoldiers', expl: 'childSoldiersExplanation', watch: w.childSoldiers, label: 'Have you ever engaged in the recruitment or the use of child soldiers?' },
-                      { name: 'religiousFreedomViolations', expl: 'religiousFreedomViolationsExplanation', watch: w.religiousFreedomViolations, label: 'Have you, while serving as a government official, been responsible for or directly carried out, at any time, particularly severe violations of religious freedom?' },
-                      { name: 'populationControls', expl: 'populationControlsExplanation', watch: w.populationControls, label: 'Have you ever been directly involved in the establishment or enforcement of population controls forcing a woman to undergo an abortion against her free choice or a man or a woman to undergo sterilization against his or her free will?' },
-                      { name: 'organTransplantation', expl: 'organTransplantationExplanation', watch: w.organTransplantation, label: 'Have you ever been directly involved in the coercive transplantation of human organs or bodily tissue?' },
+                      { name: 'espionage', expl: 'espionageExplanation', watch: w.espionage, label: 'האם אתה מבקש לעסוק בריגול, חבלה, הפרות של פיקוח על יצוא, או כל פעילות בלתי חוקית אחרת בעת שהותך בארצות הברית?' },
+                      { name: 'terroristActivities', expl: 'terroristActivitiesExplanation', watch: w.terroristActivities, label: 'האם אתה מבקש לעסוק בפעילות טרור בעת שהותך בארצות הברית, או שעסקת אי פעם בפעילות טרור?' },
+                      { name: 'supportedTerrorists', expl: 'supportedTerroristsExplanation', watch: w.supportedTerrorists, label: 'האם סיפקת אי פעם, או שאתה מתכוון לספק, סיוע כספי או תמיכה אחרת למחבלים או לארגוני טרור?' },
+                      { name: 'terroristMember', expl: 'terroristMemberExplanation', watch: w.terroristMember, label: 'האם אתה חבר או נציג של ארגון טרור?' },
+                      { name: 'spouseOfTerrorist', expl: 'spouseOfTerroristExplanation', watch: w.spouseOfTerrorist, label: 'האם אתה בן או בת הזוג, הבן או הבת של אדם שעסק בפעילות טרור, לרבות מתן סיוע כספי או תמיכה אחרת למחבלים או לארגוני טרור, בחמש השנים האחרונות?' },
+                      { name: 'genocide', expl: 'genocideExplanation', watch: w.genocide, label: 'האם הורית, הסית, ביצעת, סייעת או השתתפת בדרך אחרת ברצח עם?' },
+                      { name: 'torture', expl: 'tortureExplanation', watch: w.torture, label: 'האם ביצעת, הורית, הסית, סייעת או השתתפת בדרך אחרת בעינויים?' },
+                      { name: 'extrajudicialKillings', expl: 'extrajudicialKillingsExplanation', watch: w.extrajudicialKillings, label: 'האם ביצעת, הורית, הסית, סייעת או השתתפת בדרך אחרת בהריגות ללא משפט, הריגות פוליטיות, או מעשי אלימות אחרים?' },
+                      { name: 'childSoldiers', expl: 'childSoldiersExplanation', watch: w.childSoldiers, label: 'האם עסקת אי פעם בגיוס או בשימוש בילדים-חיילים?' },
+                      { name: 'religiousFreedomViolations', expl: 'religiousFreedomViolationsExplanation', watch: w.religiousFreedomViolations, label: 'האם, בעת ששירתת כעובד מדינה, היית אחראי או ביצעת באופן ישיר הפרות חמורות במיוחד של חופש הדת?' },
+                      { name: 'populationControls', expl: 'populationControlsExplanation', watch: w.populationControls, label: 'האם היית מעורב באופן ישיר בקביעה או באכיפה של פיקוח על אוכלוסין שכפה על אישה הפלה בניגוד לבחירתה, או עיקור של גבר או אישה בניגוד לרצונם?' },
+                      { name: 'organTransplantation', expl: 'organTransplantationExplanation', watch: w.organTransplantation, label: 'האם היית מעורב באופן ישיר בהשתלת איברים או רקמות אנושיות בכפייה?' },
                     ].map(q => (
                       <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                         {q.watch === 'yes' && (
-                          <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
+                          <FormInput register={register} getFieldError={getFieldError} label="הסבר" name={q.expl} type="textarea" />
                         )}
                       </div>
                     ))}
@@ -5516,19 +5525,19 @@ export default function DS160IsraelForm({
 
                 {/* Part 4 */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 4 — Immigration Violations</h3>
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">חלק 4 — הפרות הגירה</h3>
                   <div className="space-y-4">
                     {[
-                      { name: 'removalHearing', expl: 'removalHearingExplanation', watch: w.removalHearing, label: 'Have you ever been the subject of a removal or deportation hearing?' },
-                      { name: 'immigrationFraud', expl: 'immigrationFraudExplanation', watch: w.immigrationFraud, label: 'Have you ever sought to obtain or assist others to obtain a visa, entry into the United States, or any other United States immigration benefit by fraud or willful misrepresentation or other unlawful means?' },
-                      { name: 'failedToAttendHearing', expl: 'failedToAttendHearingExplanation', watch: w.failedToAttendHearing, label: 'Have you failed to attend a hearing on removability or inadmissibility within the last five years?' },
-                      { name: 'visaViolation', expl: 'visaViolationExplanation', watch: w.visaViolation, label: 'Have you ever been unlawfully present, overstayed the amount of time granted by an immigration official or otherwise violated the terms of a U.S. visa?' },
-                      { name: 'deportedFromCountry', expl: 'deportedFromCountryExplanation', watch: w.deportedFromCountry, label: 'Have you ever been removed or deported from any country?' },
+                      { name: 'removalHearing', expl: 'removalHearingExplanation', watch: w.removalHearing, label: 'האם היית אי פעם נושא להליך הרחקה או גירוש?' },
+                      { name: 'immigrationFraud', expl: 'immigrationFraudExplanation', watch: w.immigrationFraud, label: 'האם ביקשת אי פעם להשיג, או לסייע לאחרים להשיג, ויזה, כניסה לארצות הברית, או הטבת הגירה אחרת, באמצעות מרמה, מצג שווא מכוון, או אמצעים בלתי חוקיים אחרים?' },
+                      { name: 'failedToAttendHearing', expl: 'failedToAttendHearingExplanation', watch: w.failedToAttendHearing, label: 'האם נמנעת מלהתייצב לדיון בנושא הרחקה או אי-קבילות בחמש השנים האחרונות?' },
+                      { name: 'visaViolation', expl: 'visaViolationExplanation', watch: w.visaViolation, label: 'האם שהית אי פעם שלא כדין, חרגת ממשך השהייה שאושר על ידי פקיד הגירה, או הפרת בדרך אחרת את תנאי ויזה אמריקאית?' },
+                      { name: 'deportedFromCountry', expl: 'deportedFromCountryExplanation', watch: w.deportedFromCountry, label: 'האם הורחקת או גורשת אי פעם ממדינה כלשהי?' },
                     ].map(q => (
                       <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                         {q.watch === 'yes' && (
-                          <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
+                          <FormInput register={register} getFieldError={getFieldError} label="הסבר" name={q.expl} type="textarea" />
                         )}
                       </div>
                     ))}
@@ -5537,18 +5546,18 @@ export default function DS160IsraelForm({
 
                 {/* Part 5 */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">Part 5 — Other</h3>
+                  <h3 className="font-semibold text-gray-700 text-base border-b pb-1">חלק 5 — אחר</h3>
                   <div className="space-y-4">
                     {[
-                      { name: 'withheldCustody', expl: 'withheldCustodyExplanation', watch: w.withheldCustody, label: 'Have you ever withheld custody of a U.S. citizen child outside the United States from a person granted legal custody by a U.S. court?' },
-                      { name: 'votedIllegally', expl: 'votedIllegallyExplanation', watch: w.votedIllegally, label: 'Have you voted in the United States in violation of any law or regulation?' },
-                      { name: 'renouncedCitizenship', expl: 'renouncedCitizenshipExplanation', watch: w.renouncedCitizenship, label: 'Have you ever renounced United States citizenship for the purposes of avoiding taxation?' },
-                      { name: 'publicSchoolWithoutReimbursement', expl: 'publicSchoolWithoutReimbursementExplanation', watch: w.publicSchoolWithoutReimbursement, label: 'Have you attended a public elementary school on student (F) status or a public secondary school after November 30, 1996 without reimbursing the school?' },
+                      { name: 'withheldCustody', expl: 'withheldCustodyExplanation', watch: w.withheldCustody, label: 'האם מנעת אי פעם משמורת על ילד אזרח ארצות הברית, מחוץ לארצות הברית, מאדם שקיבל משמורת חוקית מבית משפט אמריקאי?' },
+                      { name: 'votedIllegally', expl: 'votedIllegallyExplanation', watch: w.votedIllegally, label: 'האם הצבעת בארצות הברית בניגוד לחוק או לתקנה?' },
+                      { name: 'renouncedCitizenship', expl: 'renouncedCitizenshipExplanation', watch: w.renouncedCitizenship, label: 'האם ויתרת אי פעם על אזרחות ארצות הברית כדי להימנע מתשלום מסים?' },
+                      { name: 'publicSchoolWithoutReimbursement', expl: 'publicSchoolWithoutReimbursementExplanation', watch: w.publicSchoolWithoutReimbursement, label: 'האם למדת בבית ספר יסודי ציבורי בסטטוס סטודנט (F), או בבית ספר תיכון ציבורי לאחר 30 בנובמבר 1996, בלי להחזיר לבית הספר את עלות הלימודים?' },
                     ].map(q => (
                       <div key={q.name} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'Yes', value: 'yes' }, { label: 'No', value: 'no' }]} />
+                        <FormRadioGroup register={register} getFieldError={getFieldError} label={q.label} name={q.name} options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} />
                         {q.watch === 'yes' && (
-                          <FormInput register={register} getFieldError={getFieldError} label="Explain" name={q.expl} type="textarea" />
+                          <FormInput register={register} getFieldError={getFieldError} label="הסבר" name={q.expl} type="textarea" />
                         )}
                       </div>
                     ))}

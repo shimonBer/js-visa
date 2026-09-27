@@ -21,6 +21,7 @@ import {
   classifyFillResult,
   embeddedFormIdFromText,
   extractApplicationIdFromLog,
+  logShowsPersonal1Saved,
   lookupApplicationId,
   notifyCopy,
   notifyFillEvent,
@@ -152,15 +153,16 @@ function readBody(req) {
   })
 }
 
-function rememberItemAppId(item, appId) {
+function rememberItemAppId(item, appId, { personal1Saved = false } = {}) {
   const id = parseApplicationId(appId)
-  if (!id) return
+  if (!id || !personal1Saved) return
   item.appId = id
   rememberApplicationId(repoRoot, {
     filePath: item.path,
     name: item.name,
     formId: item.formId,
     appId: id,
+    personal1Saved: true,
   })
 }
 
@@ -259,7 +261,16 @@ function record(item, status, extra = {}) {
   item.status = status
   item.selected = selectionAfterStatus(status, item.selected)
   item.error = extra.reason || extra.error || ''
-  rememberItemAppId(item, extra.appId || item.appId)
+  if (logShowsPersonal1Saved(extra.logText)) {
+    rememberItemAppId(item, extra.appId || item.appId, { personal1Saved: true })
+  } else if (status !== 'filling') {
+    item.appId = ''
+    forgetApplicationId(repoRoot, {
+      filePath: item.path,
+      name: item.name,
+      formId: item.formId,
+    })
+  }
   const shotPath = status === 'filling' ? '' : rememberShot(item, extra.logText)
   const event = {
     name: item.name,
@@ -613,12 +624,12 @@ function runItem(item, slot) {
   item.fresh = false
   item.selected = true
   item.status = 'filling'
-  if (!fresh && !item.appId) {
-    rememberItemAppId(item, lookupApplicationId(repoRoot, {
+  if (!fresh) {
+    item.appId = lookupApplicationId(repoRoot, {
       filePath: item.path,
       name: item.name,
       formId: item.formId,
-    }))
+    }) || ''
   }
   active.set(item.id, entry)
   entry.finished = (async () => {
@@ -633,7 +644,11 @@ function runItem(item, slot) {
         fresh,
         appId: fresh ? '' : item.appId,
         onChunk(text) {
-          rememberItemAppId(item, extractApplicationIdFromLog(text))
+          const id = extractApplicationIdFromLog(text)
+          if (id) item.seenAppId = id
+          if (!logShowsPersonal1Saved(text) && !item.personal1Saved) return
+          item.personal1Saved = true
+          rememberItemAppId(item, id || item.seenAppId || item.appId, { personal1Saved: true })
         },
       })
       if (entry.stopRequested) entry.job.kill()

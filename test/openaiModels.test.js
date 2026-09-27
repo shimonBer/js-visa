@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 import {
   DEFAULT_ADDRESS_LOOKUP_MODEL,
+  DEFAULT_CAPTCHA_MODEL,
   DEFAULT_NORMALIZATION_MODEL,
   DEFAULT_OCR_MODEL,
   DEFAULT_TRANSLATION_MODEL,
@@ -20,11 +21,13 @@ test('uses the required OCR and translation defaults', () => {
   assert.equal(DEFAULT_OCR_MODEL, 'gpt-5.6-sol')
   assert.equal(DEFAULT_TRANSLATION_MODEL, 'gpt-5.6-terra')
   assert.equal(DEFAULT_NORMALIZATION_MODEL, 'gpt-5.6-terra')
+  assert.equal(DEFAULT_CAPTCHA_MODEL, 'gpt-4o')
   assert.deepEqual(models, {
     ocr: DEFAULT_OCR_MODEL,
     translation: DEFAULT_TRANSLATION_MODEL,
     normalization: DEFAULT_NORMALIZATION_MODEL,
     autofill: DEFAULT_OCR_MODEL,
+    captcha: DEFAULT_CAPTCHA_MODEL,
     i94: DEFAULT_OCR_MODEL,
     addressLookup: DEFAULT_ADDRESS_LOOKUP_MODEL,
   })
@@ -35,6 +38,7 @@ test('supports trimmed environment overrides', () => {
     OPENAI_OCR_MODEL: ' custom-ocr ',
     OPENAI_TRANSLATION_MODEL: ' custom-translation ',
     OPENAI_AUTOFILL_MODEL: ' custom-autofill ',
+    OPENAI_CAPTCHA_MODEL: ' custom-captcha ',
     OPENAI_I94_MODEL: ' custom-i94 ',
     OPENAI_ADDRESS_LOOKUP_MODEL: ' custom-address ',
   })
@@ -44,6 +48,7 @@ test('supports trimmed environment overrides', () => {
     translation: 'custom-translation',
     normalization: 'custom-translation',
     autofill: 'custom-autofill',
+    captcha: 'custom-captcha',
     i94: 'custom-i94',
     addressLookup: 'custom-address',
   })

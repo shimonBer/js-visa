@@ -10,6 +10,7 @@ import {
   parseApplicationId,
   peekApplicationId,
   forgetApplicationId,
+  logShowsPersonal1Saved,
   rememberApplicationId,
 } from '../autofill/application-id-store.js'
 import { classifyFillResult } from '../scripts/fill-ui/status.js'
@@ -47,7 +48,14 @@ test('application ID store remembers by path, name, and form id', () => {
     name: 'ofek_avraham_borus.txt',
     formId: 'form-ofek',
     appId: 'AA00FSVJWL',
+    personal1Saved: true,
   })
+  assert.equal(rememberApplicationId(repoRoot, {
+    filePath,
+    formId: 'form-early',
+    appId: 'AA00FT03BJ',
+  }), '')
+  assert.equal(lookupApplicationId(repoRoot, { formId: 'form-early' }), '')
   assert.equal(peekApplicationId(repoRoot, { formId: 'form-ofek' }), 'AA00FSVJWL')
   assert.equal(lookupApplicationId(repoRoot, { filePath }), 'AA00FSVJWL')
   assert.equal(lookupApplicationId(repoRoot, { name: 'ofek_avraham_borus.txt' }), 'AA00FSVJWL')
@@ -64,7 +72,7 @@ test('lookup recovers an Application ID from fill-events log excerpts', () => {
       name: 'ofek_avraham_borus.txt',
       status: 'failed',
       appId: '',
-      logExcerpt: STALL_LOG,
+      logExcerpt: `PERSONAL1_SAVED DS160_APPLICATION_ID=AA00FSVJWL\n${STALL_LOG}`,
     })}\n`,
   )
   assert.equal(
@@ -83,7 +91,11 @@ test('forgetting an application keeps old logs from restoring the ID', () => {
   )
   forgetApplicationId(repoRoot, { name: 'ofek_avraham_borus.txt' })
   assert.equal(lookupApplicationId(repoRoot, { name: 'ofek_avraham_borus.txt' }), '')
-  rememberApplicationId(repoRoot, { name: 'ofek_avraham_borus.txt', appId: 'AA00NEWAPP' })
+  rememberApplicationId(repoRoot, {
+    name: 'ofek_avraham_borus.txt',
+    appId: 'AA00NEWAPP',
+    personal1Saved: true,
+  })
   assert.equal(lookupApplicationId(repoRoot, { name: 'ofek_avraham_borus.txt' }), 'AA00NEWAPP')
 })
 

@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" data-copytables-uid="u40023900828199"><head id="ctl00_Head1"><base href="https://ceac.state.gov/GenNIV/General/complete/complete_previousustravel.aspx?node=PreviousUSTravel">
+<script type="text/javascript" src="/GenNIV/ScriptResource.axd?d=OVzlqCNNtqS-l5dkjydm_tj7dKVov-p22S9HAwwzsy8vS2a7w78CIujZpmHnQLBKfzCbIo3xx3WzLyONYMLmkCOeE1YwwiBbpvhRpnao-CC5liWB0&amp;t=ffffffff93d1c106"></script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_DTEYear"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['errormessage'] = "Invalid Date of Arrival"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_LOS"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_DTEYear"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['errormessage'] = "Invalid Date of Arrival"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_LOS"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_tbxPREV_US_VISIT_DTEYear"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE')['errormessage'] = "Invalid Date of Arrival"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_tbxPREV_US_VISIT_LOS"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvPREV_US_VISIT_DTE"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvtbxPREV_US_VISIT_LOS"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_DTEYear"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['errormessage'] = "Invalid Date of Arrival"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_LOS"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_tbxPREV_US_VISIT_DTEYear"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE')['errormessage'] = "Invalid Date of Arrival"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_tbxPREV_US_VISIT_LOS"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvPREV_US_VISIT_DTE')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_tbxPREV_US_VISIT_DTEYear"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvPREV_US_VISIT_DTE')['errormessage'] = "Invalid Date of Arrival"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvPREV_US_VISIT_DTE')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvtbxPREV_US_VISIT_LOS')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_tbxPREV_US_VISIT_LOS"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvtbxPREV_US_VISIT_LOS')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvPREV_US_VISIT_DTE').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvPREV_US_VISIT_DTE'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvtbxPREV_US_VISIT_LOS').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvtbxPREV_US_VISIT_LOS'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_csvtbxUS_DRIVER_LICENSE"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_CustomValidator3"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_csvtbxUS_DRIVER_LICENSE')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_tbxUS_DRIVER_LICENSE"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_csvtbxUS_DRIVER_LICENSE')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_CustomValidator3')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_ddlUS_DRIVER_LICENSE_STATE"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_CustomValidator3')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_csvtbxUS_DRIVER_LICENSE').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_csvtbxUS_DRIVER_LICENSE'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_CustomValidator3').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_CustomValidator3'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvPREV_VISA_ISSUED_DTE"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator5"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator6"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator7"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator8"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csv"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_VISA_ISSUED_DTE')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_ISSUED_DTEYear"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_VISA_ISSUED_DTE')['errormessage'] = "Invalid Date Last Visa Was Issued"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_VISA_ISSUED_DTE')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator5')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_FOIL_NUMBER"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator5')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator6')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_TYPE_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator6')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator7')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_CNTRY_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator7')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator8')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_TEN_PRINT_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator8')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csv')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_LOST_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csv')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_CANCELLED_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_VISA_ISSUED_DTE').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_VISA_ISSUED_DTE'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator5').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator5'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator6').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator6'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator7').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator7'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator8').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator8'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csv').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csv'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_REFUSED_EXPL"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_REFUSED_EXPL')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_REFUSED_EXPL"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_REFUSED_EXPL')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_REFUSED_EXPL').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_REFUSED_EXPL'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvtbxIV_PETITION_EXPL"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxIV_PETITION_EXPL')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_tbxIV_PETITION_EXPL"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxIV_PETITION_EXPL')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxIV_PETITION_EXPL').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxIV_PETITION_EXPL'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csv"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvbxPREV_VISA_LOST_YEAR"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator1"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csv')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_LOST_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csv')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvbxPREV_VISA_LOST_YEAR')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_LOST_YEAR"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvbxPREV_VISA_LOST_YEAR')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator1')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_LOST_EXPL"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator1')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csv').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csv'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvbxPREV_VISA_LOST_YEAR').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvbxPREV_VISA_LOST_YEAR'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator1').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator1'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script><script type="text/javascript">Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND"));
+Sys.WebForms.PageRequestManager._addArrayElement('Page_Validators', document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_CANCELLED_EXPL"));
+</script><script type="text/javascript">document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_CANCELLED_IND"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_CANCELLED_EXPL')['controltovalidate'] = "ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_CANCELLED_EXPL"
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_CANCELLED_EXPL')['evaluationfunction'] = "CustomValidatorEvaluateIsValid"
+</script><script type="text/javascript">
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        </script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND'));
+}
+</script><script type="text/javascript">
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_CANCELLED_EXPL').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_CANCELLED_EXPL'));
+}
+</script><script type="text/javascript">Array.add(Sys.WebForms.PageRequestManager.getInstance()._onSubmitStatements, function() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+
+return true;
+});
+</script></head><body onload="InitializeTimeoutTimer('20', 'True'); StopMe(); history.go(+1); ClearConfirmPgSession();"><apm_do_not_touch>
+
+<script type="text/javascript" async="" src="https://eum.state.gov/adrum-ext.59191791453ae6311081a09b4cf33c2d.js"></script><script type="text/javascript">
+(function(){
+window.UicS=!!window.UicS;try{(function(){(function(){})();var iS=43;try{var IS,lS,oS=_(35)?1:0,zS=_(214)?1:0,S_=_(571)?1:0;for(var I_=(_(92),0);I_<lS;++I_)oS+=_(186)?2:1,zS+=(_(349),2),S_+=(_(292),3);IS=oS+zS+S_;window.Ji===IS&&(window.Ji=++IS)}catch(j_){window.Ji=IS}var O_=!0;function O(S){var I=arguments.length,l=[];for(var z=1;z<I;++z)l.push(arguments[z]-S);return String.fromCharCode.apply(String,l)}
+function Z_(S){var I=83;!S||document[L(I,201,188,198,188,181,188,191,188,199,204,166,199,180,199,184)]&&document[L(I,201,188,198,188,181,188,191,188,199,204,166,199,180,199,184)]!==J(68616527583,I)||(O_=!1);return O_}function L(S){var I=arguments.length,l=[],z=1;while(z<I)l[z-1]=arguments[z++]-S;return String.fromCharCode.apply(String,l)}function J(S,I){S+=I;return S.toString(36)}function s_(){}Z_(window[s_[L(iS,153,140,152,144)]]===s_);Z_(typeof ie9rgb4!==J(1242178186156,iS));
+Z_(RegExp("\x3c")[J(1372162,iS)](function(){return"\x3c"})&!RegExp(J(42846,iS))[J(1372162,iS)](function(){return"'x3'+'d';"}));
+var _i=window[L(iS,140,159,159,140,142,147,112,161,144,153,159)]||RegExp(L(iS,152,154,141,148,167,140,153,143,157,154,148,143),J(-25,iS))[J(1372162,iS)](window["\x6e\x61vi\x67a\x74\x6f\x72"]["\x75\x73e\x72A\x67\x65\x6et"]),ii=+new Date+(_(281)?6E5:613860),ji,Li,oi,Zi=window[L(iS,158,144,159,127,148,152,144,154,160,159)],si=_i?_(270)?3E4:44527:_(501)?6E3:4129;
+document[O(iS,140,143,143,112,161,144,153,159,119,148,158,159,144,153,144,157)]&&document[O(iS,140,143,143,112,161,144,153,159,119,148,158,159,144,153,144,157)](L(iS,161,148,158,148,141,148,151,148,159,164,142,147,140,153,146,144),function(S){var I=50;document[O(I,168,155,165,155,148,155,158,155,166,171,133,166,147,166,151)]&&(document[O(I,168,155,165,155,148,155,158,155,166,171,133,166,147,166,151)]===O(I,154,155,150,150,151,160)&&S[O(I,155,165,134,164,167,165,166,151,150)]?oi=!0:document[O(I,168,
+155,165,155,148,155,158,155,166,171,133,166,147,166,151)]===J(68616527616,I)&&(ji=+new Date,oi=!1,_I()))});function _I(){if(!document[L(5,118,122,106,119,126,88,106,113,106,104,121,116,119)])return!0;var S=+new Date;if(S>ii&&(_(129)?6E5:536817)>S-ji)return Z_(!1);var I=Z_(Li&&!oi&&ji+si<S);ji=S;Li||(Li=!0,Zi(function(){Li=!1},_(672)?0:1));return I}_I();var II=[_(934)?25748704:17795081,_(365)?27611931586:2147483647,_(871)?1048378235:1558153217];
+function jI(S){var I=55;S=typeof S===J(1743045621,I)?S:S[O(I,171,166,138,171,169,160,165,158)](_(224)?36:31);var l=window[S];if(!l||!l[O(I,171,166,138,171,169,160,165,158)])return;var z=""+l;window[S]=function(S,I){Li=!1;return l(S,I)};window[S][O(I,171,166,138,171,169,160,165,158)]=function(){return z}}for(var lI=(_(371),0);lI<II[J(1294399162,iS)];++lI)jI(II[lI]);Z_(!1!==window[L(iS,128,148,142,126)]);window.l_=window.l_||{};window.l_.Lsz="08772f9a9916e800a011e4335c246fb13ec6b4c41fa3cbbc50263a328acbb55a06775f7219d987b7a461ea7bfd3262d52dcaf1a770e175a8fda8c8b93a92759428525f66dddcb151fe1b1407d66ccce6b4f4b132a6b3ba2b9b5d7ce059f973938c63f8b1ddeb73a0311f1d28429505b0b6d66317953fec78639b988ec75aef617b3efcd7cb5c493addb3e73fd38f09e0a45e026f49634f406de1c2703b3dc11d41d7574c79c78c5b6cd576626e578c19996a314c09973d897e418dd33095cdbf55eedb764b04d46b50f31335c2a28290d65ee7985da1c1be4ca69557384482e12dde77b96bf59faf7b4c70b43695acc5";
+function LI(S){var I=+new Date,l;!document[O(14,127,131,115,128,135,97,115,122,115,113,130,125,128,79,122,122)]||I>ii&&(_(335)?6E5:660407)>I-ji?l=Z_(!1):(l=Z_(Li&&!oi&&ji+si<I),ji=I,Li||(Li=!0,Zi(function(){Li=!1},_(153)?1:0)));return!(arguments[S]^l)}function _(S){return 587>S}(function(){var S=/(\A([0-9a-f]{1,4}:){1,6}(:[0-9a-f]{1,4}){1,1}\Z)|(\A(([0-9a-f]{1,4}:){1,7}|:):\Z)|(\A:(:[0-9a-f]{1,4}){1,7}\Z)/ig,I=document.getElementsByTagName("head")[0],l=[];I&&(I=I.innerHTML.slice(0,1E3));while(I=S.exec(""))l.push(I)})();})();}catch(x){}finally{ie9rgb4=void(0);};function ie9rgb4(a,b){return a>>b>>0};
+
+})();
+
+</script>
+</apm_do_not_touch>
+
+<script type="text/javascript" src="/TSPD/0883343043ab200072f64708c55d807f61fc4548c26017c63a67829fc131a7ec18f23ac3c28cf900?type=17"></script>
+
+    <!-- Google tag (gtag.js) -->
+    <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-JNS6XTMRTN"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-JNS6XTMRTN');
+    </script>
+    
+    <title>Nonimmigrant Visa - Previous U.S. Travel Information</title><script>window['adrum-start-time'] = new Date().getTime(); var appKey='EUM-AAB-AUA';</script><script type="text/javascript" src="https://eum.state.gov/appd.21.7.0.3493.js"></script><script src="https://eum.state.gov/adrum-21.7.0.3493.js" type="text/javascript" charset="UTF-8"></script><meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7"><link href="../../_res/css/print.css" rel="stylesheet" type="text/css" media="print"><link href="../../_res/css/screen.css" rel="stylesheet" type="text/css" media="screen"><link href="../../_res/css/tooltip.css" rel="stylesheet" type="text/css" media="screen">    
+    <script language="javascript" type="text/javascript" src="/GenNIV/_res/js/Common.js"></script>
+    <script language="javascript" type="text/javascript" src="/GenNIV/_res/js/UI.js"></script>
+    <script language="javascript" type="text/javascript" src="/GenNIV/_res/js/Usability.js"></script>
+    
+    <script type="text/javascript">         
+        
+        var exitBtnID= 'ctl00_lbtnExit';        
+        var hdFieldID = 'ctl00_HDClearSession';        
+        var timeoutUrl = '/GenNIV/Logout.aspx';
+        
+        function SessionAlert()
+        {
+             // Call serverside function
+            var msg = 'There has been no activity for 15 minutes. As a security measure, your session will time out in 5 minutes. Click OK to continue.';
+        
+            var now = new Date();
+            alert("[" + now + "] " + msg);
+            //document.forms[0].submit();
+            needToConfirm = false;  // Turn off navigation message
+            location.reload(true);  // Refresh page
+            setTimeout("SessionAlert()", 15 * 60 * 1000);
+        }
+        
+        function StopMe()
+        {
+            var anchor = document.getElementById("stophere");
+            
+            if(anchor)
+            {
+                scroll(0,0);
+                document.getElementById("stophere").focus();
+            }
+        }
+
+      
+    </script>
+    <script language="javascript" type="text/javascript" src="/GenNIV/_res/js/CheckBrowserClose.js"></script>
+    <script type="text/javascript" src="/CEAC/GoogleAnalytics.js"></script>
+    <script language="javascript" id="_fed_an_ua_tag" src="/CEAC/UniversalFederated-Analytics.js?agency=DOS&amp;subagency=CA"></script>    
+
+
+    
+    <input id="Hidden1" type="hidden" value="">
+    <form name="aspnetForm" method="post" action="./complete_previousustravel.aspx?node=PreviousUSTravel" onsubmit="javascript:return WebForm_OnSubmit();" id="aspnetForm" data-gtm-form-interact-id="0">
+<div>
+
+
+
+
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['aspnetForm'];
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/GenNIV/WebResource.axd?d=pynGkmcFUV13He1Qd6_TZIzbRPcdJzOwoniuioP5g_XVbGIYrW6mr-_nDDg3-JhlsmTFyA2&amp;t=638901320248157332" type="text/javascript"></script>
+
+
+<script src="/GenNIV/WebResource.axd?d=VWTPrjnEYXMhaTiWZxweiaaE5B13rRvzc0IHGPE9I932nzM8mm3nmQXTvVmgnUSKcoH_9dq9EFOBbnZp_NGdB1JCjv1QTvAfrkQ6gu6V-DWCWDrjpy_x2-zXo7huhnws_ikDkw2&amp;t=637080630980000000" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=1HpV3OVB0CaEXoaafcqmhiwZ4Azj4q75PynXQ0lrkgBfJOfuixT5hapC6GFTXbjeoHunFX3rDxtDjsEJBYNAep3xwyaNIXh8SH1V9twNDAku19XLyr-xlv9C1lO-By_AaSkVIQ2&amp;t=ffffffff93d1c106" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=nnHyWnZ5bTPuYszCeiYmK7zrJ_OGMyJZfOzx6shurMWQ4CZiMi27Sf_F2irQW2wcUNpazdWOtF-i1vlETu-58cvhPc6qbdDxS0MDhPxWhKVduRxq2qoF7YGdLGHq5oD9epxqW0otZyCJlJ1Njcy5fKs0C3o1&amp;t=5c0e0825" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+if (typeof(Sys) === 'undefined') throw new Error('ASP.NET Ajax client-side framework failed to load.');
+//]]>
+</script>
+
+<script src="/GenNIV/ScriptResource.axd?d=geiJw278ELCE4oVrRV2zHxcZzDfjQD84ZdvzXARLKyO4bCeWDblEJY2eEjq0dMCPy9WmK2uHhvZ8NZ6knx_E5FiARAYGltYwww5I6gzwfBKO2izgZHzPDYn-fp0npf9pDn_f80IaZptOlal2diBVZWQF_knGtjNg4WmKWy5jpvgBIn6C0&amp;t=5c0e0825" type="text/javascript"></script>
+<script src="../../_res/js/AjaxHandler.js" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=vrI32z0INVyeIryknN4aqIiUpHjicW2Z1fkItZISxddZ52EHlJ9ADaUyi6zWx7Z6DnzV7FrFgwb0_VW6ADs-bMTbnrP6LwTKc30WRxGpuQ9DldBdJw-X1RcNQGJdHMx7npFvPQ2&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=cB7L8ic4c0Mnr6k0o-A6EkbD6rSCS4Q59rhhJjithD1TtnA5eBFnN6hEtK47GvS3khArtxfh-of6YpaFCXYbdZVZtuN9JewvC0BUatxuZlGBN0EIZ00xXtwEt_JM8mO253p7hA2&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=tSrSkOzyXNNqivKjZl4B2czw6ej_-6jLY8DYnUKSGQMQ1mGxsMl_t5Kf1MYvvSddnQcWrM9s1XRAY2FlFLR34u8yDRYq1cJlY1KtJVv1vRXMVtl90&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=upCFl-A7tF3ecexwmJuc0qlYH2PuASn8icfhPxnjxbpbc6fn75CfxiZlxn6UuinZRki6SkjzPW5Z5hEmZNiYdEuLArEwbWXJ7bjppLjIAjt1nrp90&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=5lEWy3-d71fLxCVY2nJLz86R3uLJ4gmK1XvaO1q59_NNbxn4iIYSOBrndE2miKVRP0rb2_lLUSKq71812ozDxdeh0BpvYAp1Ffrimk124WJFDNkK0&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=ARPv0flDUICfBxjIcsXB1MU9popEqdi9Ptsyjk2cmR7ZgP1yKrHs0n1MnKm43-1XaSncYkFPRAK7v9sGjr84ULcfyYO5HfVvNKqKBJqajiY1DyEm0&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=q1K-66DjbeGDfNwjLlzy5VfnswjSXLK3fXtLZOJm6cHQFMwYsUyuLh1rNmkEKfa2HjlnAa_aWd-5CjGF_gbzwppSc5kk7pMcLN_8udvbPXPE4LF50&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=hOE2R60rniA7A8jD67HfFMibR_gm3LwuFGMLvIEI-RhD603GzOvD1lwxqst7jnQi6lWaEinL0bm-uC8VOYkad3lti5XCCWWblFTe2VATbbcDxjwP0&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=zZnwUah9EnFr3kYMQOr6Prgr8N9MKxTBG2kPNZ5euduwnVVmYmMx9vq4LdM0uT5csk4yCwahrjK1wNCiVFbVAdHorfu4dlIhrrkJilabicr0PqSA0&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=04WQS7qyeaF2LP634c_DGFVPnDneZUlGAQBuIhU3xRARfkShrLj2Isk2WSkGDEhkQu84XTGIjkbIwm-hJRjB24VDjpkgDQXL4Ph6fRCCtNKzUaQY0&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=2OxvNvGAFdgBSUqhQ81_gOzWypnZp_ZaC-r4Q5u1fbqqM9baYwjiO0h6FV7pS3ZrDZbxfr90fODiWA4AmkFktGj9YOf8kiMQkSihFTOgL6vFrgbL0&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=fnBmOFJtBMBkbNeB_w3xTrpk0aEcFHAnvROfcsH2pin6WjruOeBiwN_TfOCPjv1G99IfQRrOpMQUEHrPSrfwKlXKEDo9bNCrjJW8BiqHH6kz0ZUN0&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=TuHVGcME1l0INu-jL55TiCH_o_cjRoNb8PTH1J5KSzyCOlkPr1RH7ULY0-F562FQCnsn1XnA_HetzeChGPFEE6y0N_AjmEGVa6LfMnVV8KLtukJf0&amp;t=7d5986a" type="text/javascript"></script>
+<script src="/GenNIV/ScriptResource.axd?d=vqTJXdLQf5gtmOtj2rzj1PSag6cVdyRYo8rXfeBxHRUFlAtM1dJN8JHa5581kScSVhj6fjV633wy88Wn_bax3MI4NNVDBQ53ix9ilrgr23fHW-b80&amp;t=7d5986a" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+function WebForm_OnSubmit() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+return true;
+}
+//]]>
+</script>
+
+<div>
+
+	
+	
+	
+	
+	<input type="hidden" name="__PREVIOUSPAGE" id="__PREVIOUSPAGE" value="">
+</div>
+        <div id="container">
+            <div id="branding">
+                <div id="branding-logo">
+                    <img id="ctl00_banner" src="../../_res/img/design/banner_updated.jpg" alt="U.S. Department of State Electronic Application Center" usemap="#ImageMapctl00_banner" style="border-width:0px;"><map name="ImageMapctl00_banner" id="ImageMapctl00_banner">
+	<area shape="circle" coords="45,38,34" href="javascript:__doPostBack('ctl00$banner','0')" title="Go to the DS-160 home page" alt="Go to the DS-160 home page">
+</map>   
+                </div>
+            </div>
+            <hr>
+            <div id="tools">
+                <div id="tools-language">
+                    <p>
+                        </p><div id="ctl00_pnlSelectLanguage">
+	
+                            <label for="ctl00_ddlLanguage" id="ctl00_TTLabel5" class="tooltip_text" onmousemove="widetip=false; tip='בחר/י שפה'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">Select Tooltip Language</label> 
+                            <select name="ctl00$ddlLanguage" onchange="needToConfirm = false;setTimeout('__doPostBack(\'ctl00$ddlLanguage\',\'\')', 0)" id="ctl00_ddlLanguage" onclick="return ValidNavigationSelect();" style="width:190px;">
+		<option value="en-US">English</option>
+		<option value="ar-EG">العربية (Arabic)</option>
+		<option value="bn-BD">বাংলা (Bangla)</option>
+		<option value="zh-CN">中文(简体）(Chinese-Simplified) </option>
+		<option value="zh-TW">中文(繁體）(Chinese-Traditional) </option>
+		<option value="fr-FR">Français (French)</option>
+		<option value="de-DE">Deutsch (German)</option>
+		<option value="he-IL">עברית (Hebrew)</option>
+		<option value="hi-IN">हिन्दी (Hindi)</option>
+		<option value="id-ID">Indonesia (Indonesian)</option>
+		<option value="it-IT">Italiano (Italian)</option>
+		<option value="ja-JP">日本語 (Japanese)</option>
+		<option value="ko-KR">한국어 (Korean)</option>
+		<option value="sr-Latn-CS">Crnogorski (Montenegrin(Latin))</option>
+		<option value="fa-IR">فارسی (Persian(Farsi))</option>
+		<option value="pl-PL">Polski (Polish)</option>
+		<option value="pt-BR">Português (Portuguese)</option>
+		<option value="ro-RO">Română (Romanian)</option>
+		<option value="ru-RU">Русский (Russian)</option>
+		<option value="es-MX">Español (Spanish)</option>
+		<option value="th-TH">ภาษาไทย (Thai)</option>
+		<option value="tr-TR">Türkçe (Turkish)</option>
+		<option value="ur-PK">اردو (Urdu)</option>
+		<option value="vi-VN">Việt (Vietnamese)</option>
+
+	</select>
+                        
+</div>
+                    <p></p>
+                </div>
+            </div>
+            <hr>
+            <div id="nav">
+                <div id="nav-global">
+                    <ul>
+                        
+                        <li>
+                            <div id="ctl00_TTPanel2" class="tooltip_text" onmousemove="widetip=false; tip='צור קשר'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+	
+                                <a onclick="window.open(' https://il.usembassy.gov/visas/');return false;" id="ctl00_lbtnContactUs" href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$lbtnContactUs&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, true))">Contact Us</a>
+                            
+</div>
+                        </li>
+                        <li id="ctl00_lbtnHelp2">
+                            <div id="ctl00_TTPanel1" class="tooltip_text" onmousemove="widetip=false; tip='עזרה'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+	
+                                <a onclick="window.open('/GenNIV/Help/Help.aspx','Help','height=760,width=778,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,modal=yes,help=no');return false;" id="ctl00_lbtnHelp" href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$lbtnHelp&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, true))">Help</a>
+                            
+</div>
+                        </li>
+                        <li>
+                            <div class="tooltip_text" onmousemove="widetip=false; tip='יציאה'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+	
+                                <a id="ctl00_lbtnExit" href="javascript:__doPostBack('ctl00$lbtnExit','')">Exit</a>
+                                <input name="ctl00$HDClearSession" type="hidden" id="ctl00_HDClearSession" value="">                                
+                            
+</div>
+                        </li>
+                    </ul>
+                </div>
+                <div id="nav-main" xmlns:msxsl="urn:schemas-microsoft-com:xslt" xmlns:user="urn:CSD-Namespace">
+  <table cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
+    <tbody><tr>
+      <td>
+        <li class="on" style="width:190px; display:inline-block;"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='הושלם'; delayToolTip(event,tip,widetip,0,0);return false"><a class="main" style="width:190px; display:inline-block;" href="/GenNIV/General/complete/complete_personal.aspx?node=Personal1" id="COMPLETE">COMPLETE</a></span></li>
+      </td>
+      <td>
+        <li class="" style="width:190px; display:inline-block;"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='תמונה'; delayToolTip(event,tip,widetip,0,0);return false"><a class="main" style="width:190px; display:inline-block;" disabled="true" id="PHOTO">PHOTO</a></span></li>
+      </td>
+      <td>
+        <li class="" style="width:190px; display:inline-block;"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='בדיקה'; delayToolTip(event,tip,widetip,0,0);return false"><a class="main" style="width:190px; display:inline-block;" disabled="true" id="REVIEW">REVIEW</a></span></li>
+      </td>
+      <td>
+        <li class="" style="width:190px;"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='חתימה'; delayToolTip(event,tip,widetip,0,0);return false"><a class="main" style="width:190px;" disabled="true" id="ESIGN">SIGN</a></span></li>
+      </td>
+    </tr>
+  </tbody></table>
+</div>              
+            </div>
+            <hr>
+            <!--- side navigation menu --->
+            <div id="sideNav" class="nav-sidebar-main">
+                <div id="hideobject" xmlns:msxsl="urn:schemas-microsoft-com:xslt" xmlns:user="urn:CSD-Namespace">
+  <div id="nav-sidebar">
+    <ul class="nav-side1">
+      <li class="complete"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='התחלת התהליך'; delayToolTip(event,tip,widetip,0,0);return false"><a href="/GenNIV/Default.aspx" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('GetStarted');" id="GetStarted">Getting Started</a></span></li>
+      <li class="complete"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='אישי'; delayToolTip(event,tip,widetip,0,0);return false"><a href="/GenNIV/General/complete/complete_personal.aspx?node=Personal1" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('Personal');" id="Personal">Personal</a></span></li>
+      <li class="complete"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='תוכניות נסיעה'; delayToolTip(event,tip,widetip,0,0);return false"><a href="/GenNIV/General/complete/complete_travel.aspx?node=Travel" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('Travel');" id="Travel">Travel</a></span></li>
+      <li class="complete"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='אנשים המתלווים אליך'; delayToolTip(event,tip,widetip,0,0);return false"><a href="/GenNIV/General/complete/complete_travelcompanions.aspx?node=TravelCompanions" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('TravelCompanions');" id="TravelCompanions">Travel Companions</a></span></li>
+      <li class="current on"><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='ביקורים קודמים בארה&quot;ב'; delayToolTip(event,tip,widetip,0,0);return false"><a href="/GenNIV/General/complete/complete_previousustravel.aspx?node=PreviousUSTravel" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('PreviousUSTravel');" id="PreviousUSTravel">Previous U.S. Travel</a></span><ul class="nav-side2"></ul>
+      </li>
+      <li class=""><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='כתובת וטלפון'; delayToolTip(event,tip,widetip,0,0);return false"><a disabled="true" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('AddressPhone');" id="AddressPhone">Address and Phone</a></span></li>
+      <li class=""><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='דרכון'; delayToolTip(event,tip,widetip,0,0);return false"><a disabled="true" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('PptVisa');" id="PptVisa">Passport</a></span></li>
+      <li class=""><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='איש קשר בארה&quot;ב'; delayToolTip(event,tip,widetip,0,0);return false"><a disabled="true" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('USContact');" id="USContact">U.S. Contact</a></span></li>
+      <li class=""><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='בני משפחה'; delayToolTip(event,tip,widetip,0,0);return false"><a disabled="true" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('Family');" id="Family">Family</a></span></li>
+      <li class=""><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='עבודה/לימודים/התמחות'; delayToolTip(event,tip,widetip,0,0);return false"><a disabled="true" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('WorkEducationMain');" id="WorkEducationMain">Work / Education / Training</a></span></li>
+      <li class=""><span class="tooltip_text" onmouseout="hideToolTip()" onmouseover="widetip=false; tip='בטחון ורקע אישי'; delayToolTip(event,tip,widetip,0,0);return false"><a disabled="true" onclick="javascript:confirmExitPage(this,'PreviousUSTravel'); return false; CheckNodeClicked('SecAndBackMain');" id="SecAndBackMain">Security and Background</a></span></li>
+    </ul>
+  </div>
+</div>  
+                <div id="nav-sidebar-help" class="noprint">
+                    <div id="ctl00_pnlSidebarHelp" class="sidebar-help">
+	
+                        <h4>
+                            <span class="tooltip_text" onmouseover="widetip=false; tip='עזרה:'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                <span id="ctl00_Label5" style="color:#891300;">Help:</span>
+                            </span>
+                            <span class="tooltip_text" onmouseover="widetip=false; tip='כפתורי ניווט'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                <span id="ctl00_Label6">Navigation Buttons</span>
+                            </span>
+                        </h4>
+                        <p>
+                            <span class="tooltip_text" onmouseover="widetip=false; tip='הקלק/י על הכפתור מעלה על מנת לגשת למידע שהוכנס בעבר '; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                <span id="ctl00_Label7">Click on the buttons above to access previously entered data.</span>
+                            </span>
+                        </p>
+                    
+</div>
+                </div>
+            </div>
+            <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ctl00$ScriptManager1', 'aspnetForm', ['tctl00$ucNavigateOption$ucNavPanel$updConfirm','','tctl00$SiteContentPlaceHolder$FormView1$upnlPreviousUSTravel','','tctl00$SiteContentPlaceHolder$FormView1$upnlPREV_VISA','','tctl00$SiteContentPlaceHolder$FormView1$upnlPREV_VISA_REFUSED','','tctl00$SiteContentPlaceHolder$FormView1$upnlIV_PETITION',''], [], [], 180, 'ctl00');
+//]]>
+</script>
+
+            <span id="ctl00_ToolTipManager1">
+<div id="bubble_tooltip" style="display: none; left: 169px; top: 721px;">
+    <div class="bubble_middle" style="direction:rtl;">
+        <span id="bubble_tooltip_content">כן או לא</span></div>
+    </div>
+    <div id="widebubble_tooltip" style="display: none;">
+    <div class="widebubble_middle" style="direction:rtl;">
+    <span id="widebubble_tooltip_content"></span></div>
+</div></span> 
+
+            <div id="content">
+                <div id="content-main">
+                    <div id="ctl00_Panel1">
+	
+                        <h1 style="width:99%">
+                            <span class="tooltip_text" onmouseover="widetip=false; tip='טופס בקשה אלקטרוני לויזה שאינה למטרת הגירה (DS-160)'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()" style="float:none;"><!-- Ken Snyder changed the float:left to float:none to fix a problem with alignment in Safari-->
+                                <span id="ctl00_Label2">Online Nonimmigrant Visa Application (DS-160)</span>
+                            </span>
+                            <span class="tooltip_text" onmouseover="widetip=false; tip='קוד הזיהוי של טופס הבקשה'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()" style="float:right;">
+                                <span id="ctl00_lblAppIDLabel" style="color:#666; font-size:small;">Application ID</span>
+                                                            
+                            </span>
+                        </h1>
+                    
+</div>
+                    
+    <input name="ctl00$SiteContentPlaceHolder$HiddenPageValid" type="hidden" id="ctl00_SiteContentPlaceHolder_HiddenPageValid" value="">
+    <table cellspacing="0" name="FormView1" border="0" id="ctl00_SiteContentPlaceHolder_FormView1" style="border-collapse:collapse;">
+	<tbody><tr>
+		<td colspan="2">
+            <h2>
+                <span class="tooltip_text" onmousemove="widetip=true; tip='מידע בנוגע לביקורים קודמים בארה\'ב'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                    <span id="ctl00_SiteContentPlaceHolder_FormView1_Label5">Previous U.S. Travel Information</span></span>
+            </h2>
+            <div id="ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary" class="error-message" style="color:Red;background-color:White;display:none;">
+
+		</div>
+            <br>
+            <div class="note">
+                <span class="tooltip_text" onmousemove="widetip=true; tip='הערה: ספק/י מידע בנוגע לביקורים קודמים בארה\'ב. ספק/י מידע מדויק ושלם בכל אחת מהשאלות הדורשות הסבר.'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                    <span id="ctl00_SiteContentPlaceHolder_FormView1_lblPageNote1">NOTE: Provide the following previous U.S. travel information.  Provide complete and accurate information to all questions that require an explanation.</span></span>
+            </div>
+            
+            <div class="fieldset-group">
+                <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPreviousUSTravel">
+                        <fieldset>
+                            <div class="field-groups">
+                                <div class="field full">
+                                    
+                                    <div class="q">
+                                        <a id="ctl00_SiteContentPlaceHolder_FormView1_stophere" name="stophere" style="color: black"><span class="tooltip_text" onmousemove="widetip=false; tip='האם ביקרת בעבר בארה\'ב?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_US_TRAVEL_IND">Have you ever been in the U.S.?</label></span></a>
+                                        
+                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND" style="color:Red;visibility:hidden;">
+                                <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+
+                                        
+                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates" style="color:Red;visibility:hidden;"><img alt="" src="../../_res/img/trg_bk.GIF" height="0" width="0"> </span>
+
+                                        
+                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate" style="color:Red;visibility:hidden;"><img alt="" src="../../_res/img/trg_bk.GIF" height="0" width="0"> </span>
+
+                                    </div>
+                                    <div class="a">
+                                        <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND" onfocus="return ValidNavigation();" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_US_TRAVEL_IND" value="" onclick="javascript:setDirty();" tabindex="101"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_US_TRAVEL_IND" value="" onclick="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$rblPREV_US_TRAVEL_IND$1\',\'\')', 0)" tabindex="101"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+
+                                        <div id="ctl00_SiteContentPlaceHolder_FormView1_add1">
+                                            <h4>
+                                                <div id="ctl00_SiteContentPlaceHolder_FormView1_PrevVisit">
+                                                    <span class="tooltip_text" onmousemove="widetip=true; tip='ספק/י מידע בנוגע לחמשת הביקורים האחרונים שלך בארה\'ב'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_lblPreviousUSVisitsInfo">Provide information on your last five U.S. visits:</span></span>
+                                                </div>
+                                                
+                                            </h4>
+                                            <div class="field-group callout">
+                                                <table id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT" cellspacing="0" border="0" style="border-collapse:collapse;">
+	<tbody><tr>
+		<td>
+                                                        <div class="field-group callout wadd">
+                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='תאריך הגעה'; delayToolTip(event,tip,widetip,0,-10);return false" onmouseout="hideToolTip()">
+
+                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_DTEYear" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_lblPREV_US_VISIT_DTE">Date Arrived</label></span>
+                                                                
+
+                                                            <span class="RadioCheck">
+                                                                
+                                                                <input type="image" name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$helppopPREV_US_VISIT_DTEMonth" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_helppopPREV_US_VISIT_DTEMonth" tabindex="200" src="../../_res/img/infopop.bmp" alt="Click here for more information" onclick="window.open('/GenNIV/Help/Help.aspx#Month','Help','height=760,width=778,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,modal=yes,help=no');return false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$helppopPREV_US_VISIT_DTEMonth&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" style="height:15px;width:15px;border-width:0px;" value="">    
+                                                            </span>
+
+                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvPREV_US_VISIT_DTE" style="color:Red;visibility:hidden;"><img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+
+                                                            <br>
+                                                            <div class="field full" style="padding-bottom: 0%">
+                                                                <div class="date">
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$ddlPREV_US_VISIT_DTEDay" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_ddlPREV_US_VISIT_DTEDay" tabindex="200" onchange="javascript:setDirty();" style="width:45px;">
+			<option value=""></option>
+			<option value="1">01</option>
+			<option value="2">02</option>
+			<option value="3">03</option>
+			<option value="4">04</option>
+			<option value="5">05</option>
+			<option value="6">06</option>
+			<option value="7">07</option>
+			<option value="8">08</option>
+			<option value="9">09</option>
+			<option value="10">10</option>
+			<option value="11">11</option>
+			<option value="12">12</option>
+			<option value="13">13</option>
+			<option value="14">14</option>
+			<option value="15">15</option>
+			<option value="16">16</option>
+			<option value="17">17</option>
+			<option value="18">18</option>
+			<option value="19">19</option>
+			<option value="20">20</option>
+			<option value="21">21</option>
+			<option value="22">22</option>
+			<option value="23">23</option>
+			<option value="24">24</option>
+			<option value="25">25</option>
+			<option value="26">26</option>
+			<option value="27">27</option>
+			<option value="28">28</option>
+			<option value="29">29</option>
+			<option value="30">30</option>
+			<option value="31">31</option>
+
+		</select>
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$ddlPREV_US_VISIT_DTEMonth" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_ddlPREV_US_VISIT_DTEMonth" tabindex="200" onchange="javascript:setDirty();" style="width:55px;">
+			<option value=""></option>
+			<option value="1">JAN</option>
+			<option value="2">FEB</option>
+			<option value="3">MAR</option>
+			<option value="4">APR</option>
+			<option value="5">MAY</option>
+			<option value="6">JUN</option>
+			<option value="7">JUL</option>
+			<option value="8">AUG</option>
+			<option value="9">SEP</option>
+			<option value="10">OCT</option>
+			<option value="11">NOV</option>
+			<option value="12">DEC</option>
+
+		</select>
+                                                                    <input name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$tbxPREV_US_VISIT_DTEYear" type="text" maxlength="4" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_DTEYear" tabindex="200" onchange="javascript:setDirty();" style="width:35px;" value="">
+                                                                </div>
+                                                                <div class="hint">
+                                                                    <span class="tooltip_text" onmousemove="widetip=false; tip='(יום-חודש-שנה)'; delayToolTip(event,tip,widetip,0,10);return false" onmouseout="hideToolTip()">
+                                                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_lblPREV_US_VISIT_DTEHint">(Format: DD-MMM-YYYY)</span></span>
+                                                                </div>
+                                                            </div>
+                                                            <br>
+                                                            <div class="field full" style="padding-bottom: 0%">
+                                                                <div class="date">
+                                                                    <span class="tooltip_text" onmousemove="widetip=false; tip='משך השהייה'; delayToolTip(event,tip,widetip,0,-10);return false" onmouseout="hideToolTip()">
+                                                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_lblPREV_US_VISIT_LOS">Length of Stay</span></span>
+                                                                    <span class="RadioCheck">
+                                                                        
+                                                                        <input type="image" name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$helppopPREV_US_VISIT_LOS" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_helppopPREV_US_VISIT_LOS" tabindex="200" src="../../_res/img/infopop.bmp" alt="Click here for more information" onclick="window.open('/GenNIV/Help/Help.aspx#LengthOfStay','Help','height=760,width=778,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,modal=yes,help=no');return false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$helppopPREV_US_VISIT_LOS&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" style="height:15px;width:15px;border-width:0px;" value="">    
+                                                                    </span>
+                                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_csvtbxPREV_US_VISIT_LOS" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                    <br>
+                                                                    <input name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$tbxPREV_US_VISIT_LOS" type="text" maxlength="3" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_tbxPREV_US_VISIT_LOS" tabindex="200" onchange="javascript:setDirty();" style="width:35px;" value="">
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$ddlPREV_US_VISIT_LOS_CD" onchange="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$ddlPREV_US_VISIT_LOS_CD\',\'\')', 0)" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_ddlPREV_US_VISIT_LOS_CD" tabindex="200" onfocus="return ValidNavigation();" style="width: auto;">
+			<option value="">-Select One-</option>
+			<option value="Y">Year(s)</option>
+			<option value="M">Month(s)</option>
+			<option value="W">Week(s)</option>
+			<option value="D">Day(s)</option>
+			<option value="H">Less Than 24 Hours</option>
+
+		</select>
+                                                                    <br>
+                                                                    <br>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="addremove">
+                                                            <div class="addone">
+                                                                <span class="tooltip_text" onmousemove="widetip=false; tip='הוסף'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                    <a onclick="return ValidNavigation();setDirty();" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_InsertButtonPREV_US_VISIT" tabindex="200" title="Add Another" href="javascript:__doPostBack('ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$InsertButtonPREV_US_VISIT','')">Add Another</a></span>
+                                                            </div>
+                                                            <div class="removeone">
+                                                                <span class="tooltip_text" onmousemove="widetip=false; tip='הסר'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                    <a onclick="return ValidNavigation();setDirty();" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl00_DeleteButtonPREV_US_VISIT" tabindex="200" title="Remove" href="javascript:__doPostBack('ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl00$DeleteButtonPREV_US_VISIT','')">Remove</a></span>
+                                                            </div>
+                                                        </div>
+                                                        <br>
+                                                        <br>
+                                                        <br>
+                                                    </td>
+	</tr><tr>
+		<td>
+                                                        <div class="field-group callout wadd">
+                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='תאריך הגעה'; delayToolTip(event,tip,widetip,0,-10);return false" onmouseout="hideToolTip()">
+
+                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_tbxPREV_US_VISIT_DTEYear" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_lblPREV_US_VISIT_DTE">Date Arrived</label></span>
+                                                                
+
+                                                            <span class="RadioCheck">
+                                                                
+                                                                <input type="image" name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$helppopPREV_US_VISIT_DTEMonth" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_helppopPREV_US_VISIT_DTEMonth" tabindex="200" src="../../_res/img/infopop.bmp" alt="Click here for more information" onclick="window.open('/GenNIV/Help/Help.aspx#Month','Help','height=760,width=778,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,modal=yes,help=no');return false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$helppopPREV_US_VISIT_DTEMonth&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" style="height:15px;width:15px;border-width:0px;" value="">    
+                                                            </span>
+
+                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvPREV_US_VISIT_DTE" style="color:Red;visibility:hidden;"><img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+
+                                                            <br>
+                                                            <div class="field full" style="padding-bottom: 0%">
+                                                                <div class="date">
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$ddlPREV_US_VISIT_DTEDay" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_ddlPREV_US_VISIT_DTEDay" tabindex="200" onchange="javascript:setDirty();" style="width:45px;">
+			<option value=""></option>
+			<option value="1">01</option>
+			<option value="2">02</option>
+			<option value="3">03</option>
+			<option value="4">04</option>
+			<option value="5">05</option>
+			<option value="6">06</option>
+			<option value="7">07</option>
+			<option value="8">08</option>
+			<option value="9">09</option>
+			<option value="10">10</option>
+			<option value="11">11</option>
+			<option value="12">12</option>
+			<option value="13">13</option>
+			<option value="14">14</option>
+			<option value="15">15</option>
+			<option value="16">16</option>
+			<option value="17">17</option>
+			<option value="18">18</option>
+			<option value="19">19</option>
+			<option value="20">20</option>
+			<option value="21">21</option>
+			<option value="22">22</option>
+			<option value="23">23</option>
+			<option value="24">24</option>
+			<option value="25">25</option>
+			<option value="26">26</option>
+			<option value="27">27</option>
+			<option value="28">28</option>
+			<option value="29">29</option>
+			<option value="30">30</option>
+			<option value="31">31</option>
+
+		</select>
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$ddlPREV_US_VISIT_DTEMonth" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_ddlPREV_US_VISIT_DTEMonth" tabindex="200" onchange="javascript:setDirty();" style="width:55px;">
+			<option value=""></option>
+			<option value="1">JAN</option>
+			<option value="2">FEB</option>
+			<option value="3">MAR</option>
+			<option value="4">APR</option>
+			<option value="5">MAY</option>
+			<option value="6">JUN</option>
+			<option value="7">JUL</option>
+			<option value="8">AUG</option>
+			<option value="9">SEP</option>
+			<option value="10">OCT</option>
+			<option value="11">NOV</option>
+			<option value="12">DEC</option>
+
+		</select>
+                                                                    <input name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$tbxPREV_US_VISIT_DTEYear" type="text" maxlength="4" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_tbxPREV_US_VISIT_DTEYear" tabindex="200" onchange="javascript:setDirty();" style="width:35px;" value="">
+                                                                </div>
+                                                                <div class="hint">
+                                                                    <span class="tooltip_text" onmousemove="widetip=false; tip='(יום-חודש-שנה)'; delayToolTip(event,tip,widetip,0,10);return false" onmouseout="hideToolTip()">
+                                                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_lblPREV_US_VISIT_DTEHint">(Format: DD-MMM-YYYY)</span></span>
+                                                                </div>
+                                                            </div>
+                                                            <br>
+                                                            <div class="field full" style="padding-bottom: 0%">
+                                                                <div class="date">
+                                                                    <span class="tooltip_text" onmousemove="widetip=false; tip='משך השהייה'; delayToolTip(event,tip,widetip,0,-10);return false" onmouseout="hideToolTip()">
+                                                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_lblPREV_US_VISIT_LOS">Length of Stay</span></span>
+                                                                    <span class="RadioCheck">
+                                                                        
+                                                                        <input type="image" name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$helppopPREV_US_VISIT_LOS" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_helppopPREV_US_VISIT_LOS" tabindex="200" src="../../_res/img/infopop.bmp" alt="Click here for more information" onclick="window.open('/GenNIV/Help/Help.aspx#LengthOfStay','Help','height=760,width=778,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,modal=yes,help=no');return false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$helppopPREV_US_VISIT_LOS&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" style="height:15px;width:15px;border-width:0px;" value="">    
+                                                                    </span>
+                                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_csvtbxPREV_US_VISIT_LOS" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                    <br>
+                                                                    <input name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$tbxPREV_US_VISIT_LOS" type="text" maxlength="3" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_tbxPREV_US_VISIT_LOS" tabindex="200" onchange="javascript:setDirty();" style="width:35px;" value="">
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$ddlPREV_US_VISIT_LOS_CD" onchange="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$ddlPREV_US_VISIT_LOS_CD\',\'\')', 0)" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_ddlPREV_US_VISIT_LOS_CD" tabindex="200" onfocus="return ValidNavigation();" style="width: auto;">
+			<option value="">-Select One-</option>
+			<option value="Y">Year(s)</option>
+			<option value="M">Month(s)</option>
+			<option value="W">Week(s)</option>
+			<option value="D">Day(s)</option>
+			<option value="H">Less Than 24 Hours</option>
+
+		</select>
+                                                                    <br>
+                                                                    <br>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="addremove">
+                                                            <div class="addone">
+                                                                <span class="tooltip_text" onmousemove="widetip=false; tip='הוסף'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                    <a onclick="return ValidNavigation();setDirty();" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_InsertButtonPREV_US_VISIT" tabindex="200" title="Add Another" href="javascript:__doPostBack('ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$InsertButtonPREV_US_VISIT','')">Add Another</a></span>
+                                                            </div>
+                                                            <div class="removeone">
+                                                                <span class="tooltip_text" onmousemove="widetip=false; tip='הסר'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                    <a onclick="return ValidNavigation();setDirty();" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl01_DeleteButtonPREV_US_VISIT" tabindex="200" title="Remove" href="javascript:__doPostBack('ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl01$DeleteButtonPREV_US_VISIT','')">Remove</a></span>
+                                                            </div>
+                                                        </div>
+                                                        <br>
+                                                        <br>
+                                                        <br>
+                                                    </td>
+	</tr><tr>
+		<td>
+                                                        <div class="field-group callout wadd">
+                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='תאריך הגעה'; delayToolTip(event,tip,widetip,0,-10);return false" onmouseout="hideToolTip()">
+
+                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_tbxPREV_US_VISIT_DTEYear" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_lblPREV_US_VISIT_DTE">Date Arrived</label></span>
+                                                                
+
+                                                            <span class="RadioCheck">
+                                                                
+                                                                <input type="image" name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$helppopPREV_US_VISIT_DTEMonth" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_helppopPREV_US_VISIT_DTEMonth" tabindex="200" src="../../_res/img/infopop.bmp" alt="Click here for more information" onclick="window.open('/GenNIV/Help/Help.aspx#Month','Help','height=760,width=778,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,modal=yes,help=no');return false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$helppopPREV_US_VISIT_DTEMonth&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" style="height:15px;width:15px;border-width:0px;" value="">    
+                                                            </span>
+
+                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvPREV_US_VISIT_DTE" style="color:Red;visibility:hidden;"><img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+
+                                                            <br>
+                                                            <div class="field full" style="padding-bottom: 0%">
+                                                                <div class="date">
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$ddlPREV_US_VISIT_DTEDay" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_ddlPREV_US_VISIT_DTEDay" tabindex="200" onchange="javascript:setDirty();" style="width:45px;">
+			<option value=""></option>
+			<option value="1">01</option>
+			<option value="2">02</option>
+			<option value="3">03</option>
+			<option value="4">04</option>
+			<option value="5">05</option>
+			<option value="6">06</option>
+			<option value="7">07</option>
+			<option value="8">08</option>
+			<option value="9">09</option>
+			<option value="10">10</option>
+			<option value="11">11</option>
+			<option value="12">12</option>
+			<option value="13">13</option>
+			<option value="14">14</option>
+			<option value="15">15</option>
+			<option value="16">16</option>
+			<option value="17">17</option>
+			<option value="18">18</option>
+			<option value="19">19</option>
+			<option value="20">20</option>
+			<option value="21">21</option>
+			<option value="22">22</option>
+			<option value="23">23</option>
+			<option value="24">24</option>
+			<option value="25">25</option>
+			<option value="26">26</option>
+			<option value="27">27</option>
+			<option value="28">28</option>
+			<option value="29">29</option>
+			<option value="30">30</option>
+			<option value="31">31</option>
+
+		</select>
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$ddlPREV_US_VISIT_DTEMonth" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_ddlPREV_US_VISIT_DTEMonth" tabindex="200" onchange="javascript:setDirty();" style="width:55px;">
+			<option value=""></option>
+			<option value="1">JAN</option>
+			<option value="2">FEB</option>
+			<option value="3">MAR</option>
+			<option value="4">APR</option>
+			<option value="5">MAY</option>
+			<option value="6">JUN</option>
+			<option value="7">JUL</option>
+			<option value="8">AUG</option>
+			<option value="9">SEP</option>
+			<option value="10">OCT</option>
+			<option value="11">NOV</option>
+			<option value="12">DEC</option>
+
+		</select>
+                                                                    <input name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$tbxPREV_US_VISIT_DTEYear" type="text" maxlength="4" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_tbxPREV_US_VISIT_DTEYear" tabindex="200" onchange="javascript:setDirty();" style="width:35px;" value="">
+                                                                </div>
+                                                                <div class="hint">
+                                                                    <span class="tooltip_text" onmousemove="widetip=false; tip='(יום-חודש-שנה)'; delayToolTip(event,tip,widetip,0,10);return false" onmouseout="hideToolTip()">
+                                                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_lblPREV_US_VISIT_DTEHint">(Format: DD-MMM-YYYY)</span></span>
+                                                                </div>
+                                                            </div>
+                                                            <br>
+                                                            <div class="field full" style="padding-bottom: 0%">
+                                                                <div class="date">
+                                                                    <span class="tooltip_text" onmousemove="widetip=false; tip='משך השהייה'; delayToolTip(event,tip,widetip,0,-10);return false" onmouseout="hideToolTip()">
+                                                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_lblPREV_US_VISIT_LOS">Length of Stay</span></span>
+                                                                    <span class="RadioCheck">
+                                                                        
+                                                                        <input type="image" name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$helppopPREV_US_VISIT_LOS" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_helppopPREV_US_VISIT_LOS" tabindex="200" src="../../_res/img/infopop.bmp" alt="Click here for more information" onclick="window.open('/GenNIV/Help/Help.aspx#LengthOfStay','Help','height=760,width=778,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,modal=yes,help=no');return false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$helppopPREV_US_VISIT_LOS&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" style="height:15px;width:15px;border-width:0px;" value="">    
+                                                                    </span>
+                                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_csvtbxPREV_US_VISIT_LOS" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                    <br>
+                                                                    <input name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$tbxPREV_US_VISIT_LOS" type="text" maxlength="3" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_tbxPREV_US_VISIT_LOS" tabindex="200" onchange="javascript:setDirty();" style="width:35px;" value="">
+                                                                    <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$ddlPREV_US_VISIT_LOS_CD" onchange="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$ddlPREV_US_VISIT_LOS_CD\',\'\')', 0)" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_ddlPREV_US_VISIT_LOS_CD" tabindex="200" onfocus="return ValidNavigation();" style="width: auto;">
+			<option value="">-Select One-</option>
+			<option value="Y">Year(s)</option>
+			<option value="M">Month(s)</option>
+			<option value="W">Week(s)</option>
+			<option value="D">Day(s)</option>
+			<option value="H">Less Than 24 Hours</option>
+
+		</select>
+                                                                    <br>
+                                                                    <br>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="addremove">
+                                                            <div class="addone">
+                                                                <span class="tooltip_text" onmousemove="widetip=false; tip='הוסף'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                    <a onclick="return ValidNavigation();setDirty();" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_InsertButtonPREV_US_VISIT" tabindex="200" title="Add Another" href="javascript:__doPostBack('ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$InsertButtonPREV_US_VISIT','')">Add Another</a></span>
+                                                            </div>
+                                                            <div class="removeone">
+                                                                <span class="tooltip_text" onmousemove="widetip=false; tip='הסר'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                    <a onclick="return ValidNavigation();setDirty();" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPREV_US_VISIT_ctl02_DeleteButtonPREV_US_VISIT" tabindex="200" title="Remove" href="javascript:__doPostBack('ctl00$SiteContentPlaceHolder$FormView1$dtlPREV_US_VISIT$ctl02$DeleteButtonPREV_US_VISIT','')">Remove</a></span>
+                                                            </div>
+                                                        </div>
+                                                        <br>
+                                                        <br>
+                                                        <br>
+                                                    </td>
+	</tr>
+</tbody></table>
+                                                <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPREV_US_DRIVER_LIC">
+                                                        
+                                                        <div class="q">
+                                                            <a id="ctl00_SiteContentPlaceHolder_FormView1_A2" name="stophere2" style="color: black" tabindex="201"></a>
+                                                            <span class="tooltip_text" onmousemove="widetip=true; tip='האם את/ה מחזיק/ה או החזקת בעבר רשיון נהיגה אמריקאי?'; delayToolTip(event,tip,widetip,0,30);return false" onmouseout="hideToolTip()">
+                                                                
+                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_US_DRIVER_LIC_IND">Do you or did you ever hold a U.S. Driver’s License?</label>
+                                                                
+                                                                
+                                                            </span>
+                                                            
+                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_CustomValidator2" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+
+                                                        </div>
+                                                        <div class="a">
+                                                            <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND" onfocus="return ValidNavigation();" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_US_DRIVER_LIC_IND" value="" onclick="javascript:setDirty();" tabindex="201"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_US_DRIVER_LIC_IND" value="" onclick="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$rblPREV_US_DRIVER_LIC_IND$1\',\'\')', 0)" tabindex="201"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_DRIVER_LIC_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                                        </div>
+                                                        <br>
+                                                        <br>
+                                                        <div id="ctl00_SiteContentPlaceHolder_FormView1_add2">
+                                                            <h4>
+                                                                <span class="tooltip_text" onmousemove="widetip=false; tip='ציינ/י את הפרטים הבאים'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                    
+                                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_lblUS_DRIVER_LICENSEInfo">Provide the following information:</span></span></h4>
+
+                                                            <table id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE" cellspacing="0" border="0" style="border-collapse:collapse;">
+	<tbody><tr>
+		<td>
+                                                                    <div class="field-group callout wadd">
+                                                                        <div id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_upnlUS_DRIVER_LICENSE">
+			
+                                                                                <div class="field full" style="padding-bottom: 0%">
+                                                                                    <span class="tooltip_text" onmousemove="widetip=false; tip='מספר רשיון הנהיגה'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                                        
+                                                                                        <label for="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_tbxUS_DRIVER_LICENSE" id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_lblUS_DRIVER_LICENSE">Driver's License Number</label></span>
+                                                                                        
+
+                                                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_csvtbxUS_DRIVER_LICENSE" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span><br>
+                                                                                    <input name="ctl00$SiteContentPlaceHolder$FormView1$dtlUS_DRIVER_LICENSE$ctl00$tbxUS_DRIVER_LICENSE" type="text" maxlength="20" id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_tbxUS_DRIVER_LICENSE" tabindex="202" onchange="javascript:setDirty();" style="background-color:White;width: 55%" value="">
+                                                                                    
+                                                                                    <div class="field full" style="text-align: right; padding-bottom: 0%">
+                                                                                        <span class="RadioCheck">
+                                                                                            <span title="לא ידוע"><input id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_cbxUS_DRIVER_LICENSE_NA" type="checkbox" name="ctl00$SiteContentPlaceHolder$FormView1$dtlUS_DRIVER_LICENSE$ctl00$cbxUS_DRIVER_LICENSE_NA" onclick="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$dtlUS_DRIVER_LICENSE$ctl00$cbxUS_DRIVER_LICENSE_NA\',\'\')', 0)" tabindex="202" value=""><label for="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_cbxUS_DRIVER_LICENSE_NA">Do Not Know</label></span>
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            
+		</div>
+                                                                        <div class="field full">
+                                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='מדינת רשיון הנהיגה'; delayToolTip(event,tip,widetip,0,-10);return false" onmouseout="hideToolTip()">
+                                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_ddlUS_DRIVER_LICENSE_STATE" id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_lblUS_DRIVER_LICENSE_STATE">State of Driver's License</label></span>
+                                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_CustomValidator3" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                            <select name="ctl00$SiteContentPlaceHolder$FormView1$dtlUS_DRIVER_LICENSE$ctl00$ddlUS_DRIVER_LICENSE_STATE" id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_ddlUS_DRIVER_LICENSE_STATE" tabindex="202" onchange="javascript:setDirty();">
+			<option value="">- Select one -</option>
+			<option value="AL">ALABAMA</option>
+			<option value="AK">ALASKA</option>
+			<option value="AS">AMERICAN SAMOA</option>
+			<option value="AZ">ARIZONA</option>
+			<option value="AR">ARKANSAS</option>
+			<option value="CA">CALIFORNIA</option>
+			<option value="CO">COLORADO</option>
+			<option value="CT">CONNECTICUT</option>
+			<option value="DE">DELAWARE</option>
+			<option value="DC">DISTRICT OF COLUMBIA</option>
+			<option value="FL">FLORIDA</option>
+			<option value="GA">GEORGIA</option>
+			<option value="GU">GUAM</option>
+			<option value="HI">HAWAII</option>
+			<option value="ID">IDAHO</option>
+			<option value="IL">ILLINOIS</option>
+			<option value="IN">INDIANA</option>
+			<option value="IA">IOWA</option>
+			<option value="KS">KANSAS</option>
+			<option value="KY">KENTUCKY</option>
+			<option value="LA">LOUISIANA</option>
+			<option value="ME">MAINE</option>
+			<option value="MD">MARYLAND</option>
+			<option value="MA">MASSACHUSETTS</option>
+			<option value="MI">MICHIGAN</option>
+			<option value="MN">MINNESOTA</option>
+			<option value="MS">MISSISSIPPI</option>
+			<option value="MO">MISSOURI</option>
+			<option value="MT">MONTANA</option>
+			<option value="NE">NEBRASKA</option>
+			<option value="NV">NEVADA</option>
+			<option value="NH">NEW HAMPSHIRE</option>
+			<option value="NJ">NEW JERSEY</option>
+			<option value="NM">NEW MEXICO</option>
+			<option value="NY">NEW YORK</option>
+			<option value="NC">NORTH CAROLINA</option>
+			<option value="ND">NORTH DAKOTA</option>
+			<option value="MP">NORTHERN MARIANA ISLANDS</option>
+			<option value="OH">OHIO</option>
+			<option value="OK">OKLAHOMA</option>
+			<option value="OR">OREGON</option>
+			<option value="PA">PENNSYLVANIA</option>
+			<option value="PR">PUERTO RICO</option>
+			<option value="RI">RHODE ISLAND</option>
+			<option value="SC">SOUTH CAROLINA</option>
+			<option value="SD">SOUTH DAKOTA</option>
+			<option value="TN">TENNESSEE</option>
+			<option value="TX">TEXAS</option>
+			<option value="UT">UTAH</option>
+			<option value="VT">VERMONT</option>
+			<option value="VI">VIRGIN ISLANDS</option>
+			<option value="VA">VIRGINIA</option>
+			<option value="WA">WASHINGTON</option>
+			<option value="WV">WEST VIRGINIA</option>
+			<option value="WI">WISCONSIN</option>
+			<option value="WY">WYOMING</option>
+
+		</select>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="addremove">
+                                                                        <div class="addone">
+                                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='הוסף'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                                <a onclick="return ValidNavigation();setDirty();" id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_InsertButtonUS_DRIVER_LICENSE" tabindex="202" title="Add Another" href="javascript:__doPostBack('ctl00$SiteContentPlaceHolder$FormView1$dtlUS_DRIVER_LICENSE$ctl00$InsertButtonUS_DRIVER_LICENSE','')">Add Another</a></span>
+                                                                        </div>
+                                                                        <div class="removeone">
+                                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='הסר'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                                <a onclick="return ValidNavigation();setDirty();" id="ctl00_SiteContentPlaceHolder_FormView1_dtlUS_DRIVER_LICENSE_ctl00_DeleteButtonUS_DRIVER_LICENSE" tabindex="202" title="Remove" href="javascript:__doPostBack('ctl00$SiteContentPlaceHolder$FormView1$dtlUS_DRIVER_LICENSE$ctl00$DeleteButtonUS_DRIVER_LICENSE','')">Remove</a></span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <br>
+                                                                    <br>
+                                                                    <br>
+                                                                </td>
+	</tr>
+</tbody></table>
+                                                        </div>
+                                                    </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="ctl00_SiteContentPlaceHolder_FormView1_ShowDivPrevUSVisitsHelp" style="margin-top: 100px">
+                                <div class="help" id="PrevUSVisitsHelp">
+                                    <h4>
+                                        <span class="tooltip_text" onmouseover="widetip=false; tip='עזרה:'; delayToolTip(event,tip,widetip,20,0);return false" onmouseout="hideToolTip()">
+                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_Label2" style="color:#891300;">Help:</span></span>
+                                        <span><span><span class="tooltip_text" onmousemove="widetip=true; tip='ביקורים קודמים בארה\'ב'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_lblHelp1">Previous U.S. Visits</span>
+                                        </span></span>
+                                    </span></h4>
+                                    <p>
+                                        <span class="tooltip_text" onmousemove="widetip=true; tip='אם אינך בטוח/ה מתי ביקרת בארה\'ב, אנא ספק/י מועד משוער.'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_lblHelp2">If you are unsure about when you visited the U.S., please provide a best estimate.</span></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </fieldset>
+                        
+                    </div>
+                <div class="hr">
+                </div>
+                <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPREV_VISA">
+                        <fieldset>
+                            <div class="field-groups">
+                                <div class="field full">
+                                    
+                                    <div class="q">
+                                        <span class="tooltip_text" onmousemove="widetip=true; tip='האם הונפקה לך ויזה לארה\'ב?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_IND">Have you ever been issued a U.S. Visa?</label></span>
+                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4" style="color:Red;visibility:hidden;">
+                                <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                    </div>
+                                    <div class="a">
+                                        <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND" onfocus="return ValidNavigation();" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_IND" value="" onclick="javascript:setDirty();" tabindex="300"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_IND" value="" onclick="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_IND$1\',\'\')', 0)" tabindex="300"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                        <br>
+                                        <div id="ctl00_SiteContentPlaceHolder_FormView1_add3">
+                                            <h4>
+                                                <span class="tooltip_text" onmousemove="widetip=false; tip='ויזות אמריקאיות קודמות'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISAInfo">Previous U.S. Visas</span></span>
+                                            </h4>
+                                            <div class="field-group callout">
+                                                <span class="tooltip_text" onmousemove="widetip=false; tip='תאריך הנפקת הויזה האחרונה'; delayToolTip(event,tip,widetip,0,-10);return false" onmouseout="hideToolTip()">
+                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_ISSUED_DTE">Date Last Visa Was Issued</span></span>
+                                                <span class="RadioCheck">
+                                                    
+                                                    <input type="image" name="ctl00$SiteContentPlaceHolder$FormView1$helppopPREV_VISA_ISSUED_DTEMonth" id="ctl00_SiteContentPlaceHolder_FormView1_helppopPREV_VISA_ISSUED_DTEMonth" tabindex="301" src="../../_res/img/infopop.bmp" alt="Click here for more information" onclick="window.open('/GenNIV/Help/Help.aspx#Month','Help','height=760,width=778,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=no,modal=yes,help=no');return false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$FormView1$helppopPREV_VISA_ISSUED_DTEMonth&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" style="height:15px;width:15px;border-width:0px;" value="">   
+                                                </span>
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_csvPREV_VISA_ISSUED_DTE" style="color:Red;visibility:hidden;"><img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                <br>
+                                                <div class="field full">
+                                                    <div class="date">
+                                                        
+                                                        <select name="ctl00$SiteContentPlaceHolder$FormView1$ddlPREV_VISA_ISSUED_DTEDay" id="ctl00_SiteContentPlaceHolder_FormView1_ddlPREV_VISA_ISSUED_DTEDay" tabindex="301" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" style="width:45px;">
+	<option value=""></option>
+	<option value="1">01</option>
+	<option value="2">02</option>
+	<option value="3">03</option>
+	<option value="4">04</option>
+	<option value="5">05</option>
+	<option value="6">06</option>
+	<option value="7">07</option>
+	<option value="8">08</option>
+	<option value="9">09</option>
+	<option value="10">10</option>
+	<option value="11">11</option>
+	<option value="12">12</option>
+	<option value="13">13</option>
+	<option value="14">14</option>
+	<option value="15">15</option>
+	<option value="16">16</option>
+	<option value="17">17</option>
+	<option value="18">18</option>
+	<option value="19">19</option>
+	<option value="20">20</option>
+	<option value="21">21</option>
+	<option value="22">22</option>
+	<option value="23">23</option>
+	<option value="24">24</option>
+	<option value="25">25</option>
+	<option value="26">26</option>
+	<option value="27">27</option>
+	<option value="28">28</option>
+	<option value="29">29</option>
+	<option value="30">30</option>
+	<option value="31">31</option>
+
+</select>
+                                                        <select name="ctl00$SiteContentPlaceHolder$FormView1$ddlPREV_VISA_ISSUED_DTEMonth" id="ctl00_SiteContentPlaceHolder_FormView1_ddlPREV_VISA_ISSUED_DTEMonth" tabindex="301" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" style="width:55px;">
+	<option value=""></option>
+	<option value="1">JAN</option>
+	<option value="2">FEB</option>
+	<option value="3">MAR</option>
+	<option value="4">APR</option>
+	<option value="5">MAY</option>
+	<option value="6">JUN</option>
+	<option value="7">JUL</option>
+	<option value="8">AUG</option>
+	<option value="9">SEP</option>
+	<option value="10">OCT</option>
+	<option value="11">NOV</option>
+	<option value="12">DEC</option>
+
+</select>
+                                                        <input name="ctl00$SiteContentPlaceHolder$FormView1$tbxPREV_VISA_ISSUED_DTEYear" type="text" maxlength="4" id="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_ISSUED_DTEYear" tabindex="301" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" style="width:35px;" value="">
+                                                        <div class="hint">
+                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='(יום-חודש-שנה)'; delayToolTip(event,tip,widetip,0,10);return false" onmouseout="hideToolTip()">
+                                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_lblDateFormat">(Format: DD-MMM-YYYY)</span></span>
+                                                        </div>
+                                                    </div>
+                                                    <br>
+                                                    <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPREV_VISA_FOIL_NUMBER">
+	
+                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='מספר הויזה'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_FOIL_NUMBER" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_FOIL_NUMBER">Visa Number</label></span>
+                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_CustomValidator5" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                            <br>
+                                                            <input name="ctl00$SiteContentPlaceHolder$FormView1$tbxPREV_VISA_FOIL_NUMBER" type="text" maxlength="12" id="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_FOIL_NUMBER" tabindex="301" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" style="background-color:White;width: 55%" value="">
+                                                            
+                                                            <span class="RadioCheck">
+                                                                <span class="tooltip_text" onmousemove="widetip=false; tip='לא ידוע'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                    <input id="ctl00_SiteContentPlaceHolder_FormView1_cbxPREV_VISA_FOIL_NUMBER_NA" type="checkbox" name="ctl00$SiteContentPlaceHolder$FormView1$cbxPREV_VISA_FOIL_NUMBER_NA" onclick="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$cbxPREV_VISA_FOIL_NUMBER_NA\',\'\')', 0)" tabindex="301" value=""><label for="ctl00_SiteContentPlaceHolder_FormView1_cbxPREV_VISA_FOIL_NUMBER_NA">Do Not Know</label>
+                                                                </span>
+                                                            </span>
+                                                        
+</div>
+                                                    <br>
+                                                    <br>
+                                                    <br>
+                                                    <div id="ctl00_SiteContentPlaceHolder_FormView1_SameVisa">
+                                                    
+                                                        <div class="q">
+                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='האם את/ה מגיש/ה בקשה לאותו סוג ויזה?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_TYPE_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_SAME_TYPE_IND">Are you applying for the same type of visa?</label></span>
+                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_CustomValidator6" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                        </div>
+                                                        <div class="a">
+                                                            <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_TYPE_IND" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_TYPE_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_SAME_TYPE_IND" value="" onclick="javascript:setDirty();" tabindex="301" data-gtm-form-interact-field-id="3"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_TYPE_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_TYPE_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_SAME_TYPE_IND" value="" onclick="javascript:setDirty();" tabindex="301"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_TYPE_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                                        </div>
+                                                        <br>
+                                                    </div>
+                                                    <div id="ctl00_SiteContentPlaceHolder_FormView1_SameCountry">
+                                                    
+                                                        <div class="q">
+                                                            <span class="tooltip_text" onmousemove="widetip=true; tip='האם את/ה מגיש/ה את בקשתך לויזה באותה מדינה שבה הוגשה הויזה שציינת מעלה והאם מדינה זו היא מקום המגורים העיקרי שלך?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_CNTRY_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_SAME_CNTRY_IND">Are you applying in the same country or location where the visa above was issued, and is this country or location your place of principal of residence?</label></span>
+                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_CustomValidator7" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                        </div>
+                                                        <div class="a">
+                                                            <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_CNTRY_IND" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_CNTRY_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_SAME_CNTRY_IND" value="" onclick="javascript:setDirty();" tabindex="301" data-gtm-form-interact-field-id="4"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_CNTRY_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_CNTRY_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_SAME_CNTRY_IND" value="" onclick="javascript:setDirty();" tabindex="301"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_SAME_CNTRY_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                                        </div>
+                                                        <br>
+                                                    </div>
+                                                    <div id="ctl00_SiteContentPlaceHolder_FormView1_TenPrint">
+                                                                                                        
+                                                        <div class="q">
+                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='האם נלקחו ממך עשר טביעות אצבעות?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_TEN_PRINT_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_TEN_PRINT_IND">Have you been ten-printed?</label></span>
+                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_CustomValidator8" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                        </div>
+                                                        <div class="a">
+                                                            <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_TEN_PRINT_IND" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_TEN_PRINT_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_TEN_PRINT_IND" value="" onclick="javascript:setDirty();" tabindex="301" data-gtm-form-interact-field-id="7"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_TEN_PRINT_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_TEN_PRINT_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_TEN_PRINT_IND" value="" onclick="javascript:setDirty();" tabindex="301"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_TEN_PRINT_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div id="ctl00_SiteContentPlaceHolder_FormView1_ShowDivLostOrRevokedVisa">
+                                                    <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPREV_VISA_LOST">
+                                                            
+                                                            <div class="field-groups" style="width: 250px;">
+                                                                <div class="q">
+                                                                    <span class="tooltip_text" onmousemove="widetip=false; tip='האם הויזה שלך לארה\'ב אבדה או נגנבה?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                        <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_LOST_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_LOST_IND">Has your U.S. Visa ever been lost or stolen?</label></span>
+                                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_csv" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                </div>
+                                                                <div class="a">
+                                                                    <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                        <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_LOST_IND" onfocus="return ValidNavigation();" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_LOST_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_LOST_IND" value="" onclick="javascript:setDirty();" tabindex="301"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_LOST_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_LOST_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_LOST_IND" value="" onclick="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_LOST_IND$1\',\'\')', 0)" tabindex="301"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_LOST_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                                                    <br>
+                                                                    <div id="ctl00_SiteContentPlaceHolder_FormView1_ExplainLostVisa">
+                                                                        <h4>
+                                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='ציינ/י את השנה בה הויזה אבדה או נגנבה:'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_LOST_YEARInfo">Enter year visa was lost or stolen:</span>
+                                                                            </span>
+                                                                        </h4>
+                                                                        <div class="field-group callout" style="width: 250px; height: 50px">
+                                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='שנה'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_LOST_YEAR" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_LOST_YEAR">Year</label></span>
+                                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_csvbxPREV_VISA_LOST_YEAR" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                            <div class="YearTextBox">
+                                                                                <input name="ctl00$SiteContentPlaceHolder$FormView1$tbxPREV_VISA_LOST_YEAR" type="text" maxlength="4" id="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_LOST_YEAR" tabindex="301" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" style="width:30px;" value="">
+                                                                                <br>
+                                                                            </div>
+                                                                        </div>
+                                                                        <h4>
+                                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='הסבר/י'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_LOST_EXPL" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_LOST_EXPL">Explain</label></span>
+                                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_CustomValidator1" style="color:Red;visibility:hidden;">
+                                                                <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                        </h4>
+                                                                        <div class="field-group callout" style="width: 260px;">
+                                                                            <div class="field ">
+                                                                                <textarea name="ctl00$SiteContentPlaceHolder$FormView1$tbxPREV_VISA_LOST_EXPL" rows="2" cols="20" maxlength="4000" id="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_LOST_EXPL" tabindex="301" textmode="MultiLine" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" onkeyup="LimitInput(this)" onbeforepaste="doBeforePaste(this)" onpaste="doPaste(this)" onmousemove="LimitInput(this)" style="height:65px;width:75%;"></textarea><br>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPREV_VISA_CANCELLED">
+                                                            <div class="field-groups" style="width: 250px;">
+                                                                
+                                                                <div class="q">
+                                                                    <span class="tooltip_text" onmousemove="widetip=true; tip='האם אי פעם בוטלה או נשללה ממך ויזה (לאחר אישורה)?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                        <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_CANCELLED_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_CANCELLED_IND">Has your U.S. Visa ever been cancelled or revoked?</label></span>
+                                                                    <span id="ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_CANCELLED_IND" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                </div>
+                                                                <div class="a">
+                                                                    <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                        <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_CANCELLED_IND" onfocus="return ValidNavigation();" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_CANCELLED_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_CANCELLED_IND" value="" onclick="javascript:setDirty();" tabindex="301"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_CANCELLED_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_CANCELLED_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_CANCELLED_IND" value="" onclick="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_CANCELLED_IND$1\',\'\')', 0)" tabindex="301"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_CANCELLED_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                                                    <br>
+                                                                    <div id="ctl00_SiteContentPlaceHolder_FormView1_ExplainCancelledVisa">
+                                                                        <h4>
+                                                                            <span class="tooltip_text" onmousemove="widetip=false; tip='הסבר/י'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                                                <label for="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_CANCELLED_EXPL" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_CANCELLED_EXPL">Explain</label></span>
+                                                                            <span id="ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_CANCELLED_EXPL" style="color:Red;visibility:hidden;">
+                                                            <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                                                        </h4>
+                                                                        <div class="field-group callout" style="width: 260px;">
+                                                                            <div class="field ">
+                                                                                <textarea name="ctl00$SiteContentPlaceHolder$FormView1$tbxPREV_VISA_CANCELLED_EXPL" rows="2" cols="20" maxlength="4000" id="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_CANCELLED_EXPL" tabindex="301" textmode="MultiLine" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" onkeyup="LimitInput(this)" onbeforepaste="doBeforePaste(this)" onpaste="doPaste(this)" onmousemove="LimitInput(this)" style="height:65px;width:75%;"></textarea><br>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>      
+                            <div id="ctl00_SiteContentPlaceHolder_FormView1_ShowHelp">                     
+                                <div id="ctl00_SiteContentPlaceHolder_FormView1_ShowVisaNumberHelp" style="margin-top: 170px">
+                                    <div class="help" id="VisaNumberHelp">
+                                        <h4>
+                                            <span class="tooltip_text" onmouseover="widetip=false; tip='עזרה:'; delayToolTip(event,tip,widetip,20,0);return false" onmouseout="hideToolTip()">
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_Label3" style="color:#891300;">Help:</span></span>
+                                            <span><span><span class="tooltip_text" onmousemove="widetip=false; tip='מספר הויזה'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_lblHelp6">Visa Number</span></span>
+                                            </span>
+                                        </span></h4>
+                                        <p>
+                                            <span class="tooltip_text" onmousemove="widetip=true; tip='הכנס/י את המספר המוצג באדום בפינה הימנית התחתונה של הויזה שלך. מספר זה בעל 8 ספרות. אם ברשותך כרטיס מעבר (Border Crossing Card), הכנס/י את 12 הספרות האחרונות הנמצאות בשורה הראשונה של האזור הקריא אלקטרונית.'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_lblHelp7">Enter the 8-digit number that is displayed in red on the lower right hand side of your visa. If your previous visa was a Border Crossing Card enter the last 12-digit number of the first line of the machine readable zone.</span></span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div id="ctl00_SiteContentPlaceHolder_FormView1_ShowDivTenPrintHelp" style="margin-top: -35px">
+                                    <div class="help" id="TenPrintHelp">
+                                        <h4>
+                                            <span class="tooltip_text" onmouseover="widetip=false; tip='עזרה:'; delayToolTip(event,tip,widetip,20,0);return false" onmouseout="hideToolTip()">
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_Label1" style="color:#891300;">Help:</span></span>
+                                            <span><span><span class="tooltip_text" onmousemove="widetip=false; tip='עשר טביעות אצבעות'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_lblHelp4">Ten-printed</span></span>
+                                            </span>
+                                        </span></h4>
+                                        <p>
+                                            <span class="tooltip_text" onmousemove="widetip=true; tip='עשר טביעות אצבעות פירושן שסיפקת טביעות אצבעות של כל אצבעותיך, להבדיל ממתן שתי טביעות אצבעות בלבד.'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_lblHelp5">Ten-printed means that you have provided fingerprints for all your fingers, as opposed
+                                        to having provided only two fingerprints.</span></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div> 
+                        </fieldset>
+                        
+                    </div>
+                <div class="hr">
+                </div>
+                <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPREV_VISA_REFUSED">
+                        <fieldset>
+                            <div class="field-groups">
+                                <div class="field full">
+                                    
+                                    <div class="q">
+                                        <span class="tooltip_text" onmousemove="widetip=true; tip='האם אי פעם סורבה לך ויזה לארה\'ב, סורבה כניסתך לארה\'ב או נסוגת מבקשתך להכנס לארה\'ב בנקודת הכניסה בגבולות ארה\'ב?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_REFUSED_IND">Have you ever been refused a U.S. Visa, or been refused admission to the United States,
+                                    or withdrawn your application for admission at the port of entry?</label></span>
+                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND" style="color:Red;visibility:hidden;">
+                                                <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                    </div>
+                                    <div class="a">
+                                        <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <table id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND" onfocus="return ValidNavigation();" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_REFUSED_IND" value="" onclick="javascript:setDirty();" tabindex="400"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_REFUSED_IND" value="" onclick="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$rblPREV_VISA_REFUSED_IND$1\',\'\')', 0)" tabindex="400"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                        <br>
+                                        <div id="ctl00_SiteContentPlaceHolder_FormView1_ExplainVisaRefusal">
+                                            <h4>
+                                                <span class="tooltip_text" onmousemove="widetip=false; tip='הסבר/י'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                    <label for="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_REFUSED_EXPL" id="ctl00_SiteContentPlaceHolder_FormView1_lblPREV_VISA_REFUSED_EXPL">Explain</label></span>
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_csvtbxPREV_VISA_REFUSED_EXPL" style="color:Red;visibility:hidden;">
+                                                <img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                            </h4>
+                                            <div class="field-group callout">
+                                                
+                                                <textarea name="ctl00$SiteContentPlaceHolder$FormView1$tbxPREV_VISA_REFUSED_EXPL" rows="2" cols="20" maxlength="4000" id="ctl00_SiteContentPlaceHolder_FormView1_tbxPREV_VISA_REFUSED_EXPL" tabindex="401" textmode="MultiLine" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" onkeyup="LimitInput(this)" onbeforepaste="doBeforePaste(this)" onpaste="doPaste(this)" onmousemove="LimitInput(this)" style="height:65px;width:280px;"></textarea><br>
+                                                <br>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field-groups">
+                            </div>
+                        </fieldset>
+                    </div>
+                <div class="hr">
+                </div>
+                
+                
+                <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlIV_PETITION">
+                        <fieldset>
+                            <div class="field-groups">
+                                <div class="field full">
+                                    
+                                    <div class="q">
+                                        <span class="tooltip_text" onmousemove="widetip=true; tip='האם הוגשה עבורך בקשה להגירה?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <label for="ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND" id="ctl00_SiteContentPlaceHolder_FormView1_lblIV_PETITION_IND">Has anyone ever filed an immigrant petition on your behalf with the United States Citizenship and Immigration Services?</label></span>
+                                        <span id="ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND" style="color:Red;visibility:hidden;"><img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                    </div>
+                                    <div class="a">
+                                        <span class="RadioCheck"><span class="tooltip_text" onmousemove="widetip=false; tip='כן או לא'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                            <table id="ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND" onfocus="return ValidNavigation();" border="0">
+	<tbody><tr>
+		<td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND_0" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblIV_PETITION_IND" value="" onclick="javascript:setDirty();" tabindex="501"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND_0">Yes</label></td><td><input id="ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND_1" type="radio" name="ctl00$SiteContentPlaceHolder$FormView1$rblIV_PETITION_IND" value="" onclick="javascript:setDirty();setTimeout('__doPostBack(\'ctl00$SiteContentPlaceHolder$FormView1$rblIV_PETITION_IND$1\',\'\')', 0)" tabindex="501"><label for="ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND_1">No</label></td>
+	</tr>
+</tbody></table></span> </span>
+                                        <br>
+                                        <div id="ctl00_SiteContentPlaceHolder_FormView1_ExplainIVPetition">
+                                            <h4>
+                                                <span class="tooltip_text" onmousemove="widetip=false; tip='הסבר/י'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">
+                                                    <label for="ctl00_SiteContentPlaceHolder_FormView1_tbxIV_PETITION_EXPL" id="ctl00_SiteContentPlaceHolder_FormView1_lblIV_PETITION_EXPL">Explain</label></span>
+                                                <span id="ctl00_SiteContentPlaceHolder_FormView1_csvtbxIV_PETITION_EXPL" style="color:Red;visibility:hidden;"><img alt="Error" src="../../_res/img/trg_bk.GIF"></span>
+                                            </h4>
+                                            <div class="field-group callout">
+                                                
+                                                <textarea name="ctl00$SiteContentPlaceHolder$FormView1$tbxIV_PETITION_EXPL" rows="2" cols="20" maxlength="4000" id="ctl00_SiteContentPlaceHolder_FormView1_tbxIV_PETITION_EXPL" tabindex="501" textmode="MultiLine" onchange="javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty(); javascript:setDirty();" onkeyup="LimitInput(this)" onbeforepaste="doBeforePaste(this)" onpaste="doPaste(this)" onmousemove="LimitInput(this)" style="height:65px;width:280px;"></textarea><br>
+                                                <br>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field-groups">
+                            </div>
+                        </fieldset>
+                    </div>
+            </div>
+        </td>
+	</tr>
+</tbody></table>
+    <div class="fieldset-group">
+        <fieldset class="submits">
+            <div>
+                <span class="tooltip_text" onmouseover="widetip=false; tip='דף קודם: האנשים המתלווים אליך'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                    <input type="submit" name="ctl00$SiteContentPlaceHolder$UpdateButton1" value="" onclick="javascript:needToConfirm = false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$UpdateButton1&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_SiteContentPlaceHolder_UpdateButton1" tabindex="5000" class="back" onfocus="return ValidNavigation();">
+                </span><span class="tooltip_text" onmouseover="widetip=false; tip='שמור'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                    <input type="submit" name="ctl00$SiteContentPlaceHolder$UpdateButton2" value="" onclick="javascript:needToConfirm = false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$UpdateButton2&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_SiteContentPlaceHolder_UpdateButton2" tabindex="5010" class="save" onfocus="return ValidNavigation();">
+                </span><span class="tooltip_text" onmouseover="widetip=false; tip='דף הבא: כתובת ומספרי טלפון'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                    <input type="submit" name="ctl00$SiteContentPlaceHolder$UpdateButton3" value="" onclick="javascript:needToConfirm = false;WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$SiteContentPlaceHolder$UpdateButton3&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_SiteContentPlaceHolder_UpdateButton3" accesskey="z" tabindex="5020" class="next" onfocus="return ValidNavigation();">
+                </span>
+            </div>
+        </fieldset>
+    </div>
+    
+    
+    
+    
+                    
+                                       
+                </div>
+                                
+            </div>
+            <div id="ctl00_pnlSiteInfo">
+	
+                <div id="ctl00_siteInfo_pnlSiteInfo">
+		
+    <div id="siteinfo">
+        <div id="siteinfo-legal" title="Site Information" style="text-align: left">
+            <p>
+                <span id="ctl00_siteInfo_siteinfoLabelToolTip" class="tooltip_text" onmouseover="widetip = false; tip = 'אתר זה מנוהל על ידי הלשכה לעניינים קונסולריים במחלקת המדינה האמריקאית. קישורים חיצונים לאתרי אינטרנט אחרים אינם מהווים המלצה לתוכן המצוי בהם.'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()"><span id="ctl00_siteInfo_siteinfoLabel">This site is managed by the Bureau of Consular Affairs, U.S. Department of State. External links to other Internet sites should not be construed as an endorsement of the views contained therein.</span></span>
+                <br>
+                <span id="ctl00_siteInfo_hplCopyrightToolTip" class="tooltip_text" onmouseover="widetip = false; tip = 'מידע זכויות יוצרים'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()"><a id="ctl00_siteInfo_hplCopyright" href="../../Common/Copyright.aspx" target="_ceac1">Copyright Information</a></span>
+                &nbsp;
+                <span id="ctl00_siteInfo_hplDisclaimersToolTip" class="tooltip_text" onmouseover="widetip = false; tip = 'הבהרה משפטית'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()"><a id="ctl00_siteInfo_hplDisclaimers" href="https://ceac.state.gov/ceac/Common/Disclaimer.aspx" target="_ceac2">Disclaimers</a></span>
+                &nbsp;
+                <span id="ctl00_siteInfo_hplPaperworkReductionToolTip" class="tooltip_text" onmouseover="widetip = false; tip = 'חוק הפחתת הניירת'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()"><a id="ctl00_siteInfo_hplPaperworkReduction" href="../../common/paperworkreduction.aspx" target="_ceac3">Paperwork Reduction Act</a></span>
+                &nbsp;
+                <span id="ctl00_siteInfo_hplFbiPrivacyActToolTip" class="tooltip_text" onmouseover="widetip = false; tip = ''; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()"><a id="ctl00_siteInfo_hplFbiPrivacyAct" href="../../common/fbiprivacyact.aspx" target="_ceac4">FBI Privacy Act</a></span>
+                <span style="float:right;">
+                    <span id="ctl00_siteInfo_lblIP" style="background-color:LightGrey;font-size:0.6em;">(233)</span>
+                </span>
+            </p>
+        </div>
+    </div>
+
+	</div>
+            
+</div>
+            
+            <br>
+        </div>
+        
+        
+        <input type="submit" name="ctl00$btnModalHolder" value="" onclick="return ValidNavigation();WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$btnModalHolder&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_btnModalHolder" style="display:none">
+        
+        
+        
+        
+        
+        
+        
+        
+                
+        
+        
+        <div id="ctl00_ucNavigateOption_ucNavPanel_updConfirm">
+	  
+        
+
+        <a href="../../Common/Controls/#" id="ctl00_ucNavigateOption_ucNavPanel_anchorModalActivate" tabindex="-1"></a>
+         
+    
+<div id="ctl00_ucNavigateOption_ucNavPanel_modalConfirm_foregroundElement" style="display: none; position: fixed; z-index: 1001; left: 598px; top: 10px;"><div id="ctl00_ucNavigateOption_ucNavPanel_pnlMessage" class="modal-content" style="width:500px; padding:20px 20px; display:none;">
+		
+                 
+            
+            <div style="max-height:500px; overflow-y:auto;">
+                
+        <div style="font-size:11px; padding-bottom:30px; text-align:center;">
+            <span id="ctl00_ucNavigateOption_ucNavPanel_ctl01_lblNavigate" class="tooltip_text" onmousemove="widetip=false; tip='השלמת את טופס הבקשה שלך. האם ברצונך לחזור לשלב הסקירה?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">Your DS-160 is complete.  Do you want to return to the Review section?</span>
+        </div>
+        <br>
+        <div id="ctl00_ucNavigateOption_ucNavPanel_ctl01_completeButtons" style="height:25px; text-align:center;">
+            <span class="tooltip_text" onmouseover="widetip=false; tip=''; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                <input type="submit" name="ctl00$ucNavigateOption$ucNavPanel$ctl01$btnReviewPage" value="" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$ucNavigateOption$ucNavPanel$ctl01$btnReviewPage&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_ucNavigateOption_ucNavPanel_ctl01_btnReviewPage" title="כן - חזרה לסקירה " class="blankbluebutton2" style="width:200px;">
+            </span>
+            <span class="tooltip_text" onmouseover="widetip=false; tip=''; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                <input type="submit" name="ctl00$ucNavigateOption$ucNavPanel$ctl01$btnNextPageComplete" value="" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$ucNavigateOption$ucNavPanel$ctl01$btnNextPageComplete&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_ucNavigateOption_ucNavPanel_ctl01_btnNextPageComplete" class="blankbluebutton2" tootip="" style="width:200px;">
+            </span>
+        </div>
+        
+       
+            </div>       
+        
+	</div></div><div data-act-control-type="modalPopupBackground" id="ctl00_ucNavigateOption_ucNavPanel_modalConfirm_backgroundElement" class="modalBackground" style="display: none; position: fixed; left: 0px; top: 0px; z-index: 10000; width: 1197px; height: 3161px;"></div></div>
+        
+        <input name="ctl00$HiddenSideBarItemClicked" type="hidden" id="ctl00_HiddenSideBarItemClicked" text="" value="">
+        <a id="ctl00_anchorModalActivate" style="display:none; visibility:hidden;" onclick="return false"></a>
+        
+    
+<script type="text/javascript">
+//<![CDATA[
+var Page_ValidationSummaries =  new Array(document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary"));
+var Page_Validators =  new Array(document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND"), document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates"), document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate"), document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4"), document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND"), document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND"));
+//]]>
+</script>
+
+<script type="text/javascript">
+//<![CDATA[
+var ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary = document.all ? document.all["ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary"] : document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary");
+ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary.headertext = "Please correct all areas in error as indicated below. Once you have finished, click ‘Save’ or ‘Next’ to continue completing your online application form.";
+var ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND = document.all ? document.all["ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND"] : document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND");
+ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND.controltovalidate = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND";
+ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND.evaluationfunction = "CustomValidatorEvaluateIsValid";
+var ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates = document.all ? document.all["ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates"] : document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates");
+ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates.controltovalidate = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND";
+ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates.evaluationfunction = "CustomValidatorEvaluateIsValid";
+var ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate = document.all ? document.all["ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate"] : document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate");
+ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate.controltovalidate = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_US_TRAVEL_IND";
+ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate.evaluationfunction = "CustomValidatorEvaluateIsValid";
+var ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4 = document.all ? document.all["ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4"] : document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4");
+ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4.controltovalidate = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_IND";
+ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4.evaluationfunction = "CustomValidatorEvaluateIsValid";
+var ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND = document.all ? document.all["ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND"] : document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND");
+ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND.controltovalidate = "ctl00_SiteContentPlaceHolder_FormView1_rblPREV_VISA_REFUSED_IND";
+ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND.evaluationfunction = "CustomValidatorEvaluateIsValid";
+var ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND = document.all ? document.all["ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND"] : document.getElementById("ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND");
+ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND.controltovalidate = "ctl00_SiteContentPlaceHolder_FormView1_rblIV_PETITION_IND";
+ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND.evaluationfunction = "CustomValidatorEvaluateIsValid";
+//]]>
+</script>
+
+
+<script type="text/javascript">
+//<![CDATA[
+
+(function(id) {
+    var e = document.getElementById(id);
+    if (e) {
+        e.dispose = function() {
+            Array.remove(Page_ValidationSummaries, document.getElementById(id));
+        }
+        e = null;
+    }
+})('ctl00_SiteContentPlaceHolder_FormView1_ValidationSummary');
+
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        Sys.Extended.UI.Localization.SetLocale("he");
+theForm.oldSubmit = theForm.submit;
+theForm.submit = WebForm_SaveScrollPositionSubmit;
+
+theForm.oldOnSubmit = theForm.onsubmit;
+theForm.onsubmit = WebForm_SaveScrollPositionOnSubmit;
+
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvPREV_US_TRAVEL_IND'));
+}
+
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvDuplicateDates'));
+}
+
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValDLDuplicate'));
+}
+
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_CustomValidator4'));
+}
+
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblPREV_VISA_REFUSED_IND'));
+}
+
+document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('ctl00_SiteContentPlaceHolder_FormView1_csvrblIV_PETITION_IND'));
+}
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"backgroundCssClass":"modalBackground","cancelControlID":"ctl00_btnWarning","dropShadow":true,"dynamicServicePath":"/GenNIV/General/complete/complete_previousustravel.aspx","id":"warning","okControlID":"ctl00_btnWarning","onOkScript":"onOk()","popupControlID":"ctl00_pnlWarning","y":150}, null, null, $get("ctl00_btnModalHolder"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"backgroundCssClass":"modalBackground","dropShadow":true,"dynamicServicePath":"/GenNIV/General/complete/complete_previousustravel.aspx","id":"timeout","popupControlID":"ctl00_pnlTimeout","y":150}, null, null, $get("ctl00_btnModalHolder"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"backgroundCssClass":"modalBackground","cancelControlID":"ctl00_anchorModalActivate","dropShadow":true,"dynamicServicePath":"/GenNIV/General/complete/complete_previousustravel.aspx","id":"modalSave","okControlID":"ctl00_btnCancelWarning","popupControlID":"ctl00_pnlSaveWarning","y":150}, null, null, $get("ctl00_anchorModalActivate"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"backgroundCssClass":"modalBackground","cancelControlID":"ctl00_anchorModalActivate","dropShadow":true,"dynamicServicePath":"/GenNIV/General/complete/complete_previousustravel.aspx","id":"modalExitWarning","okControlID":"ctl00_btnCancelExitWarning","popupControlID":"ctl00_pnlExitWarning","y":150}, null, null, $get("ctl00_anchorModalActivate"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"backgroundCssClass":"modalBackground","cancelControlID":"ctl00_ucNavigateOption_ucNavPanel_anchorModalActivate","dropShadow":true,"dynamicServicePath":"/GenNIV/General/complete/complete_previousustravel.aspx","id":"ctl00_ucNavigateOption_ucNavPanel_modalConfirm","okControlID":"ctl00_ucNavigateOption_ucNavPanel_anchorModalActivate","popupControlID":"ctl00_ucNavigateOption_ucNavPanel_pnlMessage","y":10}, null, null, $get("ctl00_ucNavigateOption_ucNavPanel_anchorModalActivate"));
+});
+//]]>
+</script>
+<div id="warning_foregroundElement" style="display: none; position: fixed; z-index: 1001; left: 598px; top: 150px;"><div id="ctl00_pnlWarning" class="modal-content" style="width:650px; padding:20px 20px; z-index:1000; display:none;">
+	
+            <div style="font-size:11px; font-weight:bold;color: #c90b01;">
+                
+                <span id="ctl00_TTLabel1Warning" class="tooltip_text" onmousemove="widetip=false; tip='פעילותך תפוג תוקף בעוד דקה אחת. הקליק/י על \'אישור\' על מנת להאריך את תוקף העמוד בעוד 20 דקות נוספות.'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">Your session will expire in 1 minute.  Click ‘OK’ to keep your session active for another 20 minutes.</span>
+            </div>
+            <br>
+            <br>
+            <div style="text-align:center; margin-left:auto; margin-right:auto; width:650px;">
+                <span class="tooltip_text" onmouseover="widetip=false; tip='אישור'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                    <input type="submit" name="ctl00$btnWarning" value="" onclick="return ValidNavigation();WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$btnWarning&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_btnWarning" class="blankbluebutton">
+                </span>
+            </div>
+            
+        
+</div></div><div data-act-control-type="modalPopupBackground" id="warning_backgroundElement" class="modalBackground" style="display: none; position: fixed; left: 0px; top: 0px; z-index: 10000; width: 1197px; height: 3161px;"></div><div id="timeout_foregroundElement" style="display: none; position: fixed; z-index: 1001; left: 598px; top: 150px;"><div id="ctl00_pnlTimeout" class="modal-content" style="width:650px; padding:20px 20px; display:none;">
+	
+            <div style="font-size:11px; font-weight:bold;color: #c90b01;">
+                
+                <span id="ctl00_TTLabelTimeout" class="tooltip_text" onmousemove="widetip=false; tip='פעילותך פגה תוקף. על מנת לאחזר את טופס הבקשה שוב, עליך להכניס את הפרטים הבאים:'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">Your session has timed out.  To recover your application, you will need to enter the following information:</span>
+                <ul>
+                    <li>
+                        <span id="ctl00_TTLabel1" class="tooltip_text" onmousemove="widetip=false; tip='קוד הזיהוי של טופס הבקשה:'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">Application ID:</span>
+                        <span id="ctl00_lblRecoveryAppID">AA00FOVW5V</span>
+                    </li>
+                    <li>
+                        <span id="ctl00_TTLabel2" class="tooltip_text" onmousemove="widetip=false; tip='חמשת האותיות הראשונות בשם המשפחה של המועמד'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">First 5 letters of applicant’s surname</span>                    
+                    </li>
+                    <li>
+                        <span id="ctl00_TTLabel3" class="tooltip_text" onmousemove="widetip=false; tip='שנת הלידה של המועמד'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">Applicant’s year of birth</span>                    
+                    </li>
+                    <li>
+                        <span id="ctl00_TTLabel4" class="tooltip_text" onmousemove="widetip=false; tip='ענה/י על שאלת הביטחון (שאלה זו נבחרה בעת יצירת טופס הבקשה לראשונה)'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">Answer to the security question (selected when the application was first created)</span>                    
+                    </li>
+                </ul>
+            </div>
+            <br>
+            <br>
+            <div style="text-align:center; margin-left:auto; margin-right:auto; width:650px;">
+                <span class="tooltip_text" onmouseover="widetip=false; tip='שחזר טופס בקשה'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                    <input type="submit" name="ctl00$btnRecover" value="" onclick="return ValidNavigation();WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$btnRecover&quot;, &quot;&quot;, true, &quot;&quot;, &quot;../../Default.aspx&quot;, false, false))" id="ctl00_btnRecover" class="blankbluebutton">
+                </span>
+            </div>
+            
+        
+</div></div><div data-act-control-type="modalPopupBackground" id="timeout_backgroundElement" class="modalBackground" style="display: none; position: fixed; left: 0px; top: 0px; z-index: 10000; width: 1197px; height: 3161px;"></div><div id="modalSave_foregroundElement" style="display: none; position: fixed; z-index: 1001; left: 598px; top: 150px;"><div id="ctl00_pnlSaveWarning" class="modal-content" style="width:625px; padding:20px 20px; display:none;">
+	            
+            <div style="font-size:11px; padding-bottom:30px; text-align:center;">            
+                <span id="ctl00_lblWarning" class="tooltip_text" onmousemove="widetip=false; tip='האם ברצונך לשמור את הנתונים לפני שתמשיכ/י לבחירתך?'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">Do you want to save the data on the page before continuing on to your selection?</span>
+            </div>
+            
+            <div style="float:left; margin-right:5px;">
+                <span class="tooltip_text" onmouseover="widetip=false; tip='כן - שמור והמשך'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                        <input type="submit" name="ctl00$btnOkWarning" value="" onclick="return ValidNavigation();return ValidNavigation();WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$btnOkWarning&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_btnOkWarning" class="blankbluebutton">
+                </span>                
+            </div>
+            <div style="float:left; margin-right:5px;">
+                <span class="tooltip_text" onmouseover="widetip=false; tip='לא - המשך ללא שמירה'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                    <input type="button" class="blankbluebutton" value="" onclick="javascript:gotoPage();return ValidNavigation();">                        
+                </span>
+            </div>
+            
+            <div>      
+                <span class="tooltip_text" onmouseover="widetip=false; tip='ביטול: הישאר באותו דף'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                        <input type="submit" name="ctl00$btnCancelWarning" value="" onclick="javascript:cancelPage();return ValidNavigation();WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$btnCancelWarning&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="ctl00_btnCancelWarning" class="blankbluebutton">
+                </span>
+            </div>
+        
+</div></div><div data-act-control-type="modalPopupBackground" id="modalSave_backgroundElement" class="modalBackground" style="display: none; position: fixed; left: 0px; top: 0px; z-index: 10000; width: 1197px; height: 3161px;"></div><div id="modalExitWarning_foregroundElement" style="display: none; position: fixed; z-index: 1001; left: 598px; top: 150px;"><div id="ctl00_pnlExitWarning" class="modal-content" style="width:625px; padding:20px 20px; display:none;">
+	
+            <div style="font-size:11px; padding-bottom:30px; text-align:center;">            
+                <span id="ctl00_lblExitWarning" class="tooltip_text" onmousemove="widetip=false; tip='ניסית לעבור לעמוד מחוץ לטופס הבקשה שלך. על מנת לאחזר את טופס הבקשה שוב, עליך להכניס את קוד הזיהוי של טופס זה.'; delayToolTip(event,tip,widetip,0,0);return false" onmouseout="hideToolTip()">You are attempting to navigate to a page outside your DS-160 application.  You will need your Application ID to retrieve this DS-160.</span>
+            </div>
+            <div>
+                
+                
+                
+                <table style="margin-left:auto; margin-right:auto"><tbody><tr><td>
+                    <span class="tooltip_text" onmouseover="widetip=false; tip='יציאה'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                                                        
+                            <input name="ctl00$btnClientExit" type="button" id="ctl00_btnClientExit" class="blankbluebutton" onclick="javascript:gotoPage();" value="">                        
+                    </span>
+                </td>
+                <td style="width:30px">
+                </td>
+                <td>
+                    <span class="tooltip_text" onmouseover="widetip=false; tip='ביטול: הישאר באותו דף'; delayToolTip(event,tip,widetip,0,-30);return false" onmouseout="hideToolTip()">
+                            <input type="submit" name="ctl00$btnCancelExitWarning" value="" onclick="javascript:cancelPage();return ValidNavigation();" id="ctl00_btnCancelExitWarning" class="blankbluebutton">
+                    </span>
+                </td></tr></tbody></table>
+                
+                
+            </div>
+        
+</div></div><div data-act-control-type="modalPopupBackground" id="modalExitWarning_backgroundElement" class="modalBackground" style="display: none; position: fixed; left: 0px; top: 0px; z-index: 10000; width: 1197px; height: 3161px;"></div><span style="display: none !important;"><input type="hidden" name="__LASTFOCUS" id="__LASTFOCUS" value=""></span><span style="display: none !important;"><input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value=""></span><span style="display: none !important;"><input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value=""></span><span style="display: none !important;"><input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value=""></span><span style="display: none !important;"><input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value=""></span><span style="display: none !important;"><input type="hidden" name="__SCROLLPOSITIONX" id="__SCROLLPOSITIONX" value=""></span><span style="display: none !important;"><input type="hidden" name="__SCROLLPOSITIONY" id="__SCROLLPOSITIONY" value=""></span><span style="display: none !important;"><input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value=""></span></form>
+
+
+</body></html>

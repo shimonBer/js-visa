@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process'
 
 import {
   extractApplicationIdFromLog,
+  logShowsPersonal1Saved,
   lookupApplicationId,
   parseApplicationId,
   peekApplicationId,
@@ -15,6 +16,7 @@ import {
 
 export {
   extractApplicationIdFromLog,
+  logShowsPersonal1Saved,
   lookupApplicationId,
   parseApplicationId,
   peekApplicationId,

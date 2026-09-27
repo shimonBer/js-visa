@@ -109,6 +109,110 @@ export const DS160_FIELDS = {
     spouse_country_of_birth: { ref: 'ddlSpousePOBCountry',      type: 'country', label: 'Country/Region',              aliases: ['Spouse Country of Birth'] },
     spouse_address_type:     { ref: 'ddlSpouseAddressType',     type: 'enum', label: "Spouse's Address",               aliases: ['Spouse Address'], options: ['Same as Home Address', 'Same as Mailing Address', 'Same as U.S. Contact Address', 'Do Not Know', 'Other (Specify Address)'] },
   },
+
+  travel: {
+    purpose_of_trip:           { ref: 'ddlPurposeOfTrip',       type: 'enum', label: 'Purpose of Trip to the U.S.',    aliases: ['Purpose of Trip', 'Purpose of Trip / Visa Class', 'Visa Class'] },
+    visa_class:                { ref: 'ddlOtherPurpose',        type: 'enum', label: 'Specify',                        aliases: ['Specify', 'B1/B2'], afterPostback: true },
+    specific_travel_plans:     { ref: 'rblSpecificTravel',      type: 'bool', label: 'Have you made specific travel plans?', aliases: ['Specific Travel Plans'] },
+    intended_date_of_arrival:  { ref: 'TRAVEL_DTE',             type: 'date', label: 'Intended Date of Arrival',       aliases: ['Intended Date of Arrival'], afterPostback: true },
+    date_of_arrival:           { ref: 'ARRIVAL_US_DTE',         type: 'date', label: 'Date of Arrival in U.S.',        aliases: ['Date of Arrival in U.S.', 'intended_date_of_arrival'] },
+    date_of_departure:         { ref: 'DEPARTURE_US_DTE',       type: 'date', label: 'Date of Departure from U.S.',    aliases: ['Date of Departure from U.S.'] },
+    intended_length_of_stay:   { ref: 'tbxTRAVEL_LOS',          type: 'text', label: 'Intended Length of Stay in U.S.', aliases: ['Intended Length of Stay', 'Length of Stay'], afterPostback: true },
+    stay_unit:                 { ref: 'ddlTRAVEL_LOS_CD',       type: 'enum', label: 'Intended Length of Stay in U.S.', aliases: ['Intended Length of Stay', 'intended_length_of_stay'], afterPostback: true },
+    us_stay_address_line1:     { ref: 'tbxStreetAddress1',      type: 'text', label: 'Street Address (Line 1)',        aliases: ['U.S. Street Address', 'Stay Address'] },
+    us_stay_address_line2:     { ref: 'tbxStreetAddress2',      type: 'text', label: 'Street Address (Line 2)' },
+    us_stay_city:              { ref: 'tbxCity',                type: 'text', label: 'City',                           aliases: ['City of Stay'] },
+    us_stay_state:             { ref: 'ddlTravelState',         type: 'country', label: 'State' },
+    us_stay_zip_code:          { ref: 'tbZIPCode',              type: 'text', label: 'ZIP Code' },
+    trip_payer:                { ref: 'ddlWhoIsPaying',         type: 'enum', label: 'Person/Entity Paying for Your Trip', aliases: ['Who is paying', 'Payer'] },
+  },
+
+  companions: {
+    traveling_with_others:       { ref: 'rblOtherPersonsTravelingWithYou', type: 'bool', label: 'Are there other persons traveling with you?', aliases: ['Traveling with others'] },
+    traveling_as_part_of_group:  { ref: 'rblGroupTravel',                   type: 'bool', label: 'Are you traveling as part of a group or organization?', aliases: ['Traveling as part of a group'] },
+    group_name:                  { ref: 'tbxGroupName',                     type: 'text', label: 'Group Name' },
+  },
+
+  prev_travel: {
+    previous_us_travel:  { ref: 'rblPREV_US_TRAVEL_IND', type: 'bool', label: 'Have you ever been in the U.S.?', aliases: ['Previous U.S. Travel'] },
+    previous_us_visa:    { ref: 'rblPREV_VISA_IND',      type: 'bool', label: 'Have you ever been issued a U.S. Visa?', aliases: ['Previous U.S. Visa'] },
+    us_visa_refusal_or_admission_refusal_or_withdrawal: { ref: 'rblPREV_VISA_REFUSED_IND', type: 'bool', label: 'Have you ever been refused a U.S. Visa, or been refused admission to the United States, or withdrawn your application for admission at the port of entry?' },
+    immigrant_petition_filed: { ref: 'rblIV_PETITION_IND', type: 'bool', label: 'Has anyone ever filed an immigrant petition on your behalf with the United States Citizenship and Immigration Services?' },
+  },
+
+  work_present: {
+    primary_occupation: { ref: 'ddlPresentOccupation', type: 'enum', label: 'Primary Occupation', aliases: ['Occupation'] },
+    employer_or_school_name: { ref: 'tbxEmpSchName', type: 'text', label: 'Present Employer or School Name' },
+    street_address_line1: { ref: 'tbxEmpSchAddr1', type: 'text', label: 'Street Address (Line 1)' },
+    street_address_line2: { ref: 'tbxEmpSchAddr2', type: 'text', label: 'Street Address (Line 2)' },
+    city: { ref: 'tbxEmpSchCity', type: 'text', label: 'City' },
+    state_province: { ref: 'tbxWORK_EDUC_ADDR_STATE', type: 'text', label: 'State/Province' },
+    postal_code: { ref: 'tbxWORK_EDUC_ADDR_POSTAL_CD', type: 'text', label: 'Postal Zone/ZIP Code' },
+    phone: { ref: 'tbxWORK_EDUC_TEL', type: 'text', label: 'Phone Number' },
+    country: { ref: 'ddlEmpSchCountry', type: 'country', label: 'Country/Region' },
+  },
+
+  work_previous: {
+    previously_employed: { ref: 'rblPreviouslyEmployed', type: 'bool', label: 'Were you previously employed?', aliases: ['Have you previously been employed?'] },
+    employer_name: { ref: 'tbxEmpName', type: 'text', label: 'Employer Name', aliases: ['Employer Name'], afterPostback: true },
+    job_title: { ref: 'tbxEmpJobTitle', type: 'text', label: 'Job Title', afterPostback: true },
+    employer_street: { ref: 'tbxEmpAddr1', type: 'text', label: 'Street Address (Line 1)', aliases: ['Employer Address'], afterPostback: true },
+    employer_city: { ref: 'tbxEmpCity', type: 'text', label: 'Employer City', aliases: ['Employer City'], afterPostback: true },
+    employer_state: { ref: 'tbxPREV_EMPL_ADDR_STATE', type: 'text', label: 'State/Province', aliases: ['State / Province'], afterPostback: true },
+    employer_postal: { ref: 'tbxPREV_EMPL_ADDR_POSTAL_CD', type: 'text', label: 'Postal Zone/ZIP Code', aliases: ['ZIP Code'], afterPostback: true },
+    employer_country: { ref: 'ddlEmpCountry', type: 'country', label: 'Country/Region', aliases: ['Country / Region'], afterPostback: true },
+    employer_phone: { ref: 'tbxEmpPhone', type: 'text', label: 'Phone Number', aliases: ['Employer Phone Number'], afterPostback: true },
+    employment_from: { ref: 'EmpDateFrom', type: 'date', label: 'Employment Date From', aliases: ['Start Date', 'Employment Date From'], afterPostback: true },
+    employment_to: { ref: 'EmpDateTo', type: 'date', label: 'Employment Date To', aliases: ['End Date', 'Employment Date To'], afterPostback: true },
+    attended_secondary_or_higher_education: { ref: 'rblOtherEduc', type: 'bool', label: 'Have you attended any educational institutions at a secondary level or above?' },
+    school_name: { ref: 'tbxSchoolName', type: 'text', label: 'Name of Institution', aliases: ['School / Institution Name'] },
+    school_street: { ref: 'tbxSchoolAddr1', type: 'text', label: 'Street Address (Line 1)', aliases: ['Address'] },
+    school_city: { ref: 'tbxSchoolCity', type: 'text', label: 'Education City', aliases: ['City'] },
+    school_state: { ref: 'tbxEDUC_INST_ADDR_STATE', type: 'text', label: 'State/Province', aliases: ['State / Province'] },
+    school_postal: { ref: 'tbxEDUC_INST_POSTAL_CD', type: 'text', label: 'Postal Zone/ZIP Code', aliases: ['ZIP Code'] },
+    school_country: { ref: 'ddlSchoolCountry', type: 'country', label: 'Country/Region', aliases: ['Country / Region'] },
+    school_course: { ref: 'tbxSchoolCourseOfStudy', type: 'text', label: 'Course of Study' },
+    school_from: { ref: 'SchoolFrom', type: 'date', label: 'Attendance From' },
+    school_to: { ref: 'SchoolTo', type: 'date', label: 'Attendance To' },
+  },
+
+  work_additional: {
+    clan_or_tribe_member: { ref: 'rblCLAN_TRIBE_IND', type: 'bool', label: 'Do you belong to a clan or tribe?' },
+    languages: { ref: 'tbxLANGUAGE_NAME', type: 'text', label: 'Language Name', aliases: ['Languages spoken', 'Language Name'] },
+    countries_visited_indicator: {
+      ref: 'rblCOUNTRIES_VISITED_IND',
+      type: 'bool',
+      label: 'Have you traveled to any countries/regions within the last five years?',
+      aliases: [
+        'Countries visited in the last 5 years',
+        'Countries visited in the last five years',
+        'countries_visited_last_five_years',
+      ],
+    },
+    countries_visited: {
+      ref: 'ddlCOUNTRIES_VISITED',
+      type: 'country',
+      label: 'Country/Region',
+      aliases: ['Countries visited in the last 5 years', 'countries_visited_last_five_years'],
+    },
+    professional_social_charitable_organization_member: { ref: 'rblORGANIZATION_IND', type: 'bool', label: 'Have you belonged to, contributed to, or worked for any professional, social, or charitable organization?' },
+    specialized_skills_or_training: { ref: 'rblSPECIALIZED_SKILLS_IND', type: 'bool', label: 'Do you have any specialized skills or training, such as firearms, explosives, nuclear, biological, or chemical experience?' },
+    specialized_skills_explanation: {
+      ref: 'tbxSPECIALIZED_SKILLS_EXPL',
+      type: 'text',
+      label: 'Specialized Skills Explanation',
+      aliases: ['Full Description'],
+      afterPostback: true,
+    },
+    military_service: { ref: 'rblMILITARY_SERVICE_IND', type: 'bool', label: 'Have you ever served in the military?', aliases: ['Have you served in the military?'] },
+    military_country: { ref: 'ddlMILITARY_SVC_CNTRY', type: 'country', label: 'Name of Country/Region', aliases: ['Country'] },
+    military_branch: { ref: 'tbxMILITARY_SVC_BRANCH', type: 'text', label: 'Branch of Service', aliases: ['branch_of_service'] },
+    military_rank: { ref: 'tbxMILITARY_SVC_RANK', type: 'text', label: 'Rank/Position', aliases: ['Rank / Position', 'rank_position'] },
+    military_specialty: { ref: 'tbxMILITARY_SVC_SPECIALTY', type: 'text', label: 'Military Specialty' },
+    military_from: { ref: 'MILITARY_SVC_FROM', type: 'date', label: 'Date of Service From', aliases: ['Service From', 'service_from'] },
+    military_to: { ref: 'MILITARY_SVC_TO', type: 'date', label: 'Date of Service To', aliases: ['Service To', 'service_to'] },
+    paramilitary_or_rebel_group_involvement: { ref: 'rblINSURGENT_ORG_IND', type: 'bool', label: 'Have you ever served in, been a member of, or been involved with a paramilitary unit, vigilante unit, rebel group, guerrilla group, or insurgent organization?' },
+  },
 }
 
 /**
@@ -120,6 +224,13 @@ export const DS160_UNKNOWN_CHECKBOXES = {
   family: {
     father_date_of_birth: 'cbxFATHER_DOB_UNK_IND',
     mother_date_of_birth: 'cbxMOTHER_DOB_UNK_IND',
+  },
+  // One CEAC checkbox covers both contact-person name inputs. The inventory
+  // skips pure *NA gating checkboxes, so match-page also special-cases this
+  // pair via dnaBelongsToField; this mapping documents the stand-in.
+  contact: {
+    contact_surnames: 'cbxUS_POC_NAME_NA',
+    contact_given_names: 'cbxUS_POC_NAME_NA',
   },
 }
 
@@ -201,8 +312,7 @@ export function isMarkerValue(value) {
 
 /** Page sections the answer sheet carries that the registry does not yet cover. */
 const FREEFORM_SECTIONS = [
-  'travel', 'companions', 'prev_travel',
-  'work_present', 'work_previous', 'work_additional', 'security',
+  'security',
 ]
 
 /**

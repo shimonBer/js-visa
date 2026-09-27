@@ -10,8 +10,35 @@ import { answerSheetSchema, fieldCatalogue } from '../autofill/ds160-fields.js'
 import { buildTranslationPdf } from '../lib/buildTranslationPdf.js'
 import { resolveMissingInstitutionAddresses } from '../lib/institutionAddresses.js'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
+import {
+  normalizeCeacNameFieldsInAnswerSheet,
+  normalizeCeacNameFieldsInSourceData,
+  normalizeCeacNamesInTranslatedText,
+} from '../lib/ceacNameFormatting.js'
+import {
+  normalizePhoneFieldsInAnswerSheet,
+  normalizePhoneFieldsInSourceData,
+  normalizePhoneNumbersInTranslatedText,
+} from '../lib/phoneFormatting.js'
 import { stripParentheticalAliasesFromPersonNames } from '../lib/personNameFormatting.js'
 import { fetchS3FormDocumentBytes } from '../lib/s3FormDocuments.js'
+import {
+  applyMilitarySpecializedSkillsToAnswerSheet,
+  applyMilitarySpecializedSkillsToSourceData,
+  applyMilitarySpecializedSkillsToTranslatedText,
+} from '../lib/militarySpecializedSkills.js'
+import {
+  splitPackedAccommodationInSourceData,
+  splitPackedUsStayInAnswerSheet,
+  splitPackedUsStayInTranslatedText,
+} from '../lib/usStayAddress.js'
+
+export {
+  DEFAULT_MILITARY_SPECIALIZED_SKILLS,
+  applyMilitarySpecializedSkillsToAnswerSheet,
+  applyMilitarySpecializedSkillsToSourceData,
+  applyMilitarySpecializedSkillsToTranslatedText,
+} from '../lib/militarySpecializedSkills.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_TIMEOUT_MS = 180_000
@@ -230,6 +257,33 @@ HaRav Levi 25, Bat Yam, Israel
 Do NOT include ZIP/postal codes unless specifically required.
 
 ━━━━━━━━━━━━━━━━━━━━
+CEAC NAME RULES
+━━━━━━━━━━━━━━━━━━━━
+
+Employer Name, Present Employer or School Name, School / Institution Name,
+Organization Name, Group Name, and Job Title may only use A-Z, 0-9, hyphen (-),
+apostrophe ('), ampersand (&), and single spaces. CEAC rejects periods, commas,
+slashes, and parentheses — "Elbit Systems Ltd." fails; write "Elbit Systems Ltd".
+
+Strip trailing company punctuation (Ltd. / Inc. / Co. / LLC. → Ltd / Inc / Co / LLC).
+Never keep a period in these name fields.
+
+━━━━━━━━━━━━━━━━━━━━
+PHONE NUMBER RULES
+━━━━━━━━━━━━━━━━━━━━
+
+Every phone number value must contain digits only — no plus signs, spaces, hyphens, parentheses, or other punctuation.
+
+Examples:
+  +972 538055645 → 972538055645
+  +1 (347) 319-7820 → 13473197820
+  03-502-8211 → 035028211
+
+Apply this to Primary Phone Number, Secondary Phone Number, Work Phone Number, Additional Phone Number, U.S. contact Phone Number, Employer Phone Number, trip-payer Telephone Number, and any other telephone field.
+
+Do not change Yes/No answers to questions that mention phones.
+
+━━━━━━━━━━━━━━━━━━━━
 ADDRESS COMPLETION RULES
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -406,12 +460,24 @@ PERSONAL INFORMATION 2
   becomes "3 months"). If either field is empty or absent → ❗ MISSING
 
 * Address Where You Will Stay in the U.S.:
-  Rule: read the following fields directly — do NOT parse or infer from a single text blob.
-  Street Address (Line 1): accommodationStreet1
+  Rule: these are four separate fields. Street Address (Line 1) is only the
+  building number and street name. Never leave city, state, ZIP, or
+  "United States" on that line.
+  If accommodationStreet1 is a whole address, split it. A line such as
+  "1217 Bay Park Pl Far Rockaway, NY 11691 United States" becomes:
+  Street Address (Line 1): 1217 Bay Park Pl
+  City: Far Rockaway
+  State: NY
+  ZIP Code: 11691
+  The street ends at a suffix (St, Ave, Blvd, Rd, Dr, Ln, Ct, Pl, Way, Place,
+  Street, Avenue, Boulevard, Road, Drive, Lane, Court). Words after that
+  suffix, and before ", ST ZIP", are the city. Use accommodationCity,
+  accommodationState, and accommodationZip when they are already filled,
+  and still strip those parts off the street line.
   Street Address (Line 2): accommodationStreet2 (Optional — N/A if empty)
-  City: accommodationCity (Optional — N/A if empty)
-  State: accommodationState (Optional — N/A if empty)
-  ZIP Code: accommodationZip (Optional — N/A if empty)
+  City: accommodationCity (the city from the split when that field is empty)
+  State: accommodationState (the state from the split when that field is empty)
+  ZIP Code: accommodationZip (the ZIP from the split when that field is empty)
 
 
 PERSON/ENTITY PAYING FOR TRIP
@@ -550,7 +616,7 @@ HOME ADDRESS
 
 PHONE
 
-* Primary Phone Number: combine phoneCountryCode + phoneNumber
+* Primary Phone Number: combine phoneCountryCode + phoneNumber as digits only (example: "+972 538055645" → "972538055645")
 * Secondary Phone Number: secondaryPhone — if empty → N/A
   Rule: NOT mandatory — if absent or empty → output: N/A (never output ❗ MISSING for this field)
 * Work Phone Number (can check Does not apply)
@@ -661,14 +727,21 @@ The intake UI enforces either a complete contact-person name or an organization 
 Never infer these values from travel accommodation, the applicant's own contact details,
 UI examples, placeholders, or generic hotel information.
 
+CEAC (the live DS-160) requires one side or the other — not a blank name next to an organization.
+If Organization Name is a real value (for example HOTELS) and there is no real contact person,
+Contact Person Surname AND Given Name MUST be DO NOT KNOW. That maps to the form's
+"Do Not Know" checkbox beside Contact Person. Never leave those name fields blank and
+never type the words "DO NOT KNOW" as if they were a person's name.
+If a complete contact-person name is supplied and there is no organization, Organization Name MUST be DO NOT KNOW.
+
 * Contact Person Surname
-  Rule: use contactSurnames. If an organization is supplied instead and no person is supplied → DO NOT KNOW.
+  Rule: use contactSurnames. If contactNameDoNotKnow is true, OR an organization is supplied instead and no person is supplied → DO NOT KNOW.
   Otherwise, if absent → ❗ MISSING
 * Contact Person Given Name
-  Rule: use contactGivenNames. If an organization is supplied instead and no person is supplied → DO NOT KNOW.
+  Rule: use contactGivenNames. If contactNameDoNotKnow is true, OR an organization is supplied instead and no person is supplied → DO NOT KNOW.
   Otherwise, if absent → ❗ MISSING
 * Organization Name
-  Rule: use contactOrganization. If a complete contact-person name is supplied instead → DO NOT KNOW.
+  Rule: use contactOrganization. If contactOrganizationDoNotKnow is true, OR a complete contact-person name is supplied instead → DO NOT KNOW.
   Otherwise, if absent → ❗ MISSING
 * Relationship to You: contactRelationship; if absent → ❗ MISSING
 
@@ -965,11 +1038,13 @@ ORGANIZATIONS
 SPECIALIZED SKILLS
 
 * Do you possess specialized skills or training involving firearms, explosives, nuclear, biological, or chemical experience? YES/NO
-  Rule: use hasSpecializedSkills field (yes → YES, no → NO); default NO if absent
+  Rule:
+  - If servedInMilitary is yes, OR militaryService has any completed row (branch, rank, or dates) → YES
+    even when hasSpecializedSkills is no or absent. IDF / any military service is firearms training.
+  - Else use hasSpecializedSkills (yes → YES, no → NO); default NO if absent
 
   * IF YES:
-
-    * Full Description: specializedSkillsDescription — if absent → N/A
+    * Full Description: specializedSkillsDescription if present and not N/A; otherwise FIREARMS MILITARY TRAINING
 
 
 MILITARY SERVICE
@@ -1272,15 +1347,56 @@ function jsonResponse(res, status, body) {
   res.end(JSON.stringify(body))
 }
 
+function isContactUnknownToken(value) {
+  return /^(?:n\/?a|do(?:es)?\s+not\s+know|unknown|none|does\s+not\s+apply)$/i.test(
+    String(value || '').trim(),
+  )
+}
+
+function hasRealUsContactPerson(data) {
+  if (data.contactNameDoNotKnow) return false
+  const surnames = String(data.contactSurnames || '').trim()
+  const given = String(data.contactGivenNames || '').trim()
+  if (!surnames || !given) return false
+  return !isContactUnknownToken(surnames) && !isContactUnknownToken(given)
+}
+
+function hasRealUsContactOrganization(data) {
+  if (data.contactOrganizationDoNotKnow) return false
+  const org = String(data.contactOrganization || '').trim()
+  if (!org) return false
+  return !isContactUnknownToken(org)
+}
+
+/**
+ * CEAC accepts a contact person or an organization, not a filled organization
+ * with blank person names. Mirror that in the JSON the translator sees.
+ */
+function normalizeUsContactEitherOr(data) {
+  const person = hasRealUsContactPerson(data)
+  const organization = hasRealUsContactOrganization(data)
+  if (organization && !person) {
+    data.contactNameDoNotKnow = true
+    data.contactSurnames = ''
+    data.contactGivenNames = ''
+  } else if (person && !organization) {
+    data.contactOrganizationDoNotKnow = true
+    data.contactOrganization = ''
+  }
+  return data
+}
+
 export function normalizeDs160SourceData(source) {
-  const data = { ...source }
+  const data = applyMilitarySpecializedSkillsToSourceData({ ...source })
   const isIsraeliPassport = [data.passportIssuingCountry, data.nationality]
     .some((value) => /^israel(?:i)?$/i.test(String(value || '').trim()))
   if (isIsraeliPassport) {
     data.passportBookNumber = ''
     data.passportBookNumberDoesNotApply = true
   }
-  return data
+  return splitPackedAccommodationInSourceData(normalizeUsContactEitherOr(
+    normalizeCeacNameFieldsInSourceData(normalizePhoneFieldsInSourceData(data)),
+  ))
 }
 
 /**
@@ -1441,6 +1557,7 @@ Rules for every section:
 - null for N/A / DO NOT KNOW / MISSING fields.
 - Copy values as written; do not translate place names into other spellings or
   expand abbreviations.
+- Phone numbers must be digits only: strip +, spaces, hyphens, and parentheses.
 
 Output ONLY valid JSON with no extra explanation.`
 
@@ -1525,14 +1642,28 @@ Output ONLY valid JSON with no extra explanation.`
     if (!translatedContent || typeof translatedContent !== 'string') {
       return jsonResponse(res, 502, { error: 'Missing translation text from OpenAI' })
     }
-    const translated = stripParentheticalAliasesFromPersonNames(translatedContent)
+    const translated = splitPackedUsStayInTranslatedText(
+      applyMilitarySpecializedSkillsToTranslatedText(
+        normalizeCeacNamesInTranslatedText(
+          normalizePhoneNumbersInTranslatedText(
+            stripParentheticalAliasesFromPersonNames(translatedContent),
+          ),
+        ),
+      ),
+    )
 
     // ── Extract a machine-readable answerSheet from the review text ───────────
     // This is done in a small, cheap second call so the main translation quality
     // is not affected by the JSON output requirement. Falls back gracefully.
     let answerSheet = null
     try {
-      answerSheet = await extractAnswerSheet(translated, apiKey)
+      answerSheet = splitPackedUsStayInAnswerSheet(
+        applyMilitarySpecializedSkillsToAnswerSheet(
+          normalizeCeacNameFieldsInAnswerSheet(
+            normalizePhoneFieldsInAnswerSheet(await extractAnswerSheet(translated, apiKey)),
+          ),
+        ),
+      )
     } catch (asErr) {
       console.warn('[translate-form] answerSheet extraction skipped:', asErr.message)
     }

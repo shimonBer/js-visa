@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>DS-160 Fill</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <h1>DS-160 Fill</h1>
+  <p class="hint">Pass Cloudflare yourself, then Fill all pages. Close this popup — filling continues on the CEAC tab. If Chrome asks “Leave site?”, click Leave once; later pages should not ask.</p>
+  <label>Applicant file
+    <input id="file" type="file" accept=".txt,.json,text/plain" />
+  </label>
+  <p id="fileStatus" class="status">No file loaded</p>
+  <p id="bridgeStatus" class="status">Bridge: checking…</p>
+  <div class="row">
+    <button id="dryRun">Plan this page</button>
+    <button id="fill" class="primary">Fill all pages</button>
+  </div>
+  <button id="stop" class="stop">Stop</button>
+  <pre id="log"></pre>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

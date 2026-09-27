@@ -263,7 +263,7 @@ export const COPYABLE_SECTIONS = {
 
   security: {
     id: 'security',
-    label: 'Security and Background',
+    label: 'ביטחון ורקע',
     fields: [
       'arrestedOrConvicted',
       'arrestedOrConvictedExplanation',
