@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import ErrorNotice from './ErrorNotice.jsx'
 import AutofillMonitoring from './AutofillMonitoring.jsx'
 import DS160IsraelForm from './DS160IsraelForm.jsx'
 import FormLanding from './FormLanding.jsx'
@@ -38,6 +39,7 @@ export default function App() {
   const [formOpen, setFormOpen] = useState(false)
   const [monitorOpen, setMonitorOpen] = useState(false)
   const [openingPathname, setOpeningPathname] = useState('')
+  const [portalError, setPortalError] = useState('')
   const [guestToken, setGuestToken] = useState(null)
   const didInitRef = useRef(false)
   const unsavedCheckRef = useRef(() => false)
@@ -106,8 +108,9 @@ export default function App() {
           } else {
             applyLoadedForm(null, null, formId)
           }
-        } catch {
+        } catch (e) {
           setFormOpen(false)
+          setPortalError(e?.message || 'טעינת הטופס נכשלה')
         } finally {
           setOpeningPathname('')
         }
@@ -218,6 +221,7 @@ export default function App() {
 
   return (
     <>
+      <ErrorNotice message={portalError} onClose={() => setPortalError('')} />
       <SessionExpiryGuard onExpiredLogout={handleLogout} />
       <div dir="rtl" className="min-h-screen bg-gray-100 font-sans md:flex">
         <aside

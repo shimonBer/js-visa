@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ErrorNotice from './ErrorNotice.jsx'
 import { setToken } from './lib/auth.js'
 
 export default function LoginPage({ onLogin }) {
@@ -33,6 +34,7 @@ export default function LoginPage({ onLogin }) {
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 flex items-center justify-center px-4 font-sans">
+      <ErrorNotice message={error} onClose={() => setError('')} />
       <div className="w-full max-w-sm bg-white shadow-xl rounded-xl p-8 space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900">כניסה למערכת</h1>
@@ -72,12 +74,6 @@ export default function LoginPage({ onLogin }) {
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
-
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2" role="alert">
-              {error}
-            </p>
-          )}
 
           <button
             type="submit"

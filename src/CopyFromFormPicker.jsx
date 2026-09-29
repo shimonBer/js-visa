@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import ErrorNotice from './ErrorNotice.jsx'
 import Fuse from 'fuse.js'
 import { listFormBlobsFromApi, fetchFormBlobPayload } from './lib/formBlob.js'
 import {
@@ -148,6 +149,13 @@ export default function CopyFromFormPicker({
         if (e.target === e.currentTarget) onClose()
       }}
     >
+      <ErrorNotice
+        message={listError || previewError}
+        onClose={() => {
+          if (listError) setListError('')
+          else setPreviewError('')
+        }}
+      />
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 flex flex-col gap-4 max-h-[90vh]" dir="rtl">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -185,10 +193,6 @@ export default function CopyFromFormPicker({
           />
         </div>
 
-        {listError && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{listError}</p>
-        )}
-
         <div className="border border-gray-200 rounded-lg overflow-hidden min-h-[8rem] max-h-48 overflow-y-auto">
           {loading ? (
             <p className="text-sm text-gray-500 p-3">טוען טפסים…</p>
@@ -222,7 +226,6 @@ export default function CopyFromFormPicker({
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-1">
             <p className="text-xs font-semibold text-gray-600">תצוגה מקדימה</p>
             {previewLoading && <p className="text-sm text-gray-500">טוען…</p>}
-            {previewError && <p className="text-sm text-red-600">{previewError}</p>}
             {preview && (
               <ul className="text-sm text-gray-800 space-y-0.5">
                 {preview.lines.map((line, i) => (

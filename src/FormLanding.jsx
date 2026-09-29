@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import ErrorNotice from './ErrorNotice.jsx'
 import Fuse from 'fuse.js'
 import { listFormBlobsFromApi, fetchFormBlobPayload, deleteFormFromCloud } from './lib/formBlob.js'
 import { authHeaders } from './lib/auth.js'
@@ -182,9 +183,25 @@ export default function FormLanding({
   const safePage = Math.min(currentPage, totalPages)
   const pagedList = activeList.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
   const busy = !!deletingPathname || !!openingPathname
+  const guestFailure = Object.entries(guestPanels).find(([, panel]) => panel?.error)
 
   return (
     <div dir="rtl" className="flex h-full min-h-0 flex-col bg-white font-sans text-right">
+      <ErrorNotice
+        message={error || guestFailure?.[1]?.error || ''}
+        onClose={() => {
+          if (error) {
+            setError('')
+            return
+          }
+          if (!guestFailure) return
+          const pathname = guestFailure[0]
+          setGuestPanels((prev) => ({
+            ...prev,
+            [pathname]: { ...prev[pathname], error: '' },
+          }))
+        }}
+      />
       <div className="shrink-0 space-y-3 border-b border-gray-200 p-4">
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -279,11 +296,6 @@ export default function FormLanding({
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {loading && <p className="text-sm text-gray-500">טוען רשימה…</p>}
-        {error && (
-          <p className="mb-3 text-sm text-red-600" role="alert">
-            {error}
-          </p>
-        )}
         {notice && (
           <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="status">
             {notice}
@@ -392,9 +404,6 @@ export default function FormLanding({
 
                 {panel && (
                   <div className="space-y-1.5 rounded-md border border-blue-100 bg-blue-50 px-2.5 py-2 text-sm">
-                    {panel.error && (
-                      <p className="text-red-600">{panel.error}</p>
-                    )}
                     {panel.guestLink && (
                       <>
                         <p className="text-xs font-medium text-blue-800">

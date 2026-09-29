@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import ErrorNotice from './ErrorNotice.jsx'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { saveFormDraftToBrowser, loadFormDraftFromBrowser } from './lib/formStorage.js'
 import { postFormToN8n } from './lib/n8nWebhook.js'
@@ -3076,12 +3077,46 @@ export default function DS160IsraelForm({
     })
   }
 
+  const foreignPassportFailure = Object.entries(foreignPassportOcr).find(
+    ([, value]) => value?.status === 'error' && value.message,
+  )
+  const activeFailure = translateUi.error
+    ? { message: translateUi.error, dismiss: () => setTranslateUi((s) => ({ ...s, error: '' })) }
+    : asyncFlow.phase === 'error' && asyncFlow.message
+      ? { message: asyncFlow.message, dismiss: () => setAsyncFlow({ phase: 'idle', message: '' }) }
+      : passportOcr.status === 'error' && passportOcr.message
+        ? { message: passportOcr.message, dismiss: () => setPassportOcr((s) => ({ ...s, message: '' })) }
+        : foreignPassportFailure
+          ? {
+              message: foreignPassportFailure[1].message,
+              dismiss: () => setForeignPassportOcr((prev) => ({
+                ...prev,
+                [foreignPassportFailure[0]]: { ...prev[foreignPassportFailure[0]], message: '' },
+              })),
+            }
+          : socialSecurityOcr.status === 'error' && socialSecurityOcr.message
+            ? { message: socialSecurityOcr.message, dismiss: () => setSocialSecurityOcr((s) => ({ ...s, message: '' })) }
+            : usLicenseOcr.status === 'error' && usLicenseOcr.message
+              ? { message: usLicenseOcr.message, dismiss: () => setUsLicenseOcr((s) => ({ ...s, message: '' })) }
+              : previousVisaOcr.status === 'error' && previousVisaOcr.message
+                ? { message: previousVisaOcr.message, dismiss: () => setPreviousVisaOcr((s) => ({ ...s, message: '' })) }
+                : i94State.status === 'error' && i94State.error
+                  ? { message: i94State.error, dismiss: () => setI94State((s) => ({ ...s, error: '' })) }
+                  : mondayUi.searchError
+                    ? { message: mondayUi.searchError, dismiss: () => setMondayUi((s) => ({ ...s, searchError: '' })) }
+                    : mondayUi.uploadError
+                      ? { message: mondayUi.uploadError, dismiss: () => setMondayUi((s) => ({ ...s, uploadError: '' })) }
+                      : exitSaveError
+                        ? { message: exitSaveError, dismiss: () => setExitSaveError('') }
+                        : null
+
   const contactSurnamesError = getFieldError('contactSurnames')
   const contactGivenNamesError = getFieldError('contactGivenNames')
   const contactOrganizationError = getFieldError('contactOrganization')
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-100 font-sans text-right pb-10 lg:pl-56">
+      <ErrorNotice message={activeFailure?.message || ''} onClose={() => activeFailure?.dismiss()} />
       <LoadingOverlay
         message={
           translateUi.loading ? 'מתרגם את הטופס… עשוי לקחת עד דקה' :
@@ -3198,7 +3233,6 @@ export default function DS160IsraelForm({
                     גרירה או בחירת קובץ — זיהוי OCR אוטומטי: שם באנגלית, תאריך לידה, מספר דרכון, מדינת הנפקה, מין (MRZ), תעודת זהות אם מופיעה במסמך.
                   </p>
                   {passportOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה פרטי דרכון מהקובץ…</p>}
-                  {passportOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{passportOcr.message}</p>}
                   {passportOcr.status === 'idle' && passportOcr.message && <p className="text-sm text-green-700">{passportOcr.message}</p>}
                   <DocumentFileSlot
                     label="העלאת צילום דרכון"
@@ -3459,9 +3493,6 @@ export default function DS160IsraelForm({
                               />
                               {foreignPassportOcr[i]?.status === 'loading' && (
                                 <p className="text-sm text-blue-600 mt-1">מזהה מספר דרכון מהצילום…</p>
-                              )}
-                              {foreignPassportOcr[i]?.status === 'error' && (
-                                <p className="text-sm text-red-600 mt-1" role="alert">{foreignPassportOcr[i].message}</p>
                               )}
                               {foreignPassportOcr[i]?.status === 'idle' && foreignPassportOcr[i]?.message && (
                                 <p className="text-sm text-green-700 mt-1">{foreignPassportOcr[i].message}</p>
@@ -4214,10 +4245,9 @@ export default function DS160IsraelForm({
                         ✓ I-94
                       </span>
                     )}
-                    {i94State.status === 'error' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200" title={i94State.error}>
+                        {i94State.status === 'error' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200">
                         ✗ I-94
-                        {i94State.error?.includes('local') || i94State.error?.includes('LOCAL') ? ' (local only)' : ''}
                       </span>
                     )}
                     <button
@@ -4334,7 +4364,6 @@ export default function DS160IsraelForm({
                       <p className="text-xs text-gray-600">
                         נדרשים שם, תאריך לידה מלא, מספר דרכון ומדינת הנפקה באנגלית. הפעולה רצה בענן (Browser Use).
                       </p>
-                      {i94State.error && <p className="text-sm text-red-600" role="alert">{i94State.error}</p>}
                       {i94State.data && (
                         <div className="overflow-x-auto">
                           {!i94State.data.success && <p className="text-sm text-amber-800">לא הוחזרה היסטוריה (success=false).</p>}
@@ -4380,7 +4409,6 @@ export default function DS160IsraelForm({
                           העלאת צילום — זיהוי OCR אוטומטי: מספר רישיון ומדינת/מחוז ארה״ב (State, באנגלית).
                         </p>
                         {usLicenseOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה פרטי רישיון מהקובץ…</p>}
-                        {usLicenseOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{usLicenseOcr.message}</p>}
                         {usLicenseOcr.status === 'idle' && usLicenseOcr.message && <p className="text-sm text-green-700">{usLicenseOcr.message}</p>}
                         <DocumentFileSlot
                           label="רישיון נהיגה אמריקאי (צילום / PDF)"
@@ -4466,7 +4494,6 @@ export default function DS160IsraelForm({
                           העלאת צילום ויזה — זיהוי OCR אוטומטי: תאריך הנפקה ותאריך תפוגה (YYYY-MM-DD כשאפשר), בלי ניחוש.
                         </p>
                         {previousVisaOcr.status === 'loading' && <p className="text-sm text-blue-600">מזהה תאריכים מהקובץ…</p>}
-                        {previousVisaOcr.status === 'error' && <p className="text-sm text-red-600" role="alert">{previousVisaOcr.message}</p>}
                         {previousVisaOcr.status === 'idle' && previousVisaOcr.message && <p className="text-sm text-green-700">{previousVisaOcr.message}</p>}
                         <DocumentFileSlot
                           label="ויזה קודמת במידה ויש (צילום / PDF)"
@@ -5874,14 +5901,6 @@ export default function DS160IsraelForm({
             {asyncFlow.phase === 'idle' && asyncFlow.message && (
               <p className="text-sm text-green-700 max-w-xl text-right">{asyncFlow.message}</p>
             )}
-            {asyncFlow.phase === 'error' && (
-              <p className="text-sm text-red-600 max-w-xl text-right">{asyncFlow.message}</p>
-            )}
-            {translateUi.error && (
-              <p className="text-sm text-red-600 w-full text-right" role="alert">
-                {translateUi.error}
-              </p>
-            )}
             <div className="flex flex-wrap justify-end gap-4">
               {onExitToHome && (
                 <button
@@ -5946,9 +5965,6 @@ export default function DS160IsraelForm({
           <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 flex flex-col gap-4" dir="rtl">
             <h2 className="text-lg font-bold text-gray-800">שינויים שלא נשמרו</h2>
             <p className="text-sm text-gray-600">יש שינויים שלא נשמרו בטופס. האם ברצונך לשמור לפני היציאה?</p>
-            {exitSaveError && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{exitSaveError}</p>
-            )}
             <div className="flex flex-col gap-2">
               <button
                 disabled={exitSaving}
@@ -6206,12 +6222,6 @@ export default function DS160IsraelForm({
                       </button>
                     )}
 
-                    {mondayUi.searchError && (
-                      <p className="text-red-600 mt-1">{mondayUi.searchError}</p>
-                    )}
-                    {mondayUi.uploadError && (
-                      <p className="text-red-600 mt-1">{mondayUi.uploadError}</p>
-                    )}
                   </>
                 )}
               </div>

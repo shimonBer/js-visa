@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import ErrorNotice from './ErrorNotice.jsx'
+import { toHebrewError } from './lib/hebrewError.js'
 
 /**
  * Renders a single editable form field.
@@ -175,7 +177,7 @@ export default function MiniFormGuest({ guestToken }) {
         <div className="max-w-sm w-full bg-white shadow-lg rounded-xl p-8 text-center space-y-3">
           <p className="text-2xl">⚠️</p>
           <p className="font-semibold text-gray-800">הקישור אינו תקף</p>
-          <p className="text-sm text-gray-500">{loadError}</p>
+          <p className="text-sm text-gray-500">{toHebrewError(loadError)}</p>
         </div>
       </div>
     )
@@ -249,11 +251,7 @@ export default function MiniFormGuest({ guestToken }) {
               />
             ))}
 
-            {submitError && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                {submitError}
-              </p>
-            )}
+            <ErrorNotice message={submitError} onClose={() => setSubmitError('')} />
 
             <button
               type="submit"

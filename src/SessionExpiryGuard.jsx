@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import ErrorNotice from './ErrorNotice.jsx'
 import { getToken, setToken } from './lib/auth.js'
 import { authHeaders } from './lib/auth.js'
 
@@ -116,7 +117,7 @@ export default function SessionExpiryGuard({ onExpiredLogout }) {
           <p className="flex-1 text-sm text-amber-900 font-medium">
             הסשן עומד לפוג בקרוב — לחץ להארכה כדי לא לאבד עבודה
           </p>
-          {extendError && <span className="text-xs text-red-600">{extendError}</span>}
+          <ErrorNotice message={extendError} onClose={() => setExtendError('')} />
           <button
             onClick={handleExtend}
             disabled={extending}
@@ -156,9 +157,7 @@ export default function SessionExpiryGuard({ onExpiredLogout }) {
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-right focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
               />
             </div>
-            {loginError && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{loginError}</p>
-            )}
+            <ErrorNotice message={loginError} onClose={() => setLoginError('')} />
             <div className="flex gap-2">
               <button
                 type="submit"

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import ErrorNotice from './ErrorNotice.jsx'
 import { authHeaders } from './lib/auth.js'
 
 const LOCAL_FILL = 'http://127.0.0.1:47821'
@@ -140,6 +141,7 @@ export default function AutofillMonitoring({ onBack }) {
 
   return (
     <div dir="rtl" className="min-h-full bg-gray-100 px-4 py-6 text-right sm:px-8">
+      <ErrorNotice message={error} onClose={() => setError('')} />
       <div className="mx-auto max-w-3xl">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold text-gray-900">Autofill Monitoring</h1>
@@ -174,7 +176,6 @@ export default function AutofillMonitoring({ onBack }) {
         </div>
 
         {loading && <p className="mt-8 text-sm text-gray-500">טוען ריצות…</p>}
-        {error && <p className="mt-8 text-sm text-red-600">{error}</p>}
         {!loading && !error && visible.length === 0 && (
           <p className="mt-8 text-sm text-gray-500">אין ריצות להצגה.</p>
         )}
