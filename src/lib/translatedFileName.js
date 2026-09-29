@@ -1,4 +1,5 @@
 export {
+  applicantFilePrefix,
   autofillDownloadFileName,
   translatedDownloadFileName,
   slugNamePart,

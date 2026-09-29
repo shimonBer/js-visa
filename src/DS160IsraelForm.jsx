@@ -46,7 +46,7 @@ import { sendPdfToMonday, searchMondayItem } from './lib/monday.js'
 import CopyFromFormButton, { SectionCopyHeader } from './CopyFromFormButton.jsx'
 import OcrReviewDialog from './OcrReviewDialog.jsx'
 import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
-import { autofillDownloadFileName } from './lib/translatedFileName.js'
+import { applicantFilePrefix, autofillDownloadFileName } from './lib/translatedFileName.js'
 import { startLocalAutofill } from './lib/localAutofill.js'
 import {
   downloadPdfBase64,
@@ -1246,6 +1246,7 @@ export default function DS160IsraelForm({
       mailingState: '',
       mondayItemId: '',
       mondayDs160PdfKeys: '',
+      mondayTranslationFingerprint: '',
       hasExactAccommodationAddress: '',
       accommodationCityPreset: '',
       accommodationStreet1: '',
@@ -1453,6 +1454,8 @@ export default function DS160IsraelForm({
   const [submittedPdfMonday, setSubmittedPdfMonday] = useState({ status: '', itemId: '', message: '' })
   const [mondayPdfRetry, setMondayPdfRetry] = useState(0)
   const mondayPdfAttemptRef = useRef('')
+  const [mondayTranslationRetry, setMondayTranslationRetry] = useState(0)
+  const mondayTranslationAttemptRef = useRef('')
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
   const [foreignPassportOcr, setForeignPassportOcr] = useState({}) // keyed by index
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
@@ -1709,6 +1712,7 @@ export default function DS160IsraelForm({
       previousUSVisits: restoredVisits,
       mondayItemId: String(data.mondayItemId || ''),
       mondayDs160PdfKeys: String(data.mondayDs160PdfKeys || ''),
+      mondayTranslationFingerprint: String(data.mondayTranslationFingerprint || ''),
       passportScan: undefined,
       photoScan: undefined,
       existingVisaScan: undefined,
@@ -2951,20 +2955,63 @@ export default function DS160IsraelForm({
     }
   }
 
+  function translationMondayFileName() {
+    const values = getValues()
+    const prefix = applicantFilePrefix({
+      firstName: values.firstNameEnglish || values.firstName,
+      lastName: values.lastNameEnglish || values.lastName,
+    })
+    return prefix ? `${prefix}_translation-form.pdf` : 'translation-form.pdf'
+  }
+
   /**
-   * Upload the PDF to an existing Monday item (no column changes — file only).
-   * @param {string} itemId
+   * Look up the applicant card by phone, then email, and attach the translation PDF.
+   * Does not create a card when neither matches.
+   * @param {string} pdfBase64
    */
-  async function handleMondayUpload(itemId) {
-    if (!translateUi.pdfBase64?.trim()) return
-    setMondayUi((s) => ({ ...s, uploading: true, uploadError: '' }))
+  async function uploadTranslationToMonday(pdfBase64) {
+    const pdf = String(pdfBase64 || '').trim()
+    if (!pdf) return
+    const values = getValues()
+    const fingerprint = normalizeStoredTranslation(translationRef.current)?.fingerprint || ''
+    if (fingerprint && String(values.mondayTranslationFingerprint || '') === fingerprint) {
+      setMondayUi((s) => ({
+        ...s,
+        searching: false,
+        uploading: false,
+        uploadSuccess: true,
+        uploadItemId: String(values.mondayItemId || s.uploadItemId || ''),
+        uploadIsNew: false,
+      }))
+      return
+    }
+    const phone = `${String(values.phoneCountryCode || '').trim()}${String(values.phoneNumber || '').trim()}`
+    const email = String(values.email || '').trim()
+    setMondayUi((s) => ({ ...s, searching: true, searchError: '', searchResult: null, uploadError: '', uploadSuccess: false }))
     try {
+      const found = await searchMondayItem({ phone, email })
+      if (!found.found) {
+        setMondayUi((s) => ({ ...s, searching: false, searchResult: 'not_found' }))
+        return
+      }
+      setMondayUi((s) => ({ ...s, searching: false, uploading: true }))
       const result = await sendPdfToMonday({
         applicantName: '',
-        pdfBase64: translateUi.pdfBase64,
-        mondayItemId: itemId,
+        pdfBase64: pdf,
+        mondayItemId: found.itemId,
+        fileName: translationMondayFileName(),
+        updateBody: 'Translation Form',
       })
-      setValue('mondayItemId', result.itemId, { shouldDirty: true })
+      setValue('mondayItemId', result.itemId, { shouldDirty: false })
+      if (fingerprint) setValue('mondayTranslationFingerprint', fingerprint, { shouldDirty: false })
+      try {
+        await saveFormBlobPayload(
+          buildN8nBody('draft', getValues(), s3DocumentsRef.current),
+          loadedBlobKeyRef.current ?? undefined,
+        )
+      } catch (e) {
+        console.warn('[monday translation] persist failed', e)
+      }
       setMondayUi((s) => ({
         ...s,
         uploading: false,
@@ -2974,29 +3021,55 @@ export default function DS160IsraelForm({
         uploadIsNew: false,
       }))
     } catch (e) {
-      setMondayUi((s) => ({ ...s, uploading: false, uploadError: e?.message || 'העלאה נכשלה' }))
+      setMondayUi((s) => ({
+        ...s,
+        searching: false,
+        uploading: false,
+        uploadError: e?.message || 'העלאה נכשלה',
+      }))
+      throw e
     }
   }
 
-  /** Search for person on Monday and auto-upload PDF if found; stop with error if not found. */
-  async function handleSendToMonday() {
-    if (!translateUi.pdfBase64?.trim()) return
+  useEffect(() => {
+    const pdf = String(translateUi.pdfBase64 || '').trim()
+    if (!pdf) return undefined
     const values = getValues()
-    const phone = (String(values.phoneCountryCode || '').trim() + String(values.phoneNumber || '').trim())
-    const email = String(values.email || '').trim()
-    setMondayUi((s) => ({ ...s, searching: true, searchError: '', searchResult: null }))
-    try {
-      const result = await searchMondayItem({ phone, email })
-      if (!result.found) {
-        setMondayUi((s) => ({ ...s, searching: false, searchResult: 'not_found' }))
-        return
-      }
-      setMondayUi((s) => ({ ...s, searching: false }))
-      await handleMondayUpload(result.itemId)
-    } catch (e) {
-      setMondayUi((s) => ({ ...s, searching: false, searchError: e?.message || 'חיפוש נכשל' }))
+    const fingerprint = normalizeStoredTranslation(translationRef.current)?.fingerprint || ''
+    if (fingerprint && String(values.mondayTranslationFingerprint || '') === fingerprint) {
+      setMondayUi((s) => (
+        s.uploadSuccess ? s : {
+          ...s,
+          searching: false,
+          uploading: false,
+          uploadSuccess: true,
+          uploadItemId: String(values.mondayItemId || ''),
+          uploadIsNew: false,
+        }
+      ))
+      return undefined
     }
-  }
+    const phone = `${String(pdfPhoneCode || '').trim()}${String(pdfPhoneNumber || '').trim()}`
+    const email = String(pdfEmail || '').trim()
+    const hasPhone = phone.replace(/\D/g, '').length >= 7
+    const hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    if (!hasPhone && !hasEmail) return undefined
+    const attemptKey = `${mondayTranslationRetry}|${fingerprint}|${phone}|${email}|${pdf.length}`
+    if (mondayTranslationAttemptRef.current === attemptKey) return undefined
+    mondayTranslationAttemptRef.current = attemptKey
+    let active = true
+    ;(async () => {
+      try {
+        await uploadTranslationToMonday(pdf)
+      } catch {
+        if (mondayTranslationAttemptRef.current === attemptKey) mondayTranslationAttemptRef.current = ''
+        if (!active) return
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [translateUi.pdfBase64, pdfPhoneCode, pdfPhoneNumber, pdfEmail, mondayTranslationRetry, getValues])
 
   const w = {
     firstName: watch('firstName'),
@@ -6344,16 +6417,29 @@ export default function DS160IsraelForm({
                         <span className="text-red-600">❌ לא נמצא הלקוח במערכת — לא ניתן לשלוח</span>
                         <button type="button"
                           className="px-2 py-1 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 text-xs"
-                          onClick={() => setMondayUi((s) => ({ ...s, searchResult: null, searchError: '' }))}>
+                          onClick={() => {
+                            mondayTranslationAttemptRef.current = ''
+                            setMondayUi((s) => ({ ...s, searchResult: null, searchError: '', uploadError: '' }))
+                            setMondayTranslationRetry((n) => n + 1)
+                          }}>
+                          נסה שוב
+                        </button>
+                      </div>
+                    ) : mondayUi.uploadError ? (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-red-600">{mondayUi.uploadError}</span>
+                        <button type="button"
+                          className="px-2 py-1 rounded-md border border-gray-300 text-gray-500 hover:bg-gray-50 text-xs"
+                          onClick={() => {
+                            mondayTranslationAttemptRef.current = ''
+                            setMondayUi((s) => ({ ...s, uploadError: '', searchError: '' }))
+                            setMondayTranslationRetry((n) => n + 1)
+                          }}>
                           נסה שוב
                         </button>
                       </div>
                     ) : (
-                      <button type="button"
-                        className="px-3 py-1.5 rounded-md border border-violet-600 text-violet-700 hover:bg-violet-50 font-medium"
-                        onClick={() => void handleSendToMonday()}>
-                        📤 שלח ל-Monday
-                      </button>
+                      <p className="text-gray-500">מכין שליחה ל-Monday…</p>
                     )}
 
                   </>
