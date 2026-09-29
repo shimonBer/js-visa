@@ -17,6 +17,12 @@ import { spawnSync } from 'node:child_process'
 import { createCanvas } from '@napi-rs/canvas'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
 import { normalizeCeacNameFillValue } from '../lib/ceacNameFormatting.js'
+import {
+  fitDs160Phone,
+  fitDs160Value,
+  isTranslatedCityLabel,
+  limitForTranslatedLabel,
+} from '../lib/ds160CityLength.js'
 import { normalizePhoneFillValue, phoneDigits } from '../lib/phoneFormatting.js'
 import {
   detectPageContextFromHeading,
@@ -1406,6 +1412,106 @@ async function routeWorkEducationMarkerToCheckbox(page, label, value, occurrence
   throw missingUiTarget(`No applicable checkbox found for marker value in "${normalizedLabel}"`)
 }
 
+const PAYER_COMPANY_FIELDS = [
+  { match: /^name of company\/organization paying(?: for trip)?$/i, name: 'Name of Company/Organization Paying for Trip', kind: 'input' },
+  { match: /^telephone number of company paying$/i, name: 'Telephone Number', kind: 'input', digits: true },
+  { match: /^relationship of company paying$/i, name: 'Relationship to You', kind: 'input' },
+  { match: /^payer company street address \(line 1\)$/i, name: 'Street Address (Line 1)', kind: 'input' },
+  { match: /^payer company street address \(line 2\)$/i, name: 'Street Address (Line 2)', kind: 'input' },
+  { match: /^payer company city$/i, name: 'City', kind: 'input' },
+  { match: /^payer company state\/province$/i, name: 'State/Province', kind: 'input', dna: true },
+  { match: /^payer company postal(?: zone\/zip code)?$/i, name: 'Postal Zone/ZIP Code', kind: 'input', dna: true },
+  { match: /^payer company country\/region$/i, name: 'Country/Region', kind: 'select' },
+]
+
+export function matchPayerCompanyField(label) {
+  const text = String(label || '').trim()
+  return PAYER_COMPANY_FIELDS.find((spec) => spec.match.test(text)) || null
+}
+
+async function payerCompanyControl(page, spec) {
+  const panel = page.locator('[id$="upnlPayer"]').first()
+  await panel.waitFor({ state: 'attached', timeout: 8000 })
+  const role = spec.kind === 'select' ? 'combobox' : 'textbox'
+  const el = panel.getByRole(role, { name: spec.name }).first()
+  await el.waitFor({ state: 'attached', timeout: 5000 })
+  return el
+}
+
+async function payerCompanyDoesNotApplyBox(input) {
+  const field = input.locator('xpath=ancestor::div[contains(@class,"field")][1]')
+  const inField = field.locator('input[type="checkbox"]').first()
+  if (await inField.count() > 0) return inField
+  return input.locator('xpath=following::input[@type="checkbox"][1]')
+}
+
+async function setPayerCompanyDoesNotApply(page, spec) {
+  const input = await payerCompanyControl(page, spec)
+  const box = await payerCompanyDoesNotApplyBox(input)
+  await box.waitFor({ state: 'attached', timeout: 3000 })
+  if (!await box.isChecked()) await box.click()
+  log(`Checked payer company "${spec.name}" Does Not Apply`)
+}
+
+async function fillPayerCompanyControl(page, spec, value) {
+  const raw = String(value ?? '')
+  const marker = /^(?:n\/?a|does not apply)$/i.test(raw.trim())
+  if (spec.dna && (marker || !raw.trim())) {
+    await setPayerCompanyDoesNotApply(page, spec)
+    return
+  }
+  const el = await payerCompanyControl(page, spec)
+  if (spec.dna) {
+    const box = await payerCompanyDoesNotApplyBox(el)
+    if (await box.count() > 0 && await box.isChecked().catch(() => false)) {
+      await box.click()
+      await page.waitForTimeout(200)
+    }
+  }
+  if (spec.kind === 'select') {
+    const requested = raw.trim()
+    const picked = await el.evaluate((select, wanted) => {
+      const normalized = String(wanted).trim().toLowerCase()
+      const option = Array.from(select.options).find((candidate) => {
+        const text = candidate.text.trim().toLowerCase()
+        return text === normalized ||
+          candidate.value.trim().toLowerCase() === normalized ||
+          text.startsWith(normalized)
+      })
+      if (!option) return false
+      select.value = option.value
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    }, requested)
+    if (!picked) throw new Error(`Could not select "${requested}" for payer company ${spec.name}`)
+    log(`Selected payer company ${spec.name}: "${requested}"`)
+    return
+  }
+  const text = spec.digits ? raw.replace(/\D/g, '') : raw
+  await el.scrollIntoViewIfNeeded().catch(() => {})
+  await el.fill(text)
+  log(`Filled payer company ${spec.name}`)
+}
+
+async function routePayerCompanyField(page, action) {
+  const type = String(action.type || '')
+  const label = String(action.label || '').trim()
+  const fieldLabel = String(action.fieldLabel || action.for || '').trim()
+  const spec = matchPayerCompanyField(label) ||
+    (type === 'check' ? matchPayerCompanyField(fieldLabel) : null)
+  if (!spec) return false
+  if (type === 'check') {
+    if (!spec.dna) return false
+    await setPayerCompanyDoesNotApply(page, spec)
+    return true
+  }
+  if (type === 'fill' || type === 'selectOption') {
+    await fillPayerCompanyControl(page, spec, action.value)
+    return true
+  }
+  return false
+}
+
 async function routePersonal1BirthStateDoesNotApply(page, action) {
   const type = String(action.type || '')
   const label = String(action.label || '')
@@ -2148,6 +2254,10 @@ export async function executeAction(page, action) {
   // can specify a 1-based occurrence so we target the intended row.
   const occurrence = Math.max(1, Number.parseInt(action.occurrence, 10) || 1)
 
+  if (await routePayerCompanyField(page, action)) {
+    return
+  }
+
   if (await routePersonal1BirthStateDoesNotApply(page, action)) {
     return
   }
@@ -2250,6 +2360,17 @@ export async function executeAction(page, action) {
     if (named !== value) {
       log(`Normalized CEAC name "${value}" → "${named}"`)
       value = named
+    }
+    const limitLabel = limitForTranslatedLabel(label) ? label : action.fieldLabel
+    const limit = limitForTranslatedLabel(limitLabel)
+    if (limit) {
+      const shortened = /phone|telephone/i.test(String(limitLabel || ''))
+        ? fitDs160Phone(value, limit)
+        : fitDs160Value(value, limit, { city: isTranslatedCityLabel(limitLabel) })
+      if (shortened !== value) {
+        log(`Shortened "${limitLabel}" "${value}" → "${shortened}"`)
+        value = shortened
+      }
     }
   }
 
@@ -3687,7 +3808,18 @@ Travel Information rules:
     5. Relationship — {"type":"selectOption","label":"Relationship to You","value":"<relationship>"} — exact option values on screen: "CHILD", "PARENT", "SPOUSE", "OTHER RELATIVE", "FRIEND", "OTHER". If the relationship is not explicitly stated in the payer data, infer it from the Travel Companions section
     6. Address Same — answer the radio: {"type":"radio","label":"Is the address of the party paying for your trip the same as your Home or Mailing Address?","value":"Yes"} or "No". Answer Yes only if the payer's address is identical to the applicant's home/mailing address; otherwise answer No
     7. Street Address (only if No to step 6) — {"type":"fill","label":"Street Address of Person Paying for Trip","value":"<address>"}
-    For the "Name" field in the applicant data (e.g., "OREN KOFMAN"), split it: last word(s) = Surname, first word(s) = Given Name`,
+    For the "Name" field in the applicant data (e.g., "OREN KOFMAN"), split it: last word(s) = Surname, first word(s) = Given Name
+  * If "Other Company/Organization" is selected, the extra fields are inside the payer panel. Relationship is a free-text box, not the Other Person dropdown. Never put these values in the U.S. stay Street Address or City fields. Use these actions, in order:
+    1. {"type":"fill","label":"Name of Company/Organization Paying for Trip","value":"<organization>"}
+    2. {"type":"fill","label":"Telephone Number of Company Paying","value":"<digits only>"}
+    3. {"type":"fill","label":"Relationship of Company Paying","value":"<role, for example Advisor to the Ministry Director General>"}
+    4. {"type":"fill","label":"Payer Company Street Address (Line 1)","value":"<street only>"}
+    5. When a second line exists: {"type":"fill","label":"Payer Company Street Address (Line 2)","value":"<line 2>"}
+    6. {"type":"fill","label":"Payer Company City","value":"<city>"}
+    7. If there is no state/province, {"type":"check","label":"Does Not Apply","fieldLabel":"Payer Company State/Province"}. Otherwise {"type":"fill","label":"Payer Company State/Province","value":"<state>"}
+    8. If a postal code is present, {"type":"fill","label":"Payer Company Postal Zone/ZIP Code","value":"<code>"}. If it is missing or DOES NOT APPLY, {"type":"check","label":"Does Not Apply","fieldLabel":"Payer Company Postal Zone/ZIP Code"}
+    9. {"type":"selectOption","label":"Payer Company Country/Region","value":"<country, for example ISRAEL>"}
+    A single address line such as "Kanfei Nesharim 5, Jerusalem, Israel" splits into street "Kanfei Nesharim 5", city "Jerusalem", country "ISRAEL", and Does Not Apply for State/Province.`,
 
   companions: `
 Travel Companions rules:
@@ -3923,6 +4055,17 @@ RULES:
     6. Address Same — answer the radio: {"type":"radio","label":"Is the address of the party paying for your trip the same as your Home or Mailing Address?","value":"Yes"} or "No". Answer Yes only if the payer's address is identical to the applicant's home/mailing address; otherwise answer No
     7. Street Address (only if No to step 6) — {"type":"fill","label":"Street Address of Person Paying for Trip","value":"<address>"}
     For the "Name" field in the applicant data (e.g., "OREN KOFMAN"), split it: last word(s) = Surname, first word(s) = Given Name
+  * If "Other Company/Organization" is selected, the extra fields are inside the payer panel. Relationship is a free-text box, not the Other Person dropdown. Never put these values in the U.S. stay Street Address or City fields. Use these actions, in order:
+    1. {"type":"fill","label":"Name of Company/Organization Paying for Trip","value":"<organization>"}
+    2. {"type":"fill","label":"Telephone Number of Company Paying","value":"<digits only>"}
+    3. {"type":"fill","label":"Relationship of Company Paying","value":"<role, for example Advisor to the Ministry Director General>"}
+    4. {"type":"fill","label":"Payer Company Street Address (Line 1)","value":"<street only>"}
+    5. When a second line exists: {"type":"fill","label":"Payer Company Street Address (Line 2)","value":"<line 2>"}
+    6. {"type":"fill","label":"Payer Company City","value":"<city>"}
+    7. If there is no state/province, {"type":"check","label":"Does Not Apply","fieldLabel":"Payer Company State/Province"}. Otherwise {"type":"fill","label":"Payer Company State/Province","value":"<state>"}
+    8. If a postal code is present, {"type":"fill","label":"Payer Company Postal Zone/ZIP Code","value":"<code>"}. If it is missing or DOES NOT APPLY, {"type":"check","label":"Does Not Apply","fieldLabel":"Payer Company Postal Zone/ZIP Code"}
+    9. {"type":"selectOption","label":"Payer Company Country/Region","value":"<country, for example ISRAEL>"}
+    A single address line such as "Kanfei Nesharim 5, Jerusalem, Israel" splits into street "Kanfei Nesharim 5", city "Jerusalem", country "ISRAEL", and Does Not Apply for State/Province.
 - Travel Companions rules:
   * Answer "Are there other persons traveling with you?" once. If Yes, wait once for the dependent section.
   * Answer "Are you traveling as part of a group or organization?" once. For individually named companions this must be No; then wait once for the companion rows.
@@ -4684,7 +4827,12 @@ async function fillIfDifferent(input, value, { suppressAutofill = false } = {}) 
   if (!raw) return false
   const maxAttr = await input.getAttribute('maxlength').catch(() => null)
   const max = Number(maxAttr)
-  const next = Number.isFinite(max) && max > 0 ? raw.slice(0, max) : raw
+  const id = await input.getAttribute('id').catch(() => '')
+  const next = Number.isFinite(max) && max > 0
+    ? (/phone|tel/i.test(id || '')
+      ? fitDs160Phone(raw, max)
+      : fitDs160Value(raw, max, { city: /city/i.test(id || '') }))
+    : raw
   const current = (await input.inputValue().catch(() => '')).trim()
   if (current.toUpperCase() === next.toUpperCase()) return false
   if (suppressAutofill) await suppressBrowserAutofill(input)

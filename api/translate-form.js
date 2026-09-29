@@ -8,13 +8,20 @@
 
 import { answerSheetSchema, fieldCatalogue } from '../autofill/ds160-fields.js'
 import { buildTranslationPdf } from '../lib/buildTranslationPdf.js'
-import { resolveMissingInstitutionAddresses } from '../lib/institutionAddresses.js'
+import {
+  fillMissingInstitutionAddressesInText,
+  resolveMissingInstitutionAddresses,
+} from '../lib/institutionAddresses.js'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
 import {
   normalizeCeacNameFieldsInAnswerSheet,
   normalizeCeacNameFieldsInSourceData,
   normalizeCeacNamesInTranslatedText,
 } from '../lib/ceacNameFormatting.js'
+import {
+  shortenCitiesInAnswerSheet,
+  shortenCitiesInTranslatedText,
+} from '../lib/ds160CityLength.js'
 import {
   normalizePhoneFieldsInAnswerSheet,
   normalizePhoneFieldsInSourceData,
@@ -227,6 +234,7 @@ PLACE NAME RULES
 For place name fields:
 * Use the official internationally recognized English name only — no Hebrew.
 * NEVER translate Hebrew word-by-word for place names.
+* A city value may be at most 20 characters. If the English name is longer, keep the place name and drop administrative words (Maale Gamla regional council → Maale Gamla). Do not cut a word in half.
 * Examples:
   City of Birth: Jerusalem
   Employer City: Tel Aviv
@@ -511,10 +519,17 @@ PERSON/ENTITY PAYING FOR TRIP
                if tripPayerSameAddress is "no" → tripPayerAddressStreet1 + tripPayerAddressCity + tripPayerAddressCountry; if absent → ❗ MISSING
 
   - If tripPayerType is "OTHER_COMPANY_ORGANIZATION" →
-    * Organization Name → tripPayerOrgName; if absent → ❗ MISSING
-    * Phone Number → tripPayerPhone; if absent → ❗ MISSING
-    * Relationship → tripPayerOrgRelationship; if absent → ❗ MISSING
-    * Address → tripPayerAddressStreet1 + tripPayerAddressCity + tripPayerAddressCountry; if absent → ❗ MISSING
+    Output each CEAC field on its own line. Do not merge the address into one line.
+    * Who is paying for the trip? Other Company/Organization
+    * Name of Company/Organization Paying for Trip → tripPayerOrgName; if absent → ❗ MISSING
+    * Telephone Number → tripPayerPhone (digits only); if absent → ❗ MISSING
+    * Relationship to You → tripPayerOrgRelationship (free text, such as a job title; never CHILD/PARENT/SPOUSE); if absent → ❗ MISSING
+    * Street Address (Line 1) → tripPayerAddressStreet1; if absent → ❗ MISSING
+    * Street Address (Line 2) → tripPayerAddressStreet2; omit this line when empty
+    * City → tripPayerAddressCity; if absent → ❗ MISSING
+    * State/Province → DOES NOT APPLY when tripPayerAddressStateNA is true or tripPayerAddressState is empty; otherwise tripPayerAddressState
+    * Postal Zone/ZIP Code → DOES NOT APPLY when tripPayerAddressZipNA is true or tripPayerAddressZip is empty; otherwise tripPayerAddressZip
+    * Country/Region → tripPayerAddressCountry; if absent → ❗ MISSING
 
 ━━━━━━━━━━━━━━━━━━━━
 
@@ -1659,9 +1674,11 @@ Output ONLY valid JSON with no extra explanation.`
     }
     const translated = splitPackedUsStayInTranslatedText(
       applyMilitarySpecializedSkillsToTranslatedText(
-        normalizeCeacNamesInTranslatedText(
-          normalizePhoneNumbersInTranslatedText(
-            stripParentheticalAliasesFromPersonNames(translatedContent),
+        shortenCitiesInTranslatedText(
+          normalizeCeacNamesInTranslatedText(
+            normalizePhoneNumbersInTranslatedText(
+              stripParentheticalAliasesFromPersonNames(translatedContent),
+            ),
           ),
         ),
       ),
@@ -1672,13 +1689,13 @@ Output ONLY valid JSON with no extra explanation.`
     // is not affected by the JSON output requirement. Falls back gracefully.
     let answerSheet = null
     try {
-      answerSheet = splitPackedUsStayInAnswerSheet(
+      answerSheet = shortenCitiesInAnswerSheet(splitPackedUsStayInAnswerSheet(
         applyMilitarySpecializedSkillsToAnswerSheet(
           normalizeCeacNameFieldsInAnswerSheet(
             normalizePhoneFieldsInAnswerSheet(await extractAnswerSheet(translated, apiKey)),
           ),
         ),
-      )
+      ))
     } catch (asErr) {
       console.warn('[translate-form] answerSheet extraction skipped:', asErr.message)
     }
@@ -1687,6 +1704,7 @@ Output ONLY valid JSON with no extra explanation.`
     // and that field has no "Does Not Apply" checkbox to fall back on. When the
     // document does not give one, look it up rather than leaving the autofill
     // agent stuck on a page the form will not let it past.
+    const lookedUpStreets = new Map()
     if (answerSheet) {
       try {
         const { resolved, unresolved } = await resolveMissingInstitutionAddresses(
@@ -1694,6 +1712,9 @@ Output ONLY valid JSON with no extra explanation.`
           apiKey,
           { log: (message) => console.log('[translate-form]', message) },
         )
+        for (const entry of resolved) {
+          lookedUpStreets.set(String(entry.name || '').trim().toLowerCase(), entry.street)
+        }
         if (resolved.length) {
           console.log(
             `[translate-form] Looked up ${resolved.length} institution address(es): ` +
@@ -1703,13 +1724,14 @@ Output ONLY valid JSON with no extra explanation.`
         if (unresolved.length) {
           console.warn(
             '[translate-form] No verifiable address for: ' +
-            unresolved.map((entry) => `${entry.name} (${entry.city})`).join('; '),
+            unresolved.map((entry) => `${entry.name} (${entry.city}) → ${entry.street || 'n/a'}`).join('; '),
           )
         }
       } catch (addrErr) {
         console.warn('[translate-form] institution address lookup skipped:', addrErr.message)
       }
     }
+    const translatedWithAddresses = fillMissingInstitutionAddressesInText(translated, lookedUpStreets)
 
     const orderIdx = (f) => {
       const i = UPLOAD_DOC_FIELDS.indexOf(String(f || ''))
@@ -1720,7 +1742,7 @@ Output ONLY valid JSON with no extra explanation.`
 
     let pdfBase64 = ''
     try {
-      const pdfBytes = await buildTranslationPdf(translated, binaryAttachments)
+      const pdfBytes = await buildTranslationPdf(translatedWithAddresses, binaryAttachments)
       pdfBase64 = Buffer.from(pdfBytes).toString('base64')
     } catch (pdfErr) {
       console.error('[translate-form] PDF assembly failed', pdfErr)
@@ -1729,8 +1751,8 @@ Output ONLY valid JSON with no extra explanation.`
     // Append the delimited answer sheet block to the translated text so the
     // autofill CLI can load both in one file without breaking older workflows.
     const translatedWithSheet = answerSheet
-      ? translated + '\n\n━━━ DS160_ANSWER_SHEET ━━━\n' + JSON.stringify(answerSheet)
-      : translated
+      ? translatedWithAddresses + '\n\n━━━ DS160_ANSWER_SHEET ━━━\n' + JSON.stringify(answerSheet)
+      : translatedWithAddresses
 
     return jsonResponse(res, 200, { translated: translatedWithSheet, analyzedAttachments, pdfBase64 })
   } catch (e) {

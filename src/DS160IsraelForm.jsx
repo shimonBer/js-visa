@@ -7,6 +7,13 @@ import { firstFile, uploadFormDocumentsToS3 } from './lib/uploadFormDocuments.js
 import { buildFormId } from './lib/formId.js'
 import { saveFormBlobPayload } from './lib/formBlob.js'
 import { calculateCompleteness } from './lib/formCompleteness.js'
+import {
+  cityTooLongMessage,
+  collectOverlongFieldPaths,
+  fieldAtPathTooLong,
+  fieldTooLongMessage,
+  isCityFieldName,
+} from '../lib/ds160CityLength.js'
 import { extractPassportFieldsFromFile } from './lib/passportOcr.js'
 import { extractForeignPassportNumber } from './lib/foreignPassportOcr.js'
 import { extractSocialSecurityNumberFromFile } from './lib/socialSecurityOcr.js'
@@ -208,7 +215,7 @@ function digitsOnlyRegister(register, name) {
   }
 }
 
-function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError, optional, naGate, watch: watchFn, setValue: setVal, digitsOnly }) {
+function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError, optional, naGate, watch: watchFn, setValue: setVal, digitsOnly, maxLength }) {
   const fieldError = getFieldError(name)
   const naName = `${name}NA`
   const isDisabled = naGate && !!watchFn?.(naName)
@@ -240,6 +247,7 @@ function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, r
           type={type}
           {...inputProps}
           inputMode={digitsOnly ? 'numeric' : undefined}
+          maxLength={maxLength}
           disabled={isDisabled}
           className={`rounded-md p-2 focus:ring-blue-500 focus:border-blue-500 border disabled:bg-gray-100 disabled:text-gray-400 ${fieldError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
           placeholder={placeholder}
@@ -698,6 +706,9 @@ function AccommodationBlock({
                   <div className="flex flex-col gap-1">
                     <label className="font-semibold text-sm text-gray-700">עיר</label>
                     <input type="text" {...register('accommodationCity')} readOnly className="rounded-md p-2 border border-gray-300 bg-gray-100" dir="ltr" />
+                    {cityTooLongMessage(watch('accommodationCity')) && (
+                      <span className="text-red-500 text-sm">{cityTooLongMessage(watch('accommodationCity'))}</span>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="font-semibold text-sm text-gray-700">מדינה (State)</label>
@@ -2656,6 +2667,8 @@ export default function DS160IsraelForm({
     }
     if (values.hasParamilitary === 'yes') req('paramilitaryExplanation')
 
+    for (const path of collectOverlongFieldPaths(values)) missing.add(path)
+
     return missing
   }
 
@@ -3006,6 +3019,13 @@ export default function DS160IsraelForm({
       ? path.split('.').reduce((acc, key) => (acc == null ? undefined : /** @type {Record<string, unknown>} */ (acc)[key]), /** @type {unknown} */ (errors))
       : undefined
     if (rhfErr) return rhfErr
+    if (fieldAtPathTooLong(allFormValues, path)) {
+      const currentValue = path.split('.').reduce(
+        (acc, key) => (acc == null ? undefined : /** @type {Record<string, unknown>} */ (acc)[key]),
+        /** @type {unknown} */ (allFormValues)
+      )
+      return { message: fieldTooLongMessage(path, currentValue) }
+    }
     if (translationErrors.has(path)) {
       const currentValue = path.split('.').reduce(
         (acc, key) => (acc == null ? undefined : /** @type {Record<string, unknown>} */ (acc)[key]),
@@ -3533,13 +3553,16 @@ export default function DS160IsraelForm({
                             <div className="flex items-center gap-3">
                               <input type="text" {...register(`formerSpouses.${i}.birthCity`)}
                                 disabled={watch(`formerSpouses.${i}.birthCityDoNotKnow`)}
-                                className={`rounded-md p-2 border flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${translationErrors.has(`formerSpouses.${i}.birthCity`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                                className={`rounded-md p-2 border flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${translationErrors.has(`formerSpouses.${i}.birthCity`) || cityTooLongMessage(watch(`formerSpouses.${i}.birthCity`)) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                                 dir="ltr" />
                               <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                                 <input type="checkbox" {...register(`formerSpouses.${i}.birthCityDoNotKnow`)} className="rounded" />
                                 לא ידוע
                               </label>
                             </div>
+                            {cityTooLongMessage(watch(`formerSpouses.${i}.birthCity`)) && (
+                              <span className="text-red-500 text-sm">{cityTooLongMessage(watch(`formerSpouses.${i}.birthCity`))}</span>
+                            )}
                           </div>
                           <div className="flex flex-col mb-4">
                             <div className="flex items-center justify-between mb-1">
@@ -3620,12 +3643,15 @@ export default function DS160IsraelForm({
                         <label className="font-semibold text-sm text-gray-700">עיר</label>
                         <div className="flex items-center gap-3">
                           <input type="text" {...register('spouseBirthCity')} disabled={watch('spouseBirthCityDoNotKnow')}
-                            className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
+                            className={`rounded-md p-2 border flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${cityTooLongMessage(watch('spouseBirthCity')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} dir="ltr" />
                           <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                             <input type="checkbox" {...register('spouseBirthCityDoNotKnow')} className="rounded" />
                             לא ידוע
                           </label>
                         </div>
+                        {cityTooLongMessage(watch('spouseBirthCity')) && (
+                          <span className="text-red-500 text-sm">{cityTooLongMessage(watch('spouseBirthCity'))}</span>
+                        )}
                       </div>
                       <div className="flex flex-col mb-4">
                         <div className="flex items-center justify-between mb-1">
@@ -3721,8 +3747,11 @@ export default function DS160IsraelForm({
                       {...register('addressState')}
                       placeholder="לדוגמה: Tel Aviv District"
                       dir="ltr"
-                      className="w-full rounded-md p-2 border border-gray-300 text-sm"
+                      className={`w-full rounded-md p-2 border text-sm ${fieldTooLongMessage('addressState', watch('addressState')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     />
+                    {fieldTooLongMessage('addressState', watch('addressState')) && (
+                      <span className="text-red-500 text-sm">{fieldTooLongMessage('addressState', watch('addressState'))}</span>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">מיקוד (Postal/ZIP Code)<OptionalBadge /></label>
@@ -3730,8 +3759,11 @@ export default function DS160IsraelForm({
                       {...register('addressZip')}
                       placeholder="לדוגמה: 6473214"
                       dir="ltr"
-                      className="w-full rounded-md p-2 border border-gray-300 text-sm"
+                      className={`w-full rounded-md p-2 border text-sm ${fieldTooLongMessage('addressZip', watch('addressZip')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     />
+                    {fieldTooLongMessage('addressZip', watch('addressZip')) && (
+                      <span className="text-red-500 text-sm">{fieldTooLongMessage('addressZip', watch('addressZip'))}</span>
+                    )}
                   </div>
                   <div>
                     <FormInput register={register} getFieldError={getFieldError} label="מדינה / ארץ (Country/Region)" name="addressCountry" hint="לדוגמה: Israel" />
@@ -3880,20 +3912,27 @@ export default function DS160IsraelForm({
                   <FormRadioGroup register={register} getFieldError={getFieldError} label="האם השתמשת בכתובות אימייל אחרות ב-5 השנים האחרונות?" name="otherEmailsLastFiveYears" options={[{ label: 'לא', value: 'no' }, { label: 'כן', value: 'yes' }]} optional />
                   {w.otherEmailsLastFiveYears === 'yes' && (
                     <div className="mt-2 space-y-2 border-r-2 border-blue-200 pr-3">
-                      {otherEmailFields.map((field, index) => (
-                        <div key={field.id} className="flex gap-2 items-center">
-                          <input
-                            {...register(`otherEmails.${index}.address`)}
-                            placeholder="כתובת אימייל"
-                            dir="ltr"
-                            type="email"
-                            className="flex-1 rounded-md p-2 border border-gray-300 text-sm"
-                          />
-                          {otherEmailFields.length > 1 && (
-                            <button type="button" onClick={() => removeOtherEmail(index)} className="text-sm text-red-500 hover:text-red-700">הסר ✕</button>
-                          )}
+                      {otherEmailFields.map((field, index) => {
+                        const emailPath = `otherEmails.${index}.address`
+                        const emailTooLong = fieldTooLongMessage(emailPath, watch(emailPath))
+                        return (
+                        <div key={field.id} className="flex flex-col gap-1">
+                          <div className="flex gap-2 items-center">
+                            <input
+                              {...register(emailPath)}
+                              placeholder="כתובת אימייל"
+                              dir="ltr"
+                              type="email"
+                              className={`flex-1 rounded-md p-2 border text-sm ${emailTooLong ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                            />
+                            {otherEmailFields.length > 1 && (
+                              <button type="button" onClick={() => removeOtherEmail(index)} className="text-sm text-red-500 hover:text-red-700">הסר ✕</button>
+                            )}
+                          </div>
+                          {emailTooLong && <span className="text-red-500 text-sm">{emailTooLong}</span>}
                         </div>
-                      ))}
+                        )
+                      })}
                       <button type="button" onClick={() => appendOtherEmail({ address: '' })} className="text-sm text-blue-600 hover:text-blue-800 font-medium">+ הוסף אימייל</button>
                     </div>
                   )}
@@ -4659,9 +4698,12 @@ export default function DS160IsraelForm({
                         type="text"
                         {...register(name)}
                         readOnly
-                        className="rounded-md p-2 border border-gray-300 bg-gray-100"
+                        className={`rounded-md p-2 border bg-gray-100 ${isCityFieldName(name) && cityTooLongMessage(watch(name)) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                         dir="ltr"
                       />
+                      {isCityFieldName(name) && cityTooLongMessage(watch(name)) && (
+                        <span className="text-red-500 text-sm">{cityTooLongMessage(watch(name))}</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -4690,13 +4732,16 @@ export default function DS160IsraelForm({
                 <label className="font-semibold text-sm text-gray-700">שם משפחה</label>
                 <div className="flex items-center gap-3">
                   <input type="text" {...register('fatherSurnames')} disabled={watch('fatherSurnamesDoNotKnow')}
-                    className={`rounded-md p-2 border flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${translationErrors.has('fatherSurnames') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                    className={`rounded-md p-2 border flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${translationErrors.has('fatherSurnames') || fieldTooLongMessage('fatherSurnames', watch('fatherSurnames')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     dir="ltr" placeholder="e.g., Hernandez Garcia" />
                   <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                     <input type="checkbox" {...register('fatherSurnamesDoNotKnow')} className="rounded" />
                     לא ידוע
                   </label>
                 </div>
+                {fieldTooLongMessage('fatherSurnames', watch('fatherSurnames')) && (
+                  <span className="text-red-500 text-sm">{fieldTooLongMessage('fatherSurnames', watch('fatherSurnames'))}</span>
+                )}
                 {translationErrors.has('fatherSurnames') && <span className="text-red-500 text-xs">נדרש שם פרטי או שם משפחה</span>}
               </div>
 
@@ -5007,12 +5052,15 @@ export default function DS160IsraelForm({
                   <label className="font-semibold text-sm text-gray-700">הכנסה חודשית במטבע מקומי</label>
                   <div className="flex items-center gap-3">
                     <input type="text" {...register('monthlySalaryGross')} disabled={watch('monthlySalaryDoesNotApply')}
-                      className="rounded-md p-2 border border-gray-300 flex-1 disabled:bg-gray-100 disabled:text-gray-400" dir="ltr" />
+                      className={`rounded-md p-2 border flex-1 disabled:bg-gray-100 disabled:text-gray-400 ${fieldTooLongMessage('monthlySalaryGross', watch('monthlySalaryGross')) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} dir="ltr" />
                     <label className="flex items-center gap-1 text-sm text-gray-600 whitespace-nowrap cursor-pointer">
                       <input type="checkbox" {...register('monthlySalaryDoesNotApply')} className="rounded" />
                       לא רלוונטי
                     </label>
                   </div>
+                  {fieldTooLongMessage('monthlySalaryGross', watch('monthlySalaryGross')) && (
+                    <span className="text-red-500 text-sm">{fieldTooLongMessage('monthlySalaryGross', watch('monthlySalaryGross'))}</span>
+                  )}
                 </div>
 
                 <FormInput register={register} getFieldError={getFieldError} label="תיאור קצר של תפקידיך:" name="jobDuties" type="textarea" />
@@ -5282,19 +5330,24 @@ export default function DS160IsraelForm({
             {w.hasOrganizations === 'yes' && (
               <div className="space-y-2 pl-2 border-r-4 border-blue-400 pr-4">
                 <p className="text-sm text-gray-600">רשימת ארגונים</p>
-                {organizationFields.map((field, i) => (
+                {organizationFields.map((field, i) => {
+                  const orgPath = `organizations.${i}.name`
+                  const orgTooLong = fieldTooLongMessage(orgPath, watch(orgPath))
+                  return (
                   <div key={field.id} className="flex items-end gap-3 bg-gray-50 border border-gray-200 rounded p-3">
                     <div className="flex flex-col gap-1 flex-1">
-                      <label className="font-semibold text-sm text-gray-700">שם הארגון {translationErrors.has(`organizations.${i}.name`) && <span className="text-red-500">*</span>}</label>
-                      <input type="text" {...register(`organizations.${i}.name`)}
-                        className={`rounded-md p-2 border w-full ${translationErrors.has(`organizations.${i}.name`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                      <label className="font-semibold text-sm text-gray-700">שם הארגון {translationErrors.has(orgPath) && <span className="text-red-500">*</span>}</label>
+                      <input type="text" {...register(orgPath)}
+                        className={`rounded-md p-2 border w-full ${translationErrors.has(orgPath) || orgTooLong ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                         dir="ltr" />
+                      {orgTooLong && <span className="text-red-500 text-sm">{orgTooLong}</span>}
                     </div>
                     {organizationFields.length > 1 && (
                       <button type="button" onClick={() => removeOrganization(i)} className="text-red-500 text-sm hover:underline pb-2">הסר</button>
                     )}
                   </div>
-                ))}
+                  )
+                })}
                 <button type="button" onClick={() => appendOrganization({ name: '', type: '' })}
                   className="inline-flex items-center gap-1.5 rounded-md border border-blue-600 bg-white px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50">
                   <span aria-hidden className="text-lg leading-none">+</span>
@@ -5622,7 +5675,9 @@ export default function DS160IsraelForm({
                       dir="ltr"
                       className={`w-full rounded-md p-2 border text-sm ${getFieldError(`socialMediaAccounts.${index}.identifier`) ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
                     />
-                    {getFieldError(`socialMediaAccounts.${index}.identifier`) && <span className="text-red-500 text-xs">שדה חובה</span>}
+                    {getFieldError(`socialMediaAccounts.${index}.identifier`) && (
+                      <span className="text-red-500 text-xs">{getFieldError(`socialMediaAccounts.${index}.identifier`)?.message || 'שדה חובה'}</span>
+                    )}
                   </div>
                   {socialMediaAccountFields.length > 1 && (
                     <button type="button" onClick={() => removeSocialMediaAccount(index)} className="pb-1 text-sm text-red-500 hover:text-red-700 font-medium">הסר ✕</button>
@@ -5785,7 +5840,24 @@ export default function DS160IsraelForm({
                 dir="rtl"
                 role="alert"
               >
-                יש למלא {translationErrors.size} שד{translationErrors.size === 1 ? 'ה' : 'ות'} חובה המסומנ{translationErrors.size === 1 ? 'ות' : 'ות'} באדום לפני התרגום.
+                {(() => {
+                  const overlongCount = [...translationErrors].filter((path) => fieldAtPathTooLong(allFormValues, path)).length
+                  const missingCount = translationErrors.size - overlongCount
+                  return (
+                    <>
+                      {missingCount > 0 && (
+                        <span className="block">
+                          יש למלא {missingCount} שד{missingCount === 1 ? 'ה' : 'ות'} חובה המסומנ{missingCount === 1 ? 'ות' : 'ות'} באדום לפני התרגום.
+                        </span>
+                      )}
+                      {overlongCount > 0 && (
+                        <span className="block">
+                          יש לקצר שדות שחורגים ממגבלת התווים של טופס DS-160. הם מסומנים באדום ולא ימשיכו לתרגום.
+                        </span>
+                      )}
+                    </>
+                  )
+                })()}
               </div>
             )}
             {asyncFlow.phase === 'working' && (

@@ -2,8 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  fillMissingInstitutionAddressesInText,
   findInstitutionsMissingAddress,
   lookupInstitutionAddress,
+  placeNameFromInstitution,
   resolveMissingInstitutionAddresses,
   sanitizeStreet,
 } from '../lib/institutionAddresses.js'
@@ -173,24 +175,57 @@ test('resolved addresses are written into the sheet', async () => {
   assert.equal(result.unresolved.length, 0)
 })
 
-test('an unresolved address is reported and the sheet is left untouched', async () => {
-  const sheet = { s: { school_name: 'Zzqx Academy', school_street: 'N/A', school_city: 'Modiin' } }
+test('an unresolved address repeats the place name', async () => {
+  const sheet = {
+    s: {
+      school_name: "Galil Ma'aravi Comprehensive School",
+      school_street: 'N/A',
+      school_city: 'Maale Yosef',
+    },
+  }
   const result = await resolveMissingInstitutionAddresses(sheet, 'key', {
     fetchImpl: stubFetch('{"street":"","confidence":"low"}'),
   })
 
-  assert.equal(sheet.s.school_street, 'N/A')
+  assert.equal(sheet.s.school_street, "Galil Ma'aravi")
   assert.deepEqual(result.resolved, [])
-  assert.equal(result.unresolved[0].name, 'Zzqx Academy')
+  assert.equal(result.unresolved[0].name, "Galil Ma'aravi Comprehensive School")
+  assert.equal(result.unresolved[0].street, "Galil Ma'aravi")
 })
 
 test('a lookup failure never breaks the translation', async () => {
-  const sheet = { s: { school_name: 'X', school_street: 'N/A', school_city: 'Y' } }
+  const sheet = { s: { school_name: 'X School', school_street: 'N/A', school_city: 'Y' } }
   const failing = async () => { throw new Error('network down') }
 
   const result = await resolveMissingInstitutionAddresses(sheet, 'key', { fetchImpl: failing })
   assert.equal(result.unresolved.length, 1)
-  assert.equal(sheet.s.school_street, 'N/A')
+  assert.equal(sheet.s.school_street, 'X')
+})
+
+test('the place name drops the kind of institution', () => {
+  assert.equal(placeNameFromInstitution("Galil Ma'aravi Comprehensive School"), "Galil Ma'aravi")
+  assert.equal(placeNameFromInstitution('Reichman University'), 'Reichman')
+  assert.equal(placeNameFromInstitution('Ort Ironi D'), 'Ort Ironi D')
+})
+
+test('a missing address in the review text becomes the place name', () => {
+  const text = [
+    "School / Institution Name: Galil Ma'aravi Comprehensive School",
+    'Address: N/A',
+    'City: Maale Yosef',
+    'Employer Name: Elbit Systems Ltd',
+    'Employer Address: Road 4',
+  ].join('\n')
+  assert.equal(
+    fillMissingInstitutionAddressesInText(text),
+    [
+      "School / Institution Name: Galil Ma'aravi Comprehensive School",
+      "Address: Galil Ma'aravi",
+      'City: Maale Yosef',
+      'Employer Name: Elbit Systems Ltd',
+      'Employer Address: Road 4',
+    ].join('\n'),
+  )
 })
 
 test("a postal code the applicant supplied is not overwritten", async () => {

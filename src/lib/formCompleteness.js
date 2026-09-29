@@ -3,6 +3,8 @@
  * Mirrors validateForTranslation in DS160IsraelForm.jsx — keep in sync.
  */
 
+import { collectOverlongFieldPaths, limitForPortalField } from '../../lib/ds160CityLength.js'
+
 export const FIELD_META = {
   // Personal
   passportId:               { label: 'מספר דרכון' },
@@ -213,6 +215,9 @@ export function calculateCompleteness(data) {
     req('tripPayerOrgName')
     req('tripPayerPhone')
     req('tripPayerOrgRelationship')
+    req('tripPayerAddressStreet1')
+    req('tripPayerAddressCity')
+    req('tripPayerAddressCountry')
   }
 
   // ── Family ──
@@ -364,6 +369,11 @@ export function calculateCompleteness(data) {
   }
   if (d.hasSocialSecurityNumber === 'yes') req('socialSecurityNumber')
   if (d.hasTaxpayerID === 'yes') req('taxpayerIDNumber')
+
+  for (const path of collectOverlongFieldPaths(d)) {
+    const max = limitForPortalField(path)
+    list.push({ field: path, label: `מוגבל ל-${max} תווים` })
+  }
 
   return { isComplete: list.length === 0, missingFields: list }
 }

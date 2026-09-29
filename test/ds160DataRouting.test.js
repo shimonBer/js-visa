@@ -1222,3 +1222,109 @@ test('employer name fill drops the Ltd. period CEAC rejects', async () => {
     await browser.close()
   }
 })
+
+test('company payer fields stay inside the payer panel', async () => {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(`
+      <label for="stayStreet">Street Address (Line 1)</label>
+      <input id="stayStreet" type="text" value="">
+      <label for="stayCity">City</label>
+      <input id="stayCity" type="text" value="">
+      <input id="cbexAPP_POB_ST_PROVINCE_NA" type="checkbox">
+      <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPayer">
+        <div class="field">
+          <label for="org">Name of Company/Organization Paying for Trip</label>
+          <input id="org" type="text">
+        </div>
+        <div class="field">
+          <label for="tel">Telephone Number</label>
+          <input id="tel" type="text">
+        </div>
+        <div class="field">
+          <label for="rel">Relationship to You</label>
+          <input id="rel" type="text">
+        </div>
+        <div class="field">
+          <label for="st1">Street Address (Line 1)</label>
+          <input id="st1" type="text">
+        </div>
+        <div class="field">
+          <label for="city">City</label>
+          <input id="city" type="text">
+        </div>
+        <div class="field">
+          <label for="state">State/Province</label>
+          <input id="state" type="text">
+          <input id="stateNa" type="checkbox">
+          <label for="stateNa">Does Not Apply</label>
+        </div>
+        <div class="field">
+          <label for="zip">Postal Zone/ZIP Code</label>
+          <input id="zip" type="text">
+        </div>
+        <div class="field">
+          <label for="ctry">Country/Region</label>
+          <select id="ctry">
+            <option value="">- SELECT ONE -</option>
+            <option value="ISRL">ISRAEL</option>
+          </select>
+        </div>
+      </div>
+    `)
+    await executeAction(page, {
+      type: 'fill',
+      label: 'Name of Company/Organization Paying for Trip',
+      value: 'Ministry of the Negev Galilee and National Resilience State of Israel',
+    })
+    await executeAction(page, {
+      type: 'fill',
+      label: 'Telephone Number of Company Paying',
+      value: '972522964588',
+    })
+    await executeAction(page, {
+      type: 'fill',
+      label: 'Relationship of Company Paying',
+      value: 'Advisor to the Ministry Director General',
+    })
+    await executeAction(page, {
+      type: 'fill',
+      label: 'Payer Company Street Address (Line 1)',
+      value: 'Kanfei Nesharim 5',
+    })
+    await executeAction(page, {
+      type: 'fill',
+      label: 'Payer Company City',
+      value: 'Jerusalem',
+    })
+    await executeAction(page, {
+      type: 'check',
+      label: 'Does Not Apply',
+      fieldLabel: 'Payer Company State/Province',
+    })
+    await executeAction(page, {
+      type: 'fill',
+      label: 'Payer Company Postal Zone/ZIP Code',
+      value: '9546412',
+    })
+    await executeAction(page, {
+      type: 'selectOption',
+      label: 'Payer Company Country/Region',
+      value: 'ISRAEL',
+    })
+    assert.equal(await page.locator('#org').inputValue(), 'Ministry of the Negev Galilee and National Resilience State of Israel')
+    assert.equal(await page.locator('#tel').inputValue(), '972522964588')
+    assert.equal(await page.locator('#rel').inputValue(), 'Advisor to the Ministry Director General')
+    assert.equal(await page.locator('#st1').inputValue(), 'Kanfei Nesharim 5')
+    assert.equal(await page.locator('#city').inputValue(), 'Jerusalem')
+    assert.equal(await page.locator('#zip').inputValue(), '9546412')
+    assert.equal(await page.locator('#ctry').inputValue(), 'ISRL')
+    assert.equal(await page.locator('#stateNa').isChecked(), true)
+    assert.equal(await page.locator('#stayStreet').inputValue(), '')
+    assert.equal(await page.locator('#stayCity').inputValue(), '')
+    assert.equal(await page.locator('#cbexAPP_POB_ST_PROVINCE_NA').isChecked(), false)
+  } finally {
+    await browser.close()
+  }
+})
