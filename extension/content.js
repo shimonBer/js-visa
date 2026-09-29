@@ -401,6 +401,20 @@ function canonClick(value) {
   return normalizeLabel(value).replace(/&/g, 'and')
 }
 
+function isCeacChromeNavigation(el) {
+  if (!el) return false
+  const id = el.id || ''
+  if (
+    [
+      'GetStarted', 'Personal', 'Travel', 'TravelCompanions', 'PreviousUSTravel',
+      'AddressPhone', 'PptVisa', 'USContact', 'Family', 'WorkEducationMain', 'SecAndBackMain',
+      'COMPLETE', 'PHOTO', 'REVIEW', 'ESIGN',
+      'ctl00_lbtnExit', 'ctl00_lbtnHelp', 'ctl00_lbtnContactUs', 'ctl00_banner',
+    ].includes(id)
+  ) return true
+  return Boolean(el.closest('#sideNav, #nav-sidebar, #nav-global, #branding, #nav-main'))
+}
+
 function clickByText(text) {
   const want = normalizeLabel(text)
   if (!want) throw new Error('No click text')
@@ -473,6 +487,7 @@ function clickByText(text) {
   ]
   let match = null
   for (const el of els) {
+    if (isCeacChromeNavigation(el)) continue
     const label = clickLabel(el)
     if (!label) continue
     const labelCanon = canonClick(label)

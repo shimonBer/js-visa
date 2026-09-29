@@ -366,6 +366,10 @@ export function disarmCeacUnloadInPage() {
     try { window.onbeforeunload = null } catch { /* ignore */ }
     try { window.onunload = null } catch { /* ignore */ }
     try { window.confirmExit = function confirmExit() {} } catch { /* ignore */ }
+    // Sidebar links call confirmExitPage(). Links with no in-form href (Getting
+    // Started, and later sections that are still disabled) open the
+    // "navigate outside your DS-160" modal. A no-op keeps the click on the page.
+    try { window.confirmExitPage = function confirmExitPage() { return false } } catch { /* ignore */ }
     try {
       // CEAC setDirty marks the form changed so repeater "Add Another" postbacks
       // keep the row just typed. Do not no-op it — that left languages/countries
@@ -438,18 +442,41 @@ export function disarmCeacUnloadInPage() {
   document.addEventListener('click', silence, true)
 }
 
+/** Sidebar, top tabs, Exit, Help, Contact Us, and the banner leave the form. */
+export async function isCeacChromeNavigation(locator) {
+  if (!locator) return false
+  return locator.evaluate((el) => {
+    const node = el.closest?.('a, area, input, button') || el
+    const id = node.id || ''
+    const chromeIds = [
+      'GetStarted', 'Personal', 'Travel', 'TravelCompanions', 'PreviousUSTravel',
+      'AddressPhone', 'PptVisa', 'USContact', 'Family', 'WorkEducationMain', 'SecAndBackMain',
+      'COMPLETE', 'PHOTO', 'REVIEW', 'ESIGN',
+      'ctl00_lbtnExit', 'ctl00_lbtnHelp', 'ctl00_lbtnContactUs', 'ctl00_banner',
+    ]
+    if (chromeIds.includes(id)) return true
+    return Boolean(node.closest?.('#sideNav, #nav-sidebar, #nav-global, #branding, #nav-main'))
+  }).catch(() => false)
+}
+
 /** Click Cancel: Stay on Page if CEAC thinks we are leaving the application. */
 export async function dismissCeacLeavePageDialog(page) {
   if (!page || page.isClosed()) return false
   const panel = page.locator('#ctl00_pnlExitWarning')
-  const visible = await panel.isVisible({ timeout: 250 }).catch(() => false)
-  if (!visible) return false
-  const stay = page.locator(
-    '#ctl00_btnCancelExitWarning, input[id$="btnCancelExitWarning"], input[value*="Stay on Page" i]',
-  ).first()
-  if (!await stay.isVisible({ timeout: 800 }).catch(() => false)) return false
+  const foreground = page.locator('#modalExitWarning_foregroundElement')
+  const panelVisible = await panel.isVisible().catch(() => false)
+  const foregroundVisible = await foreground.isVisible().catch(() => false)
+  if (!panelVisible && !foregroundVisible) return false
+  // The save dialog has its own earlier "Cancel: Stay on Page" button. A
+  // page-wide value match hits that hidden button and leaves this modal up.
+  const stay = page.locator('#ctl00_btnCancelExitWarning').first()
+  const stayVisible = await stay.isVisible().catch(() => false)
   log('CEAC "leaving the application" dialog — staying on the page')
-  await stay.click({ timeout: 3000 }).catch(() => {})
+  if (stayVisible) {
+    await stay.click({ timeout: 3000 }).catch(() => {})
+  } else {
+    await stay.click({ force: true, timeout: 3000 }).catch(() => {})
+  }
   await page.waitForTimeout(400).catch(() => {})
   return true
 }
@@ -2398,6 +2425,7 @@ async function prepareAddressPhoneForNavigation(page) {
 export async function executeAction(page, action) {
   const { type, label, text, ref } = action
   let { value } = action
+  await dismissCeacLeavePageDialog(page)
   // Repeated DS-160 controls use the same visible label in every row. Actions
   // can specify a 1-based occurrence so we target the intended row.
   const occurrence = Math.max(1, Number.parseInt(action.occurrence, 10) || 1)
@@ -3804,9 +3832,15 @@ export async function executeAction(page, action) {
     // visible DS-160 submit button whose value starts with "Next" or "Continue".
     try {
       const el = await findElement(page, { text, label })
+      if (await isCeacChromeNavigation(el)) {
+        throw new Error(
+          `Refusing a click that leaves the DS-160 application (${text || label || 'sidebar/header'})`,
+        )
+      }
       await el.click()
       return
-    } catch {
+    } catch (err) {
+      if (/leaves the DS-160 application/.test(err?.message || '')) throw err
       if (/^next|^continue/i.test((text || label || ''))) {
         const submitBtns = await page.locator('input[type="submit"], button[type="submit"]').all()
         for (const btn of submitBtns) {
@@ -6585,6 +6619,7 @@ export async function runAgent(page, translatedText, apiKey, opts = {}) {
         continue
       }
     } catch (err) {
+      await dismissCeacLeavePageDialog(page)
       if (err.code === 'UI_TARGET_NOT_FOUND') {
         consecutiveErrors = 0
         logWarn(`Skipped translated-only/missing UI target: ${err.message}`)

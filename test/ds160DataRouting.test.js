@@ -13,6 +13,7 @@ import {
   detectCurrentPageContext,
   clickStartApplication,
   disarmCeacUnload,
+  dismissCeacLeavePageDialog,
   executeAction,
   filterTranslatedText,
   isBlockedSubmissionClick,
@@ -1192,6 +1193,75 @@ test('disabled lnkNew is enabled and posted back', async () => {
       await page.evaluate(() => window.__clicked),
       'ctl00$SiteContentPlaceHolder$lnkNew',
     )
+  } finally {
+    await browser.close()
+  }
+})
+
+test('leaving-application dialog Stay button is the exit modal, not the hidden save button', async () => {
+  const html = `<!DOCTYPE html><html><body>
+    <div id="ctl00_pnlSaveWarning" style="display:none">
+      <input type="submit" id="ctl00_btnCancelWarning" value="Cancel: Stay on Page">
+    </div>
+    <div id="modalExitWarning_foregroundElement" style="display:block">
+      <div id="ctl00_pnlExitWarning" style="display:block">
+        <input type="submit" id="ctl00_btnCancelExitWarning" value="Cancel: Stay on Page">
+      </div>
+    </div>
+    <script>
+      document.getElementById('ctl00_btnCancelWarning').addEventListener('click', (event) => {
+        event.preventDefault()
+        window.__stayed = 'save'
+      })
+      document.getElementById('ctl00_btnCancelExitWarning').addEventListener('click', (event) => {
+        event.preventDefault()
+        window.__stayed = 'exit'
+        document.getElementById('ctl00_pnlExitWarning').style.display = 'none'
+      })
+    </script>
+  </body></html>`
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: 'domcontentloaded' })
+    const dismissed = await dismissCeacLeavePageDialog(page)
+    assert.equal(dismissed, true)
+    assert.equal(await page.evaluate(() => window.__stayed), 'exit')
+  } finally {
+    await browser.close()
+  }
+})
+
+test('sidebar clicks do not open the leave-application dialog', async () => {
+  const html = `<!DOCTYPE html><html><body>
+    <div id="sideNav">
+      <a id="GetStarted" href="javascript:void(0)" onclick="confirmExitPage(this,'Travel'); return false;">Getting Started</a>
+      <input id="PptVisa" type="button" value="Passport">
+    </div>
+    <input id="ctl00_SiteContentPlaceHolder_UpdateButton3" class="next" type="submit" value="Next: Travel Companions"
+      onclick="window.__nextClicked = true; return false;">
+    <div id="ctl00_pnlExitWarning" style="display:none">outside</div>
+    <script>
+      window.confirmExitPage = function () {
+        document.getElementById('ctl00_pnlExitWarning').style.display = 'block'
+        window.__opened = true
+      }
+    </script>
+  </body></html>`
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: 'domcontentloaded' })
+    await disarmCeacUnload(page)
+    await page.locator('#GetStarted').click()
+    assert.equal(await page.evaluate(() => window.__opened || false), false)
+    assert.equal(await page.locator('#ctl00_pnlExitWarning').isVisible(), false)
+    await assert.rejects(
+      () => executeAction(page, { type: 'click', text: 'Passport' }),
+      /leaves the DS-160 application/,
+    )
+    await executeAction(page, { type: 'click', text: 'Next: Travel Companions' })
+    assert.equal(await page.evaluate(() => window.__nextClicked), true)
   } finally {
     await browser.close()
   }

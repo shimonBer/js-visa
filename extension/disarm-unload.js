@@ -9,6 +9,7 @@
     try { window.onbeforeunload = null } catch { /* ignore */ }
     try { window.onunload = null } catch { /* ignore */ }
     try { window.confirmExit = function confirmExit() {} } catch { /* ignore */ }
+    try { window.confirmExitPage = function confirmExitPage() { return false } } catch { /* ignore */ }
     try {
       if (typeof window.setDirty === 'function' && !window.setDirty.__ds160Wrapped) {
         const original = window.setDirty
