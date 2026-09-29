@@ -164,7 +164,14 @@ export default async function handler(req, res) {
         (typeof payload?.data?.formUUID === 'string' && payload.data.formUUID.trim()) ||
         (typeof payload?.formId === 'string' && payload.formId.trim()) ||
         ''
-      for (const item of ds160SubmittedPdfKeys(formId)) {
+      const nameOptions = {
+        firstName: payload?.data?.firstNameEnglish || payload?.data?.firstName,
+        lastName: payload?.data?.lastNameEnglish || payload?.data?.lastName,
+      }
+      for (const item of [
+        ...ds160SubmittedPdfKeys(formId),
+        ...ds160SubmittedPdfKeys(formId, nameOptions),
+      ]) {
         const key = sanitizeS3ObjectKey(item.key)
         if (!key || seen.has(key)) continue
         seen.add(key)

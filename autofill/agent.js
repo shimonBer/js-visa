@@ -1487,7 +1487,11 @@ async function fillPayerCompanyControl(page, spec, value) {
     log(`Selected payer company ${spec.name}: "${requested}"`)
     return
   }
-  const text = spec.digits ? raw.replace(/\D/g, '') : raw
+  let text = spec.digits ? raw.replace(/\D/g, '') : raw
+  if (!spec.digits) {
+    const max = Number(await el.getAttribute('maxlength'))
+    if (Number.isFinite(max) && max > 0) text = fitDs160Value(text, max)
+  }
   await el.scrollIntoViewIfNeeded().catch(() => {})
   await el.fill(text)
   log(`Filled payer company ${spec.name}`)
@@ -1497,8 +1501,14 @@ async function routePayerCompanyField(page, action) {
   const type = String(action.type || '')
   const label = String(action.label || '').trim()
   const fieldLabel = String(action.fieldLabel || action.for || '').trim()
-  const spec = matchPayerCompanyField(label) ||
+  let spec = matchPayerCompanyField(label) ||
     (type === 'check' ? matchPayerCompanyField(fieldLabel) : null)
+  // Company payers use a free-text "Relationship to You". Other Person uses a
+  // dropdown with the same words, so only steal that label when the company
+  // name box is actually on the page.
+  if (!spec && /^relationship to you$/i.test(label) && await companyPayerNameBox(page)) {
+    spec = PAYER_COMPANY_FIELDS.find((item) => item.name === 'Relationship to You') || null
+  }
   if (!spec) return false
   if (type === 'check') {
     if (!spec.dna) return false
@@ -1506,10 +1516,148 @@ async function routePayerCompanyField(page, action) {
     return true
   }
   if (type === 'fill' || type === 'selectOption') {
-    await fillPayerCompanyControl(page, spec, action.value)
+    const value = payerCompanyValueForSpec(spec, action.value)
+    await fillPayerCompanyControl(page, spec, value)
     return true
   }
   return false
+}
+
+let expectedPayerCompany = null
+
+function payerCompanyBlock(sectionText) {
+  return String(sectionText || '').match(
+    /\*{0,2}PERSON\/ENTITY PAYING\b[\s\S]*?(?=\n🟦|$)/i,
+  )?.[0] || ''
+}
+
+export function parsePayerCompanyFromSource(sectionText) {
+  const block = payerCompanyBlock(sectionText)
+  if (!block) return null
+  const who = block.match(/who is paying for the trip\??\s*:?\s*(.+)$/im)?.[1]?.trim() || ''
+  if (!/company|organization/i.test(who)) return null
+  const parsed = {
+    name: sourceLineValue(block, 'Name of Company/Organization Paying for Trip'),
+    phone: sourceLineValue(block, 'Telephone Number').replace(/\D/g, ''),
+    relationship: sourceLineValue(block, 'Relationship to You'),
+    street1: sourceLineValue(block, 'Street Address (Line 1)'),
+    street2: sourceLineValue(block, 'Street Address (Line 2)'),
+    city: sourceLineValue(block, 'City'),
+    state: sourceLineValue(block, 'State/Province'),
+    zip: sourceLineValue(block, 'Postal Zone/ZIP Code'),
+    country: sourceLineValue(block, 'Country/Region'),
+  }
+  if (!parsed.name && !parsed.street1) return null
+  return parsed
+}
+
+function payerCompanyValueForSpec(spec, fallback) {
+  const expected = expectedPayerCompany
+  const incoming = String(fallback || '').trim()
+  if (!expected) return fallback
+  if (spec.name !== 'Name of Company/Organization Paying for Trip') return fallback
+  const relationship = String(expected.relationship || '').trim()
+  const looksLikeRole = relationship &&
+    incoming.toUpperCase().startsWith(relationship.slice(0, 20).toUpperCase())
+  if (!incoming || looksLikeRole) return expected.name || fallback
+  return fallback
+}
+
+async function companyPayerNameBox(page) {
+  const panel = page.locator('[id$="upnlPayer"]').first()
+  if (await panel.count() === 0) return null
+  const box = panel.getByRole('textbox', { name: 'Name of Company/Organization Paying for Trip' }).first()
+  if (await box.count() === 0) return null
+  return box
+}
+
+async function selectCompanyPayer(page) {
+  const select = page.locator('select[id$="ddlWhoIsPaying"]').first()
+  if (await select.count() === 0) return false
+  const current = await select.evaluate((el) => el.options[el.selectedIndex]?.text || '').catch(() => '')
+  if (/other company/i.test(current)) return false
+  const picked = await select.evaluate((el) => {
+    const option = Array.from(el.options).find((candidate) =>
+      /other company/i.test(candidate.text) || candidate.value === 'C',
+    )
+    if (!option) return false
+    el.value = option.value
+    el.dispatchEvent(new Event('change', { bubbles: true }))
+    return true
+  }).catch(() => false)
+  if (!picked) return false
+  log('Selected Other Company/Organization as the trip payer')
+  await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {})
+  return true
+}
+
+async function payerCompanyText(page, spec) {
+  const el = await payerCompanyControl(page, spec)
+  if (spec.kind === 'select') {
+    return el.evaluate((select) => select.options[select.selectedIndex]?.text || '').catch(() => '')
+  }
+  return el.inputValue().catch(() => '')
+}
+
+function samePayerText(current, next) {
+  return String(current || '').trim().toUpperCase() === String(next || '').trim().toUpperCase()
+}
+
+export async function syncPayerCompanyFromSource(page, sectionText) {
+  const parsed = parsePayerCompanyFromSource(sectionText)
+  expectedPayerCompany = parsed
+  if (!parsed) return false
+
+  const nameBox = await companyPayerNameBox(page)
+  if (!nameBox) return selectCompanyPayer(page)
+
+  const fields = [
+    ['Name of Company/Organization Paying for Trip', parsed.name],
+    ['Telephone Number', parsed.phone],
+    ['Relationship to You', parsed.relationship],
+    ['Street Address (Line 1)', parsed.street1],
+    ['Street Address (Line 2)', parsed.street2],
+    ['City', parsed.city],
+    ['State/Province', parsed.state],
+    ['Postal Zone/ZIP Code', parsed.zip],
+    ['Country/Region', parsed.country],
+  ]
+  let changed = false
+  for (const [label, value] of fields) {
+    if (!String(value || '').trim()) continue
+    const spec = PAYER_COMPANY_FIELDS.find((item) => item.name === label)
+    if (!spec) continue
+    if (spec.dna && isMarkerValue(value)) {
+      const input = await payerCompanyControl(page, spec)
+      const box = await payerCompanyDoesNotApplyBox(input)
+      if (await box.count() === 0 || await box.isChecked().catch(() => false)) continue
+      await setPayerCompanyDoesNotApply(page, spec)
+      changed = true
+      continue
+    }
+    if (spec.kind !== 'select' && !spec.digits) {
+      const el = await payerCompanyControl(page, spec)
+      const max = Number(await el.getAttribute('maxlength'))
+      const fitted = Number.isFinite(max) && max > 0 ? fitDs160Value(value, max) : value
+      if (samePayerText(await el.inputValue().catch(() => ''), fitted)) continue
+      await fillPayerCompanyControl(page, spec, fitted)
+      changed = true
+      continue
+    }
+    const current = await payerCompanyText(page, spec)
+    const next = spec.digits ? String(value).replace(/\D/g, '') : value
+    if (spec.kind === 'select') {
+      if (current.trim().toLowerCase().startsWith(String(next).trim().toLowerCase())) continue
+    } else if (samePayerText(current, next)) {
+      continue
+    }
+    await fillPayerCompanyControl(page, spec, next)
+    changed = true
+  }
+  if (changed) {
+    log(`Synchronized company payer: ${parsed.name}, ${parsed.city}, ${parsed.country}`)
+  }
+  return changed
 }
 
 async function routePersonal1BirthStateDoesNotApply(page, action) {
@@ -2255,6 +2403,17 @@ export async function executeAction(page, action) {
   const occurrence = Math.max(1, Number.parseInt(action.occurrence, 10) || 1)
 
   if (await routePayerCompanyField(page, action)) {
+    return
+  }
+
+  if (
+    expectedPayerCompany?.street1 &&
+    type === 'fill' &&
+    /street address \(line 1\)/i.test(String(label || '')) &&
+    !/payer company/i.test(String(label || '')) &&
+    String(value || '').trim().toUpperCase() === expectedPayerCompany.street1.trim().toUpperCase()
+  ) {
+    log('Skipped payer street on the U.S. stay address')
     return
   }
 
@@ -4507,16 +4666,45 @@ export function parsePrevTravelFromSource(sectionText) {
   }
 }
 
-export function parseUsStayAddressFromSource(sectionText) {
+function stripPayerBlock(text) {
+  return String(text || '').replace(
+    /\n?\*{0,2}PERSON\/ENTITY PAYING\b[\s\S]*?(?=\n🟦|$)/i,
+    '\n',
+  )
+}
+
+function travelSectionText(text) {
+  const match = String(text || '').match(/🟦 TRAVEL INFORMATION[\s\S]*?(?=\n🟦|$)/i)
+  return match ? match[0] : String(text || '')
+}
+
+function usContactAddressBlock(text) {
+  const match = String(text || '').match(
+    /\*{0,2}U\.S\. ADDRESS\*{0,2}[\s\S]*?(?=\n\*{0,2}CONTACT DETAILS\*{0,2}|\n🟦|$)/i,
+  )
+  return match?.[0] || ''
+}
+
+function readStayAddressLines(sectionText) {
   const streetRaw = sourceLineValue(sectionText, 'Street Address (Line 1)')
     || sourceLineValue(sectionText, 'Street Address')
-  const split = splitUsStayAddress({
+  return splitUsStayAddress({
     street: streetRaw,
     city: sourceLineValue(sectionText, 'City'),
     state: sourceLineValue(sectionText, 'State'),
     zip: sourceLineValue(sectionText, 'ZIP Code')
       || sourceLineValue(sectionText, 'Postal Zone/ZIP Code'),
   })
+}
+
+export function parseUsStayAddressFromSource(sectionText) {
+  // The payer block lives in TRAVEL INFORMATION and uses the same street/city
+  // labels. It is an address in Israel. The stay address is the U.S. hotel.
+  const stayScope = stripPayerBlock(travelSectionText(sectionText))
+  let split = readStayAddressLines(stayScope)
+  if (!split.street && !split.city) {
+    split = readStayAddressLines(usContactAddressBlock(sectionText))
+  }
   if ((split.street || split.city) && isMarkerValue(split.zip)) split.zip = UNKNOWN_US_STAY_ZIP
   return split
 }
@@ -5965,8 +6153,15 @@ export async function runAgent(page, translatedText, apiKey, opts = {}) {
       continue
     }
 
-    if (await syncUsStayAddressFromSource(page, travelText)) {
+    if (await syncUsStayAddressFromSource(page, translatedText)) {
       actionHistory.push({ type: '_us_stay_address_synced_from_source' })
+      currentPlan = null
+      await page.waitForTimeout(200)
+      continue
+    }
+
+    if (await syncPayerCompanyFromSource(page, travelText)) {
+      actionHistory.push({ type: '_payer_company_synced_from_source' })
       currentPlan = null
       await page.waitForTimeout(200)
       continue

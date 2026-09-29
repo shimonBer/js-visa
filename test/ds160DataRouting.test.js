@@ -30,8 +30,10 @@ import {
   parseIntendedStayFromSource,
   parseSocialMediaFromSource,
   parseTravelCompanions,
+  parsePayerCompanyFromSource,
   parseUsStayAddressFromSource,
   socialMediaIdentifier,
+  syncPayerCompanyFromSource,
   syncPrevTravelFromSource,
   syncIntendedStayFromSource,
   syncSocialMediaFromSource,
@@ -356,6 +358,63 @@ test('U.S. stay address is parsed from the travel section', () => {
     city: 'Cooper City',
     state: 'FL',
     zip: '33026',
+  })
+})
+
+test('U.S. stay address does not reuse the payer company address in Israel', () => {
+  const parsed = parseUsStayAddressFromSource([
+    '🟦 TRAVEL INFORMATION',
+    'Arrival City: New York',
+    'Provide the locations you plan to visit in the U.S.: Washington DC',
+    '**PERSON/ENTITY PAYING FOR TRIP**',
+    'Who is paying for the trip? Other Company/Organization',
+    'Street Address (Line 1): Kanfei Nesharim 5',
+    'City: Jerusalem',
+    'State/Province: DOES NOT APPLY',
+    'Postal Zone/ZIP Code: 9546412',
+    'Country/Region: Israel',
+    '🟦 U.S. CONTACT INFORMATION',
+    'Organization Name: HOTELS',
+    '**U.S. ADDRESS**',
+    'Street Address: HOTELS',
+    'City: New York',
+    'State: NY',
+    'ZIP Code: DOES NOT APPLY',
+    '**CONTACT DETAILS**',
+    'Phone Number: 0000000000',
+  ].join('\n'))
+  assert.deepEqual(parsed, {
+    street: 'HOTELS',
+    city: 'New York',
+    state: 'NY',
+    zip: '00000',
+  })
+})
+
+test('a real U.S. stay address wins over the payer address and the U.S. contact', () => {
+  const parsed = parseUsStayAddressFromSource([
+    '🟦 TRAVEL INFORMATION',
+    'Address Where You Will Stay in the U.S.:',
+    'Street Address (Line 1): Hotels',
+    'City: New York',
+    'State: NY',
+    'ZIP Code: N/A',
+    'PERSON/ENTITY PAYING FOR TRIP',
+    'Street Address (Line 1): Kanfei Nesharim 5',
+    'City: Jerusalem',
+    'Postal Zone/ZIP Code: 9546412',
+    '🟦 U.S. CONTACT INFORMATION',
+    '**U.S. ADDRESS**',
+    'Street Address: 1 Other Street',
+    'City: Boston',
+    'State: MA',
+    'ZIP Code: 02101',
+  ].join('\n'))
+  assert.deepEqual(parsed, {
+    street: 'Hotels',
+    city: 'New York',
+    state: 'NY',
+    zip: '00000',
   })
 })
 
@@ -1218,6 +1277,68 @@ test('employer name fill drops the Ltd. period CEAC rejects', async () => {
       await page.locator('input[id$="tbxEmpName"]').inputValue(),
       'ELBIT SYSTEMS LTD',
     )
+  } finally {
+    await browser.close()
+  }
+})
+
+test('company payer sync fills the organization, relationship, and Israel address', async () => {
+  const source = [
+    '🟦 TRAVEL INFORMATION',
+    '**PERSON/ENTITY PAYING FOR TRIP**',
+    'Who is paying for the trip? Other Company/Organization',
+    'Name of Company/Organization Paying for Trip: Ministry of the Negev Galilee and National Resilience',
+    'Telephone Number: 972522964588',
+    'Relationship to You: Advisor to the Ministry Director General',
+    'Street Address (Line 1): Kanfei Nesharim 5',
+    'City: Jerusalem',
+    'State/Province: DOES NOT APPLY',
+    'Postal Zone/ZIP Code: 9546412',
+    'Country/Region: Israel',
+  ].join('\n')
+  assert.equal(parsePayerCompanyFromSource(source).city, 'Jerusalem')
+  assert.equal(parsePayerCompanyFromSource(source).name.startsWith('Ministry'), true)
+
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(`
+      <div id="ctl00_SiteContentPlaceHolder_FormView1_upnlPayer">
+        <label for="org">Name of Company/Organization Paying for Trip</label>
+        <input id="org" maxlength="33" value="ADVISOR TO THE MINISTRY DIRECTOR">
+        <label for="tel">Telephone Number</label>
+        <input id="tel" value="972522964588">
+        <label for="rel">Relationship to You</label>
+        <input id="rel" maxlength="40" value="">
+        <label for="st1">Street Address (Line 1)</label>
+        <input id="st1" maxlength="40" value="">
+        <label for="city">City</label>
+        <input id="city" maxlength="20" value="">
+        <label for="state">State/Province</label>
+        <input id="state" value="">
+        <input id="stateNa" type="checkbox">
+        <label for="stateNa">Does Not Apply</label>
+        <label for="zip">Postal Zone/ZIP Code</label>
+        <input id="zip" value="">
+        <input id="zipNa" type="checkbox">
+        <label for="zipNa">Does Not Apply</label>
+        <label for="ctry">Country/Region</label>
+        <select id="ctry">
+          <option value="">- SELECT ONE -</option>
+          <option value="ISRL">ISRAEL</option>
+        </select>
+      </div>
+    `)
+    assert.equal(await syncPayerCompanyFromSource(page, source), true)
+    assert.equal(await page.locator('#org').inputValue(), 'Ministry of the Negev Galilee and')
+    assert.equal(await page.locator('#rel').inputValue(), 'Advisor to the Ministry Director General')
+    assert.equal(await page.locator('#st1').inputValue(), 'Kanfei Nesharim 5')
+    assert.equal(await page.locator('#city').inputValue(), 'Jerusalem')
+    assert.equal(await page.locator('#zip').inputValue(), '9546412')
+    assert.equal(await page.locator('#ctry').inputValue(), 'ISRL')
+    assert.equal(await page.locator('#stateNa').isChecked(), true)
+    assert.equal(await page.locator('#zipNa').isChecked(), false)
+    assert.equal(await syncPayerCompanyFromSource(page, source), false)
   } finally {
     await browser.close()
   }

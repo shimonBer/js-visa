@@ -2,8 +2,6 @@ import fs from 'fs'
 import path from 'path'
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import {
-  DS160_APPLICATION_FILE,
-  DS160_CONFIRMATION_FILE,
   ds160SubmittedPdfKeys,
   resolveS3UploadApiUrl,
 } from '../lib/ds160SubmittedPdfs.js'
@@ -86,7 +84,7 @@ async function openPrintApplication(page, log) {
   log(`Opened CEAC Print Application page: ${page.url()}`)
 }
 
-export async function saveConfirmationPdf(page, formId, log = console.log) {
+export async function saveConfirmationPdf(page, formId, log = console.log, nameOptions = {}) {
   await page.waitForSelector('h2:has-text("Confirmation")', {
     state: 'visible',
     timeout: 20_000,
@@ -95,7 +93,7 @@ export async function saveConfirmationPdf(page, formId, log = console.log) {
   const confirmationPdf = await renderPagePdf(page)
   await openPrintApplication(page, log)
   const applicationPdf = await renderPagePdf(page)
-  return persistDs160Pdfs(formId, { confirmationPdf, applicationPdf }, log)
+  return persistDs160Pdfs(formId, { confirmationPdf, applicationPdf, ...nameOptions }, log)
 }
 
 function toPdfBuffer(value) {
@@ -106,8 +104,8 @@ function toPdfBuffer(value) {
   return raw ? Buffer.from(raw, 'base64') : null
 }
 
-function submittedPdfRefs(formId, bucket) {
-  return ds160SubmittedPdfKeys(formId).map((item) => ({
+function submittedPdfRefs(formId, bucket, nameOptions) {
+  return ds160SubmittedPdfKeys(formId, nameOptions).map((item) => ({
     field: item.field,
     key: item.key,
     ...(bucket ? { bucket } : {}),
@@ -135,7 +133,7 @@ async function uploadPdfViaApi(apiUrl, formId, fileName, buf) {
   }
 }
 
-export async function persistDs160Pdfs(formId, { confirmationPdf, applicationPdf } = {}, log = console.log) {
+export async function persistDs160Pdfs(formId, { confirmationPdf, applicationPdf, firstName, lastName, translatedText } = {}, log = console.log) {
   const safeFormId = sanitizeFormId(formId)
   if (!safeFormId || safeFormId === 'incomplete') {
     throw new Error(
@@ -149,17 +147,21 @@ export async function persistDs160Pdfs(formId, { confirmationPdf, applicationPdf
   if (!confirmationBuf?.length) throw new Error('Confirmation PDF is empty')
   if (!applicationBuf?.length) throw new Error('Application PDF is empty')
 
+  const nameOptions = { firstName, lastName, translatedText }
+  const [confirmationMeta, applicationMeta] = ds160SubmittedPdfKeys(safeFormId, nameOptions)
+  const confirmationFile = confirmationMeta.fileName
+  const applicationFile = applicationMeta.fileName
+
   const outputDir = path.resolve('autofill-output', safeFormId)
   fs.mkdirSync(outputDir, { recursive: true })
 
-  const confirmationPath = path.join(outputDir, DS160_CONFIRMATION_FILE)
-  const applicationPath = path.join(outputDir, DS160_APPLICATION_FILE)
+  const confirmationPath = path.join(outputDir, confirmationFile)
+  const applicationPath = path.join(outputDir, applicationFile)
   fs.writeFileSync(confirmationPath, confirmationBuf)
   log(`Saved confirmation PDF locally: ${confirmationPath}`)
   fs.writeFileSync(applicationPath, applicationBuf)
   log(`Saved full Print Application PDF locally: ${applicationPath}`)
 
-  const [confirmationMeta, applicationMeta] = ds160SubmittedPdfKeys(safeFormId)
   const confirmationKey = confirmationMeta.key
   const applicationKey = applicationMeta.key
   const bucket =
@@ -173,7 +175,7 @@ export async function persistDs160Pdfs(formId, { confirmationPdf, applicationPdf
     applicationPath,
     confirmationKey,
     applicationKey,
-    s3Documents: submittedPdfRefs(safeFormId, bucket),
+    s3Documents: submittedPdfRefs(safeFormId, bucket, nameOptions),
     uploaded: false,
   }
 
@@ -181,8 +183,8 @@ export async function persistDs160Pdfs(formId, { confirmationPdf, applicationPdf
   if (apiUrl) {
     try {
       const [confirmationUp, applicationUp] = await Promise.all([
-        uploadPdfViaApi(apiUrl, safeFormId, DS160_CONFIRMATION_FILE, confirmationBuf),
-        uploadPdfViaApi(apiUrl, safeFormId, DS160_APPLICATION_FILE, applicationBuf),
+        uploadPdfViaApi(apiUrl, safeFormId, confirmationFile, confirmationBuf),
+        uploadPdfViaApi(apiUrl, safeFormId, applicationFile, applicationBuf),
       ])
       const resolvedBucket = confirmationUp.bucket || applicationUp.bucket || bucket
       log(`Uploaded confirmation PDF via ${apiUrl} → ${confirmationUp.key || confirmationKey}`)
@@ -192,7 +194,7 @@ export async function persistDs160Pdfs(formId, { confirmationPdf, applicationPdf
         bucket: resolvedBucket,
         key: confirmationUp.key || confirmationKey,
         applicationKey: applicationUp.key || applicationKey,
-        s3Documents: submittedPdfRefs(safeFormId, resolvedBucket),
+        s3Documents: submittedPdfRefs(safeFormId, resolvedBucket, nameOptions),
         uploaded: true,
         via: 'upload-api',
       }

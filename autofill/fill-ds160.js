@@ -1947,7 +1947,7 @@ async function main() {
         let pdfsSaved = false
         try {
           if (formId) {
-            await saveConfirmationPdf(page, formId, log)
+            await saveConfirmationPdf(page, formId, log, { translatedText })
           } else {
             log('Skipped DS-160 PDF saves (no form UUID).')
           }

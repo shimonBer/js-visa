@@ -734,6 +734,65 @@ test('address: no social media in the source selects NONE', () => {
   )
 })
 
+test('travel stay fields ignore the payer company address in Israel', () => {
+  const answers = [
+    '🟦 TRAVEL INFORMATION',
+    'Arrival City: New York',
+    '**PERSON/ENTITY PAYING FOR TRIP**',
+    'Who is paying for the trip? Other Company/Organization',
+    'Street Address (Line 1): Kanfei Nesharim 5',
+    'City: Jerusalem',
+    'State/Province: DOES NOT APPLY',
+    'Postal Zone/ZIP Code: 9546412',
+    'Country/Region: Israel',
+  ].join('\n')
+  const result = matchPage({
+    pageContext: 'travel',
+    inventory: {
+      fields: [
+        { ref: 'tbxStreetAddress1', kind: 'text', label: 'Street Address (Line 1)', value: '', required: true },
+        { ref: 'tbxCity', kind: 'text', label: 'City', value: '', required: true },
+        { ref: 'ddlTravelState', kind: 'select', label: 'State', value: '- SELECT ONE -', required: true },
+        { ref: 'tbZIPCode', kind: 'text', label: 'ZIP Code', value: '', required: true },
+      ],
+      buttons: [],
+    },
+    answers,
+  })
+  assert.equal(result.actions.find((action) => action.ref === 'tbxStreetAddress1'), undefined)
+  assert.equal(result.actions.find((action) => action.ref === 'tbxCity'), undefined)
+  assert.equal(result.actions.find((action) => action.ref === 'tbZIPCode'), undefined)
+})
+
+test('travel stay address stays the U.S. hotel when a payer address is also listed', () => {
+  const answers = [
+    'Address Where You Will Stay in the U.S.:',
+    'Street Address (Line 1): Hotels',
+    'City: New York',
+    'State: NY',
+    'ZIP Code: 00000',
+    'PERSON/ENTITY PAYING FOR TRIP',
+    'Street Address (Line 1): Kanfei Nesharim 5',
+    'City: Jerusalem',
+    'Postal Zone/ZIP Code: 9546412',
+  ].join('\n')
+  const result = matchPage({
+    pageContext: 'travel',
+    inventory: {
+      fields: [
+        { ref: 'tbxStreetAddress1', kind: 'text', label: 'Street Address (Line 1)', value: '', required: true },
+        { ref: 'tbxCity', kind: 'text', label: 'City', value: '', required: true },
+        { ref: 'tbZIPCode', kind: 'text', label: 'ZIP Code', value: '', required: true },
+      ],
+      buttons: [],
+    },
+    answers,
+  })
+  assert.equal(result.actions.find((action) => action.ref === 'tbxStreetAddress1')?.value, 'Hotels')
+  assert.equal(result.actions.find((action) => action.ref === 'tbxCity')?.value, 'New York')
+  assert.equal(result.actions.find((action) => action.ref === 'tbZIPCode')?.value, '00000')
+})
+
 test('travel: B1/B2 purpose, stay address and payer resolve without the LLM', async () => {
   const parsed = parseApplicantSource(readFileSync('people/form10.txt', 'utf8'))
   const html = readFileSync('dom-snapshots/travel--expanded.html', 'utf8')

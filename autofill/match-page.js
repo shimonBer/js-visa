@@ -112,9 +112,17 @@ export function revealedFieldsToFill(added = [], plannedRefs = []) {
  */
 export function parseSourceAnswers(text) {
   const entries = []
+  let inPayer = false
   for (const rawLine of String(text ?? '').split(/\r?\n/)) {
     const line = rawLine.trim()
-    if (!line || line.startsWith('🟦')) continue
+    if (!line || line.startsWith('🟦')) {
+      if (line.startsWith('🟦')) inPayer = false
+      continue
+    }
+    if (/^\*{0,2}PERSON\/ENTITY PAYING\b/i.test(line)) {
+      inPayer = true
+      continue
+    }
 
     const colon = line.indexOf(':')
     const question = line.indexOf('?')
@@ -134,7 +142,7 @@ export function parseSourceAnswers(text) {
     key = key.trim()
     value = value.trim()
     if (!key || !value) continue
-    entries.push({ key, normKey: normalizeKey(key), value })
+    entries.push({ key, normKey: normalizeKey(key), value, payer: inPayer })
   }
   return entries
 }
@@ -491,9 +499,20 @@ function lookupCountryFallback(field, sources) {
  * Resolve one field to a raw source value.
  * Returns { value, sourceLabel, entry } or null when nothing matched.
  */
+const US_STAY_ADDRESS_REFS = new Set([
+  'tbxStreetAddress1',
+  'tbxStreetAddress2',
+  'tbxCity',
+  'ddlTravelState',
+  'tbZIPCode',
+])
+
 function lookupValue(field, sources, registry) {
   const core = refCore(field.ref)
   const row = field.row || 1
+  if (US_STAY_ADDRESS_REFS.has(core)) {
+    sources = sources.map((entries) => entries.filter((entry) => !entry.payer))
+  }
 
   const pick = (matches) => {
     if (!matches.length) return null

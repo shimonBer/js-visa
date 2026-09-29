@@ -117,6 +117,9 @@ const server = http.createServer(async (req, res) => {
         {
           confirmationPdf: body.confirmationPdf,
           applicationPdf: body.applicationPdf,
+          firstName: body.firstName,
+          lastName: body.lastName,
+          translatedText: body.translatedText,
         },
         (message) => console.log(`[save-pdfs] ${message}`),
       )

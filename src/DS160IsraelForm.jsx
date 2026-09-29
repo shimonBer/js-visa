@@ -1745,6 +1745,11 @@ export default function DS160IsraelForm({
     }
   }, [initialBlobKey, initialBlob, setValue])
 
+  const pdfFirstName = watch('firstNameEnglish')
+  const pdfLastName = watch('lastNameEnglish')
+  const pdfFirstNameHe = watch('firstName')
+  const pdfLastNameHe = watch('lastName')
+
   useEffect(() => {
     const formKey = formUUIDRef.current || storageFormId
     if (!formKey || formKey === 'incomplete') return undefined
@@ -1752,7 +1757,10 @@ export default function DS160IsraelForm({
     if (fromBlob.length > 0) setSubmittedPdfs(fromBlob)
     let cancelled = false
     ;(async () => {
-      const found = await probeDs160SubmittedPdfs(formKey)
+      const found = await probeDs160SubmittedPdfs(formKey, {
+        firstName: pdfFirstName || pdfFirstNameHe,
+        lastName: pdfLastName || pdfLastNameHe,
+      })
       if (cancelled || found.length === 0) return
       s3DocumentsRef.current = mergeS3DocumentsByField(s3DocumentsRef.current, found)
       setSubmittedPdfs(submittedPdfsFromDocuments(s3DocumentsRef.current, formKey))
@@ -1760,7 +1768,7 @@ export default function DS160IsraelForm({
     return () => {
       cancelled = true
     }
-  }, [initialBlobKey, storageFormId])
+  }, [initialBlobKey, storageFormId, pdfFirstName, pdfLastName, pdfFirstNameHe, pdfLastNameHe])
 
   useEffect(() => {
     if (normalizeStoredTranslation(translationRef.current)) return undefined

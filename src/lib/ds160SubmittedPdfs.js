@@ -29,8 +29,15 @@ function uploadUrl(key, extra = {}) {
  * @param {string} formId
  * @returns {Promise<{ field: string, key: string, fileName: string }[]>}
  */
-export async function probeDs160SubmittedPdfs(formId) {
-  const items = ds160SubmittedPdfKeys(formId)
+export async function probeDs160SubmittedPdfs(formId, nameOptions) {
+  const prefixed = ds160SubmittedPdfKeys(formId, nameOptions)
+  const plain = ds160SubmittedPdfKeys(formId)
+  const seen = new Set()
+  const items = [...plain, ...prefixed].filter((item) => {
+    if (seen.has(item.key)) return false
+    seen.add(item.key)
+    return true
+  })
   if (!getS3UploadApiBase() || items.length === 0) return []
 
   const found = []
@@ -49,7 +56,12 @@ export async function probeDs160SubmittedPdfs(formId) {
       }
     }),
   )
-  return found
+  const byField = new Map()
+  for (const item of found) {
+    const current = byField.get(item.field)
+    if (!current || item.fileName.length > current.fileName.length) byField.set(item.field, item)
+  }
+  return [...byField.values()]
 }
 
 /**

@@ -522,7 +522,7 @@ async function saveDs160Pdfs(tabId, formId, report) {
   const res = await fetch(`${BRIDGE}/save-pdfs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ formId, confirmationPdf, applicationPdf }),
+    body: JSON.stringify({ formId, confirmationPdf, applicationPdf, translatedText: source }),
   })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(body.error || `Bridge ${res.status}`)
