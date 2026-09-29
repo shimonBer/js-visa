@@ -33,8 +33,12 @@ import { restoreS3DocumentsIntoForm } from './lib/restoreFormDocumentsFromS3.js'
 import { getS3UploadApiBase } from './lib/uploadFormDocuments.js'
 import {
   DS160_APPLICATION_FIELD,
+  DS160_APPLICATION_FILE,
   DS160_CONFIRMATION_FIELD,
+  DS160_CONFIRMATION_FILE,
   downloadS3FormDocument,
+  ds160SubmittedPdfFileName,
+  fetchS3FormDocumentBase64,
   probeDs160SubmittedPdfs,
   submittedPdfsFromDocuments,
 } from './lib/ds160SubmittedPdfs.js'
@@ -1241,6 +1245,7 @@ export default function DS160IsraelForm({
       mailingStreet2: '',
       mailingState: '',
       mondayItemId: '',
+      mondayDs160PdfKeys: '',
       hasExactAccommodationAddress: '',
       accommodationCityPreset: '',
       accommodationStreet1: '',
@@ -1445,6 +1450,9 @@ export default function DS160IsraelForm({
     () => submittedPdfsFromDocuments(initialBlob?.s3Documents, formUUID || ''),
   )
   const [downloadingPdfField, setDownloadingPdfField] = useState('')
+  const [submittedPdfMonday, setSubmittedPdfMonday] = useState({ status: '', itemId: '', message: '' })
+  const [mondayPdfRetry, setMondayPdfRetry] = useState(0)
+  const mondayPdfAttemptRef = useRef('')
   const [passportOcr, setPassportOcr] = useState({ status: 'idle', message: '' })
   const [foreignPassportOcr, setForeignPassportOcr] = useState({}) // keyed by index
   const [socialSecurityOcr, setSocialSecurityOcr] = useState({ status: 'idle', message: '' })
@@ -1700,6 +1708,7 @@ export default function DS160IsraelForm({
       travelCompanions: companions,
       previousUSVisits: restoredVisits,
       mondayItemId: String(data.mondayItemId || ''),
+      mondayDs160PdfKeys: String(data.mondayDs160PdfKeys || ''),
       passportScan: undefined,
       photoScan: undefined,
       existingVisaScan: undefined,
@@ -2146,17 +2155,106 @@ export default function DS160IsraelForm({
     }
   }
 
+  function submittedPdfNameOptions() {
+    const values = getValues()
+    return {
+      firstName: values.firstNameEnglish || values.firstName,
+      lastName: values.lastNameEnglish || values.lastName,
+    }
+  }
+
+  function submittedPdfDownloadName(doc) {
+    const base = doc?.field === DS160_APPLICATION_FIELD
+      ? DS160_APPLICATION_FILE
+      : doc?.field === DS160_CONFIRMATION_FIELD
+        ? DS160_CONFIRMATION_FILE
+        : ''
+    if (!base) return doc?.fileName || 'document.pdf'
+    return ds160SubmittedPdfFileName(base, submittedPdfNameOptions())
+  }
+
+  function submittedPdfUpdateBody(doc) {
+    if (doc?.field === DS160_APPLICATION_FIELD) return '📄 DS-160 Print Application'
+    return '📄 DS-160 Confirmation'
+  }
+
   async function handleDownloadSubmittedPdf(doc) {
     if (!doc?.key) return
     setDownloadingPdfField(doc.field)
     try {
-      await downloadS3FormDocument(doc.key, doc.fileName)
+      await downloadS3FormDocument(doc.key, submittedPdfDownloadName(doc))
     } catch (e) {
       setAsyncFlow({ phase: 'error', message: `הורדת הקובץ נכשלה: ${e?.message || 'שגיאה'}` })
     } finally {
       setDownloadingPdfField('')
     }
   }
+
+  const pdfPhoneCode = watch('phoneCountryCode')
+  const pdfPhoneNumber = watch('phoneNumber')
+  const pdfEmail = watch('email')
+
+  useEffect(() => {
+    if (submittedPdfs.length === 0) return undefined
+    const values = getValues()
+    const uploaded = new Set(
+      String(values.mondayDs160PdfKeys || '').split('\n').map((key) => key.trim()).filter(Boolean),
+    )
+    const pending = submittedPdfs.filter((doc) => doc?.key && !uploaded.has(doc.key))
+    if (pending.length === 0) return undefined
+    const phone = `${String(pdfPhoneCode || '').trim()}${String(pdfPhoneNumber || '').trim()}`
+    const email = String(pdfEmail || '').trim()
+    const hasPhone = phone.replace(/\D/g, '').length >= 7
+    const hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    if (!hasPhone && !hasEmail) return undefined
+    const attemptKey = `${mondayPdfRetry}|${phone}|${email}|${pending.map((doc) => doc.key).sort().join('|')}`
+    if (mondayPdfAttemptRef.current === attemptKey) return undefined
+    mondayPdfAttemptRef.current = attemptKey
+    let active = true
+    ;(async () => {
+      if (active) setSubmittedPdfMonday({ status: 'uploading', itemId: '', message: '' })
+      try {
+        const found = await searchMondayItem({ phone, email })
+        if (!found.found) {
+          if (active) setSubmittedPdfMonday({ status: 'not_found', itemId: '', message: '' })
+          return
+        }
+        for (const doc of pending) {
+          const pdfBase64 = await fetchS3FormDocumentBase64(doc.key)
+          await sendPdfToMonday({
+            applicantName: '',
+            pdfBase64,
+            mondayItemId: found.itemId,
+            fileName: submittedPdfDownloadName(doc),
+            updateBody: submittedPdfUpdateBody(doc),
+          })
+          uploaded.add(doc.key)
+        }
+        setValue('mondayItemId', found.itemId, { shouldDirty: false })
+        setValue('mondayDs160PdfKeys', [...uploaded].join('\n'), { shouldDirty: false })
+        try {
+          await saveFormBlobPayload(
+            buildN8nBody('draft', getValues(), s3DocumentsRef.current),
+            loadedBlobKeyRef.current ?? undefined,
+          )
+        } catch (e) {
+          console.warn('[monday pdfs] persist failed', e)
+        }
+        if (active) setSubmittedPdfMonday({ status: 'uploaded', itemId: found.itemId, message: '' })
+      } catch (e) {
+        if (mondayPdfAttemptRef.current === attemptKey) mondayPdfAttemptRef.current = ''
+        if (!active) return
+        setSubmittedPdfMonday({
+          status: 'error',
+          itemId: '',
+          message: e?.message || 'העלאה ל-Monday נכשלה',
+        })
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [submittedPdfs, pdfPhoneCode, pdfPhoneNumber, pdfEmail, pdfFirstName, pdfLastName, pdfFirstNameHe, pdfLastNameHe, mondayPdfRetry, getValues, setValue])
 
   /** Controlled by VITE_I94_ENABLED env var. Defaults to enabled when not set. */
   const i94Enabled = import.meta.env.VITE_I94_ENABLED !== 'false'
@@ -5847,6 +5945,42 @@ export default function DS160IsraelForm({
               <p className="text-sm text-gray-600">
                 דף האישור והטופס המלא שנשמרו ל-S3 אחרי מילוי CEAC. אפשר להוריד אותם מכאן.
               </p>
+              {submittedPdfMonday.status === 'uploading' ? (
+                <p className="text-sm text-gray-500">מעלה את הקבצים לכרטיס ב-Monday…</p>
+              ) : null}
+              {submittedPdfMonday.status === 'uploaded' ? (
+                <p className="text-sm text-green-700">הקבצים הועלו לכרטיס ב-Monday.</p>
+              ) : null}
+              {submittedPdfMonday.status === 'not_found' ? (
+                <div className="flex flex-wrap items-center gap-2 text-sm text-red-600">
+                  <span>לא נמצא הלקוח ב-Monday — הקבצים לא הועלו.</span>
+                  <button
+                    type="button"
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-white"
+                    onClick={() => {
+                      mondayPdfAttemptRef.current = ''
+                      setMondayPdfRetry((n) => n + 1)
+                    }}
+                  >
+                    נסה שוב
+                  </button>
+                </div>
+              ) : null}
+              {submittedPdfMonday.status === 'error' ? (
+                <div className="flex flex-wrap items-center gap-2 text-sm text-red-600">
+                  <span>{submittedPdfMonday.message || 'העלאה ל-Monday נכשלה'}</span>
+                  <button
+                    type="button"
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-white"
+                    onClick={() => {
+                      mondayPdfAttemptRef.current = ''
+                      setMondayPdfRetry((n) => n + 1)
+                    }}
+                  >
+                    נסה שוב
+                  </button>
+                </div>
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 {submittedPdfs.map((doc) => {
                   const copy = SUBMITTED_PDF_COPY[doc.field] || { title: doc.fileName, hint: '' }

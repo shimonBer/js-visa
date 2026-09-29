@@ -1,13 +1,14 @@
 /**
  * POST /api/monday-lookup
- * Body: { phone: string }
+ * Body: { phone?: string, email?: string }
  * Response: { found: boolean, itemId?: string, itemName?: string }
  *
  * Safety — read-only: uses GraphQL `items_page_by_column_values` (query only). No mutations.
  *
- * Searches by phone only (digits-only, e.g. "9725433454").
+ * Searches by phone first (digits-only, e.g. "9725433454"), then by email if the phone misses.
  * Board is read from MONDAY_BOARD_ID env var.
  * Phone column id is read from MONDAY_PHONE_COLUMN_ID env var (column type: phone, id: "phone").
+ * Email column id is read from MONDAY_EMAIL_COLUMN_ID env var.
  * When required env vars are missing returns { found: false } (HTTP 200) for graceful degradation.
  */
 
@@ -105,6 +106,7 @@ export default async function handler(req, res) {
   const apiToken = process.env.MONDAY_API_TOKEN?.trim()
   const boardId = process.env.MONDAY_BOARD_ID?.trim()
   const phoneColumnId = process.env.MONDAY_PHONE_COLUMN_ID?.trim() || 'phone'
+  const emailColumnId = process.env.MONDAY_EMAIL_COLUMN_ID?.trim() || ''
 
   if (!apiToken || !boardId) {
     return jsonResponse(res, 200, { found: false })
@@ -119,13 +121,17 @@ export default async function handler(req, res) {
 
   const rawPhone = typeof body.phone === 'string' ? body.phone.trim() : ''
   const digits = rawPhone.replace(/\D/g, '')
+  const email = typeof body.email === 'string' ? body.email.trim() : ''
 
-  if (!digits || digits.length < 7) {
-    return jsonResponse(res, 200, { found: false })
+  if (digits.length >= 7) {
+    const hit = await lookupByColumn({ apiToken, boardId, columnId: phoneColumnId, value: digits })
+    if (hit) return jsonResponse(res, 200, { found: true, itemId: hit.id, itemName: hit.name || hit.id })
   }
 
-  const hit = await lookupByColumn({ apiToken, boardId, columnId: phoneColumnId, value: digits })
-  if (hit) return jsonResponse(res, 200, { found: true, itemId: hit.id, itemName: hit.name || hit.id })
+  if (emailColumnId && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const hit = await lookupByColumn({ apiToken, boardId, columnId: emailColumnId, value: email })
+    if (hit) return jsonResponse(res, 200, { found: true, itemId: hit.id, itemName: hit.name || hit.id })
+  }
 
   return jsonResponse(res, 200, { found: false })
 }

@@ -10,7 +10,7 @@
  * server temp file under /tmp.
  *
  * Body (JSON):
- *   { applicantName, pdfBase64, phone?, email?, mondayItemId?, status?, metadata? }
+ *   { applicantName, pdfBase64, phone?, email?, mondayItemId?, fileName?, updateBody?, status?, metadata? }
  *
  * Lookup flow (no `mondayItemId` pre-stored):
  *   1. If MONDAY_PHONE_COLUMN_ID configured and phone provided → query board by phone digits
@@ -274,15 +274,26 @@ export async function createMondayItem({ apiToken, boardId, applicantName, group
  * @param {string} opts.itemId
  * @param {string} opts.filePath — absolute path to PDF on disk (e.g. under /tmp)
  * @param {string} [opts.fileName]
+ * @param {string} [opts.updateBody] — plain-text update shown with the file
  * @param {unknown} [opts.metadata] — optional extra data serialised into the update body
  * @returns {Promise<{ updateId: string, asset: Record<string, unknown> }>}
  */
-export async function createUpdateAndUploadPdf({ apiToken, itemId, filePath, fileName = 'ds160-english-summary.pdf', metadata }) {
+export async function createUpdateAndUploadPdf({
+  apiToken,
+  itemId,
+  filePath,
+  fileName = 'ds160-english-summary.pdf',
+  updateBody,
+  metadata,
+}) {
   if (!itemId) throw new Error('createUpdateAndUploadPdf: itemId is required')
   if (!filePath) throw new Error('createUpdateAndUploadPdf: filePath is required')
 
   // Build update body — always includes "DS-160" label; append metadata if provided
-  let bodyText = '📄 DS-160 English Summary'
+  const label = typeof updateBody === 'string' && updateBody.trim()
+    ? escapeHtml(updateBody.trim().slice(0, 200))
+    : '📄 DS-160 English Summary'
+  let bodyText = label
   if (metadata != null && !(typeof metadata === 'object' && metadata !== null && Object.keys(metadata).length === 0)) {
     const jsonText = JSON.stringify(metadata, null, 2).slice(0, 6000)
     bodyText += `\n\n<pre>${escapeHtml(jsonText)}</pre>`
@@ -380,6 +391,8 @@ function escapeHtml(s) {
  * @param {string} [opts.emailColumnId] — Monday column id for the email field
  * @param {string} [opts.groupId] — board group id to create new items in
  * @param {string} [opts.itemUrlPrefix] — optional URL prefix to build item link
+ * @param {string} [opts.fileName] — PDF name stored on the Monday update
+ * @param {string} [opts.updateBody] — plain-text update shown with the file
  * @param {string} [opts.status]
  * @param {unknown} [opts.metadata]
  * @returns {Promise<{ success: true, itemId: string, updateId: string, isNew: boolean, itemUrl: string, fileUpload: Record<string, unknown> }>}
@@ -396,6 +409,8 @@ export async function sendPdfToMonday({
   emailColumnId,
   groupId,
   itemUrlPrefix,
+  fileName,
+  updateBody,
   status,
   metadata,
 }) {
@@ -473,7 +488,8 @@ export async function sendPdfToMonday({
       apiToken,
       itemId,
       filePath: tmpPath,
-      fileName: 'ds160-english-summary.pdf',
+      fileName: sanitizeMondayFileName(fileName) || 'ds160-english-summary.pdf',
+      updateBody,
       metadata,
     })
 
@@ -490,6 +506,11 @@ export async function sendPdfToMonday({
       /* ignore missing file or failed write */
     }
   }
+}
+
+function sanitizeMondayFileName(fileName) {
+  const base = String(fileName || '').trim().replace(/[\\/]/g, '')
+  return /^[A-Za-z0-9._-]{1,180}\.pdf$/i.test(base) ? base : ''
 }
 
 function requireMondayEnv() {
@@ -552,6 +573,8 @@ export default async function handler(req, res) {
           : ''
     const status = typeof body.status === 'string' ? body.status : undefined
     const metadata = body.metadata
+    const fileName = typeof body.fileName === 'string' ? body.fileName : ''
+    const updateBody = typeof body.updateBody === 'string' ? body.updateBody : ''
 
     const result = await sendPdfToMonday({
       apiToken: mondayEnv.apiToken,
@@ -565,6 +588,8 @@ export default async function handler(req, res) {
       phone,
       email,
       mondayItemId,
+      fileName,
+      updateBody,
       status,
       metadata,
     })

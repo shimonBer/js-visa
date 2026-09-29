@@ -26,18 +26,23 @@ function getMondayLookupUrl(opts = {}) {
 }
 
 /**
- * Search for an existing Monday board item by phone (digits only, e.g. "9725433454").
+ * Search for an existing Monday board item by phone, then by email if the phone misses.
  *
  * @param {{ phone?: string, email?: string }} params
  * @param {{ apiBase?: string }} [opts]
  * @returns {Promise<{ found: true, itemId: string, itemName: string } | { found: false }>}
  */
-export async function searchMondayItem({ phone } = {}, opts = {}) {
+export async function searchMondayItem({ phone, email } = {}, opts = {}) {
   const url = getMondayLookupUrl(opts)
+  const phoneStr = String(phone || '').trim()
+  const emailStr = String(email || '').trim()
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: String(phone || '').trim() }),
+    body: JSON.stringify({
+      ...(phoneStr ? { phone: phoneStr } : {}),
+      ...(emailStr ? { email: emailStr } : {}),
+    }),
   })
 
   const text = await res.text()
@@ -67,6 +72,8 @@ export async function searchMondayItem({ phone } = {}, opts = {}) {
  * @param {string} [payload.phone] — applicant phone for Monday lookup / column population
  * @param {string} [payload.email] — applicant email for Monday lookup / column population
  * @param {string} [payload.mondayItemId] — pre-stored Monday item id (skips lookup)
+ * @param {string} [payload.fileName] — PDF name stored on the Monday card
+ * @param {string} [payload.updateBody] — plain-text update shown with the file
  * @param {string} [payload.status]
  * @param {Record<string, unknown>} [payload.metadata]
  * @param {{ apiBase?: string }} [opts]
@@ -90,6 +97,12 @@ export async function sendPdfToMonday(payload, opts = {}) {
       ...(payload.email != null && String(payload.email).trim() ? { email: String(payload.email).trim() } : {}),
       ...(payload.mondayItemId != null && String(payload.mondayItemId).trim()
         ? { mondayItemId: String(payload.mondayItemId).trim() }
+        : {}),
+      ...(payload.fileName != null && String(payload.fileName).trim()
+        ? { fileName: String(payload.fileName).trim() }
+        : {}),
+      ...(payload.updateBody != null && String(payload.updateBody).trim()
+        ? { updateBody: String(payload.updateBody).trim() }
         : {}),
       ...(payload.status != null && payload.status !== '' ? { status: payload.status } : {}),
       ...(payload.metadata && typeof payload.metadata === 'object' ? { metadata: payload.metadata } : {}),

@@ -8,6 +8,7 @@ export {
   DS160_CONFIRMATION_FIELD,
   DS160_CONFIRMATION_FILE,
   DS160_SUBMITTED_PDF_FIELDS,
+  ds160SubmittedPdfFileName,
   ds160SubmittedPdfKeys,
   isDs160SubmittedPdfField,
   submittedPdfsFromDocuments,
@@ -83,4 +84,23 @@ export async function downloadS3FormDocument(key, fileName) {
   a.download = fileName || 'document.pdf'
   a.click()
   URL.revokeObjectURL(href)
+}
+
+/** @param {string} key @returns {Promise<string>} raw base64, no data: prefix */
+export async function fetchS3FormDocumentBase64(key) {
+  const url = uploadUrl(key, { download: '1' })
+  if (!url) throw new Error('S3 download is not configured')
+  const res = await fetch(url, { method: 'GET', headers: authHeaders() })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text.slice(0, 200) || `Download failed (${res.status})`)
+  }
+  const bytes = new Uint8Array(await res.arrayBuffer())
+  if (!bytes.length) throw new Error('Downloaded PDF is empty')
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
 }
