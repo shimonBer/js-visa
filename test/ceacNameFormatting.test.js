@@ -69,6 +69,29 @@ test('source JSON employer names are sanitized', () => {
   assert.equal(normalized.educationRecords[0].institutionName, 'Ort Ironi D')
 })
 
+test('Hebrew source names are kept for translation; English output drops marks', () => {
+  assert.equal(sanitizeCeacName('Elbit Systems Ltd.'), 'Elbit Systems Ltd')
+  assert.equal(sanitizeCeacName('Reichman University.'), 'Reichman University')
+  const normalized = normalizeCeacNameFieldsInSourceData({
+    employerName: 'קטה גרופ ',
+    jobTitle: 'עורכת דין במחלקה המשפטית של החברה ',
+    previousEmployments: [{
+      employerName: "AYR - עמר רייטר ז'אן שוכטוביץ ושות'",
+      jobTitle: 'עורכת דין ',
+    }],
+    educationRecords: [
+      { institutionName: 'בי"ס מקיף גליל מערבי' },
+      { institutionName: 'אוניברסיטת רייכמן' },
+    ],
+  })
+  assert.equal(normalized.employerName, 'קטה גרופ')
+  assert.equal(normalized.jobTitle, 'עורכת דין במחלקה המשפטית של החברה')
+  assert.equal(normalized.previousEmployments[0].employerName, "AYR - עמר רייטר ז'אן שוכטוביץ ושות'")
+  assert.equal(normalized.previousEmployments[0].jobTitle, 'עורכת דין')
+  assert.equal(normalized.educationRecords[0].institutionName, 'בי"ס מקיף גליל מערבי')
+  assert.equal(normalized.educationRecords[1].institutionName, 'אוניברסיטת רייכמן')
+})
+
 test('fill values are sanitized only for CEAC name fields', () => {
   assert.equal(
     normalizeCeacNameFillValue('Elbit Systems Ltd.', { label: 'Employer Name' }),

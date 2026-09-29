@@ -268,6 +268,19 @@ slashes, and parentheses — "Elbit Systems Ltd." fails; write "Elbit Systems Lt
 Strip trailing company punctuation (Ltd. / Inc. / Co. / LLC. → Ltd / Inc / Co / LLC).
 Never keep a period in these name fields.
 
+The JSON value may be Hebrew. That Hebrew is the text to translate. It is not a
+missing value, and it must not be copied into the output.
+The only field that stays in Hebrew is "Full Name in Native Alphabet".
+
+* Job titles and other descriptive phrases: translate the meaning
+  (עורכת דין → Lawyer).
+* Places, employers, schools, and other institutions: use the official English
+  name when one exists (פתח תקווה → Petah Tikva, אוניברסיטת רייכמן → Reichman
+  University, בי"ס מקיף → the school's English name). Otherwise transliterate.
+* A non-empty Hebrew value is present. Never output ❗ MISSING or N/A for it.
+* The translated value is English only, then with periods, commas, slashes,
+  parentheses, and other CEAC-rejected marks removed.
+
 ━━━━━━━━━━━━━━━━━━━━
 PHONE NUMBER RULES
 ━━━━━━━━━━━━━━━━━━━━
@@ -917,11 +930,13 @@ RELATIVES IN THE U.S.
   Rule:
   - If currentOccupation is 'STUDENT' → use studentInstitutionName; if absent → ❗ MISSING
   - Otherwise → use employerName; if absent → ❗ MISSING
+  - Hebrew is present, not absent. Output the official English institution or employer name.
 
 * Job Title / Position
   Rule:
   - If currentOccupation is 'STUDENT' → use studentDegree (course/degree being studied); if absent → ❗ MISSING
   - Otherwise → use jobTitle; if absent → N/A
+  - A Hebrew job title is present. Translate it to English. Do not output N/A.
 
 * Employer Address
   Rule:
@@ -965,8 +980,8 @@ RELATIVES IN THE U.S.
 
   * IF YES: iterate over the previousEmployments array. For each entry output:
 
-    * Employer Name → previousEmployments[i].employerName; if absent → ❗ MISSING
-    * Job Title → previousEmployments[i].jobTitle; if absent → ❗ MISSING
+    * Employer Name → previousEmployments[i].employerName; if absent → ❗ MISSING. Hebrew is present, not absent: output the official English name.
+    * Job Title → previousEmployments[i].jobTitle; if absent → ❗ MISSING. A Hebrew title is present: translate it to English.
     * Employer Address → previousEmployments[i].street + previousEmployments[i].street2; if absent → N/A
     * Employer City → previousEmployments[i].city; if absent → N/A
     * State / Province → previousEmployments[i].state; if previousEmployments[i].stateDoesNotApply is true or absent → DOES NOT APPLY
@@ -990,7 +1005,7 @@ RELATIVES IN THE U.S.
 
   * IF YES: iterate over the educationRecords array. For each entry output:
 
-    * School / Institution Name → educationRecords[i].institutionName; if absent → ❗ MISSING
+    * School / Institution Name → educationRecords[i].institutionName; if absent → ❗ MISSING. Hebrew is present, not absent: output the official English name.
     * Address → educationRecords[i].street + educationRecords[i].street2; if absent → N/A
     * City → educationRecords[i].city; if absent → N/A
     * State / Province → educationRecords[i].state; if educationRecords[i].stateDoesNotApply is true or absent → DOES NOT APPLY
