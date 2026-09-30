@@ -2877,7 +2877,6 @@ export default function DS160IsraelForm({
         error: '',
         reused: true,
       })
-      downloadAutofillFile(cached.translated)
       void fetchTranslationPdfBase64(storageFormId)
         .then((pdfBase64) => {
           if (!pdfBase64) return
@@ -2949,7 +2948,6 @@ export default function DS160IsraelForm({
         error: '',
         reused: false,
       })
-      downloadAutofillFile(translated)
     } catch (e) {
       setTranslateUi((s) => ({ ...s, loading: false, error: e?.message || 'שגיאת תרגום' }))
     }
