@@ -16,6 +16,7 @@ import { randomUUID } from 'node:crypto'
 
 import { translatedDownloadFileName } from '../../lib/translatedFileName.js'
 import { repoRoot, startFill } from '../run-fill.js'
+import { updateFillKit } from '../update-fill-kit.js'
 import {
   appendFillEvent,
   classifyFillResult,
@@ -887,12 +888,32 @@ const server = http.createServer(async (req, res) => {
   }
 })
 
+function restartUpdatedApp() {
+  const child = spawn(process.execPath, process.argv.slice(1), {
+    cwd: repoRoot,
+    detached: true,
+    windowsHide: true,
+    stdio: 'inherit',
+    env: { ...process.env, DS160_FILL_UPDATED: '1' },
+  })
+  child.unref()
+  console.log('fill-ds160 updated; restarting')
+  process.exit(0)
+}
+
 async function main() {
   if (await alreadyRunning()) {
     if (wantOpen) revealUi(`http://${HOST}:${PORT}/`)
     console.log(`fill-ds160 UI already running at http://${HOST}:${PORT}/`)
     return
   }
+
+  const update = await updateFillKit({ repoRoot })
+  if (update.busy) {
+    console.log('fill-ds160 is already opening')
+    return
+  }
+  if (update.restart) restartUpdatedApp()
 
   loadPersisted()
   await new Promise((resolve, reject) => {

@@ -16,6 +16,7 @@
     "fill-ds160": "node scripts/fill-ui/server.js --open",
     "fill-easy": "node scripts/fill-ds160-easy.js",
     "pack-fill-kit": "node scripts/pack-fill-kit.js",
+    "publish-worker": "node scripts/publish-worker.js",
     "extension-bridge": "node autofill/extension-bridge.js",
     "extension:sync": "node extension/sync-inventory.js",
     "crawl-dom": "node autofill/crawl-dom.js --input",

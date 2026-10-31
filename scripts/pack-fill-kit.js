@@ -31,6 +31,7 @@ const FILL_ENV_KEYS = [
   'DS160_FILL_EMAIL_EVENTS',
   'RESEND_API_KEY',
   'DS160_FILL_WEBHOOK_URL',
+  'DS160_UPDATE_TOKEN',
 ]
 
 function run(command, args, opts = {}) {
@@ -93,6 +94,8 @@ Windows
 
 In the visa form, translate and download first_last.txt, then drop those files into fill-ds160.
 
+Opening fill-ds160 downloads newer code by itself. Another zip is only needed if someone asks you to reinstall.
+
 Keep this folder private — it includes API keys in .env.
 `
 
@@ -127,6 +130,9 @@ writeFillEnv(path.join(kitDir, '.env'), {
   ...readDotenv(path.join(repoRoot, 'env.example')),
   ...readDotenv(path.join(repoRoot, '.env')),
 })
+const head = run('git', ['-C', repoRoot, 'rev-parse', 'HEAD']).stdout.trim()
+fs.mkdirSync(path.join(kitDir, 'autofill-output'), { recursive: true })
+fs.writeFileSync(path.join(kitDir, 'autofill-output', '.fill-kit-sha'), `${head}\n`)
 fs.writeFileSync(path.join(kitDir, 'HOW-TO.txt'), readme)
 
 if (fs.existsSync(zipPath)) fs.rmSync(zipPath)
