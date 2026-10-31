@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-const DEFAULT_I94_MODEL = 'gpt-5.6-sol'
+const DEFAULT_I94_MODEL = 'gpt-6-astra'
 
 export const I94_MODEL =
   process.env.OPENAI_I94_MODEL?.trim() ||

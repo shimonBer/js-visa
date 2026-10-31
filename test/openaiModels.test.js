@@ -18,7 +18,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 test('uses the required OCR and translation defaults', () => {
   const models = resolveOpenAIModels({})
 
-  assert.equal(DEFAULT_OCR_MODEL, 'gpt-5.6-sol')
+  assert.equal(DEFAULT_OCR_MODEL, 'gpt-6-astra')
   assert.equal(DEFAULT_TRANSLATION_MODEL, 'gpt-5.6-terra')
   assert.equal(DEFAULT_NORMALIZATION_MODEL, 'gpt-5.6-terra')
   assert.equal(DEFAULT_CAPTCHA_MODEL, 'gpt-4o')
