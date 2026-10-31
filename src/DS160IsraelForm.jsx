@@ -1541,7 +1541,7 @@ export default function DS160IsraelForm({
         approved: comparison.approved,
         reviewedAt: new Date().toISOString(),
       }, { shouldDirty: true })
-      setStatus('הקריאות תאמו והנתונים עודכנו אוטומטית.')
+      setStatus('הנתונים נקראו ועודכנו אוטומטית.')
       return
     }
 

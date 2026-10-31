@@ -47,16 +47,18 @@ function validationWarning(value, field) {
   return ''
 }
 
+/**
+ * One read per document. A second identical call only doubled the cost of the
+ * OCR model, and two runs of the same model can agree on a wrong spelling.
+ * The returned pair is the same reading so the existing comparison still
+ * checks dates and document-number formats.
+ */
 export async function runTwoPassOcr(extract, file) {
-  const results = await Promise.allSettled([extract(file), extract(file)])
-  const successful = results.filter((result) => result.status === 'fulfilled')
-  if (successful.length === 0) throw results[0].reason
-
+  const value = await extract(file)
   return {
-    first: results[0].status === 'fulfilled' ? results[0].value : {},
-    second: results[1].status === 'fulfilled' ? results[1].value : {},
-    passErrors: results.map((result) =>
-      result.status === 'rejected' ? String(result.reason?.message || result.reason || 'OCR request failed') : ''),
+    first: value,
+    second: value,
+    passErrors: ['', ''],
   }
 }
 

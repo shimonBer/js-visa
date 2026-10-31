@@ -44,17 +44,17 @@ test('requires review for invalid dates and expiration ordering', () => {
   assert.match(comparison.reasons.join('\n'), /must be after/)
 })
 
-test('retains a successful pass when the other OCR request fails', async () => {
+test('reads each document once', async () => {
   let calls = 0
   const extract = async () => {
     calls += 1
-    if (calls === 1) throw new Error('temporary OCR failure')
     return { passportNumber: 'AB123456' }
   }
 
   const result = await runTwoPassOcr(extract, {})
 
-  assert.deepEqual(result.first, {})
+  assert.equal(calls, 1)
+  assert.equal(result.first.passportNumber, 'AB123456')
   assert.equal(result.second.passportNumber, 'AB123456')
-  assert.match(result.passErrors[0], /temporary OCR failure/)
+  assert.deepEqual(result.passErrors, ['', ''])
 })
