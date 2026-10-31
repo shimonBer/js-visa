@@ -6240,10 +6240,7 @@ export default function DS160IsraelForm({
                 onChange={(event) => setDownloadAndRunAutofill(event.target.checked)}
               />
               <span>
-                הורד את קובץ המילוי והרץ אותו
-                <span className="mt-0.5 block text-xs font-normal text-gray-600">
-                  בלי סימון, התרגום רק נשמר ועולה ל-Monday. עם סימון, הקובץ יורד והמילוי מתחיל אם חלון המילוי פתוח במחשב הזה.
-                </span>
+                התחל מילוי אוטומטי של הקובץ עם סיום התרגום
               </span>
             </label>
             <div className="flex flex-col gap-2">
