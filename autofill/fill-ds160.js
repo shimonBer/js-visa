@@ -1446,6 +1446,7 @@ async function leaveApplicationCleanly(page) {
       log('⚠️  No Exit control on the page — leaving the session for CEAC to time out')
       return false
     }
+    await page.evaluate(() => { window.__ds160AllowExit = true }).catch(() => {})
     await exitLink.click({ timeout: 5000 })
     await safeWait(page, 1000)
     await confirmExitPrompts(page)
@@ -1474,6 +1475,7 @@ async function exitApplication(page) {
     return false
   }
 
+  await page.evaluate(() => { window.__ds160AllowExit = true }).catch(() => {})
   await Promise.all([
     page.waitForLoadState('domcontentloaded', { timeout: 15_000 }).catch(() => {}),
     exitControl.click(),
@@ -1658,12 +1660,7 @@ async function launchPersistentContext(headed) {
       ...(isolated ? ['--enable-automation'] : []),
     ],
     ...(isolated
-      ? {
-          args: [
-            ...(CHROME_LAUNCH_OPTS.args || []),
-            '--disable-blink-features=AutomationControlled',
-          ],
-        }
+      ? { args: [...(CHROME_LAUNCH_OPTS.args || [])] }
       : {}),
   }
   if (!headed) {

@@ -1226,7 +1226,41 @@ test('leaving-application dialog Stay button is the exit modal, not the hidden s
     await page.setContent(html, { waitUntil: 'domcontentloaded' })
     const dismissed = await dismissCeacLeavePageDialog(page)
     assert.equal(dismissed, true)
-    assert.equal(await page.evaluate(() => window.__stayed), 'exit')
+    assert.equal(await page.evaluate(() => window.__stayed || ''), '')
+    assert.equal(await page.locator('#ctl00_pnlExitWarning').isVisible(), false)
+  } finally {
+    await browser.close()
+  }
+})
+
+test('disarm closes the leave dialog even when CEAC calls modal.show()', async () => {
+  const html = `<!DOCTYPE html><html><body>
+    <div id="modalExitWarning_foregroundElement" style="display:none">
+      <div id="ctl00_pnlExitWarning" style="display:none">
+        <input type="submit" id="ctl00_btnCancelExitWarning" value="Cancel: Stay on Page">
+      </div>
+    </div>
+    <script>
+      const modal = {
+        show() {
+          document.getElementById('modalExitWarning_foregroundElement').style.display = 'block'
+          document.getElementById('ctl00_pnlExitWarning').style.display = 'block'
+        },
+        hide() {
+          document.getElementById('modalExitWarning_foregroundElement').style.display = 'none'
+          document.getElementById('ctl00_pnlExitWarning').style.display = 'none'
+        },
+      }
+      window.$find = (id) => id === 'modalExitWarning' ? modal : null
+    </script>
+  </body></html>`
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: 'domcontentloaded' })
+    await disarmCeacUnload(page)
+    await page.evaluate(() => window.$find('modalExitWarning').show())
+    assert.equal(await page.locator('#ctl00_pnlExitWarning').isVisible(), false)
   } finally {
     await browser.close()
   }

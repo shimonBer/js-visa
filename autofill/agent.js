@@ -367,10 +367,7 @@ export function disarmCeacUnloadInPage() {
     try { window.onbeforeunload = null } catch { /* ignore */ }
     try { window.onunload = null } catch { /* ignore */ }
     try { window.confirmExit = function confirmExit() {} } catch { /* ignore */ }
-    // Sidebar links call confirmExitPage(). Links with no in-form href (Getting
-    // Started, and later sections that are still disabled) open the
-    // "navigate outside your DS-160" modal. A no-op keeps the click on the page.
-    try { window.confirmExitPage = function confirmExitPage() { return false } } catch { /* ignore */ }
+    try { window.__ds160SuppressExitWarning?.() } catch { /* ignore */ }
     try {
       // CEAC setDirty marks the form changed so repeater "Add Another" postbacks
       // keep the row just typed. Do not no-op it — that left languages/countries
@@ -388,13 +385,64 @@ export function disarmCeacUnloadInPage() {
     } catch { /* ignore */ }
     if (typeof window.__doPostBack === 'function' && !window.__doPostBack.__ds160Wrapped) {
       const original = window.__doPostBack
-      const wrapped = function wrappedDoPostBack() {
+      const wrapped = function wrappedDoPostBack(target) {
+        const name = String(target || '')
+        // Exit, the seal, Help, and Contact Us post back out of the application
+        // and CEAC answers with the "navigate outside" modal.
+        if (!window.__ds160AllowExit && /(?:^|\$)(?:lbtnExit|banner|lbtnHelp|lbtnContactUs)$/i.test(name)) {
+          return
+        }
         try { window.needToConfirm = false } catch { /* ignore */ }
         return original.apply(this, arguments)
       }
       wrapped.__ds160Wrapped = true
       window.__doPostBack = wrapped
     }
+  }
+
+  const chromeNav = (node) => {
+    const el = node && node.closest ? node.closest('a, area, input, button') : null
+    if (!el) return false
+    const id = el.id || ''
+    if ([
+      'GetStarted', 'Personal', 'Travel', 'TravelCompanions', 'PreviousUSTravel',
+      'AddressPhone', 'PptVisa', 'USContact', 'Family', 'WorkEducationMain', 'SecAndBackMain',
+      'COMPLETE', 'PHOTO', 'REVIEW', 'ESIGN',
+      'ctl00_lbtnExit', 'ctl00_lbtnHelp', 'ctl00_lbtnContactUs', 'ctl00_banner',
+    ].includes(id)) return true
+    return Boolean(el.closest('#sideNav, #nav-sidebar, #nav-global, #branding, #nav-main'))
+  }
+
+  // CEAC shows this modal from confirmExitPage() and from $find('modalExitWarning').show().
+  // Hiding it here does not depend on Playwright being able to click Stay.
+  window.__ds160SuppressExitWarning = () => {
+    try { window.confirmExitPage = function confirmExitPage() { return false } } catch { /* ignore */ }
+    if (window.__ds160AllowExit) return false
+    try {
+      const modal = window.$find && window.$find('modalExitWarning')
+      if (modal && !modal.__ds160ShowBlocked) {
+        modal.__ds160ShowBlocked = true
+        modal.show = function show() {}
+      }
+    } catch { /* ignore */ }
+    const fg = document.getElementById('modalExitWarning_foregroundElement')
+    const bg = document.getElementById('modalExitWarning_backgroundElement')
+    const panel = document.getElementById('ctl00_pnlExitWarning')
+    const shown = (el) => {
+      if (!el) return false
+      const style = getComputedStyle(el)
+      return style.display !== 'none' && style.visibility !== 'hidden' && el.getClientRects().length > 0
+    }
+    if (!shown(fg) && !shown(panel)) return false
+    try { if (typeof window.cancelPage === 'function') window.cancelPage() } catch { /* ignore */ }
+    try {
+      const modal = window.$find && window.$find('modalExitWarning')
+      if (modal && typeof modal.hide === 'function') modal.hide()
+    } catch { /* ignore */ }
+    for (const el of [fg, bg, panel]) {
+      if (el) el.style.display = 'none'
+    }
+    return true
   }
 
   const freeze = (name, getter) => {
@@ -441,6 +489,13 @@ export function disarmCeacUnloadInPage() {
   }
   document.addEventListener('submit', silence, true)
   document.addEventListener('click', silence, true)
+  document.addEventListener('click', (event) => {
+    if (window.__ds160AllowExit) return
+    if (!chromeNav(event.target)) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+  }, true)
 }
 
 /** Sidebar, top tabs, Exit, Help, Contact Us, and the banner leave the form. */
@@ -460,26 +515,29 @@ export async function isCeacChromeNavigation(locator) {
   }).catch(() => false)
 }
 
-/** Click Cancel: Stay on Page if CEAC thinks we are leaving the application. */
+/** Close the "navigate outside your DS-160" modal without submitting Stay. */
 export async function dismissCeacLeavePageDialog(page) {
   if (!page || page.isClosed()) return false
-  const panel = page.locator('#ctl00_pnlExitWarning')
-  const foreground = page.locator('#modalExitWarning_foregroundElement')
-  const panelVisible = await panel.isVisible().catch(() => false)
-  const foregroundVisible = await foreground.isVisible().catch(() => false)
-  if (!panelVisible && !foregroundVisible) return false
-  // The save dialog has its own earlier "Cancel: Stay on Page" button. A
-  // page-wide value match hits that hidden button and leaves this modal up.
-  const stay = page.locator('#ctl00_btnCancelExitWarning').first()
-  const stayVisible = await stay.isVisible().catch(() => false)
-  log('CEAC "leaving the application" dialog — staying on the page')
-  if (stayVisible) {
-    await stay.click({ timeout: 3000 }).catch(() => {})
-  } else {
-    await stay.click({ force: true, timeout: 3000 }).catch(() => {})
-  }
-  await page.waitForTimeout(400).catch(() => {})
-  return true
+  const dismissed = await page.evaluate(() => {
+    if (typeof window.__ds160SuppressExitWarning === 'function') {
+      return window.__ds160SuppressExitWarning()
+    }
+    const fg = document.getElementById('modalExitWarning_foregroundElement')
+    const bg = document.getElementById('modalExitWarning_backgroundElement')
+    const panel = document.getElementById('ctl00_pnlExitWarning')
+    const shown = (el) => {
+      if (!el) return false
+      const style = getComputedStyle(el)
+      return style.display !== 'none' && style.visibility !== 'hidden' && el.getClientRects().length > 0
+    }
+    if (!shown(fg) && !shown(panel)) return false
+    for (const el of [fg, bg, panel]) {
+      if (el) el.style.display = 'none'
+    }
+    return true
+  }).catch(() => false)
+  if (dismissed) log('CEAC "leaving the application" dialog — staying on the page')
+  return Boolean(dismissed)
 }
 
 async function suppressBrowserAutofill(locator) {

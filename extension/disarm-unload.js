@@ -9,7 +9,7 @@
     try { window.onbeforeunload = null } catch { /* ignore */ }
     try { window.onunload = null } catch { /* ignore */ }
     try { window.confirmExit = function confirmExit() {} } catch { /* ignore */ }
-    try { window.confirmExitPage = function confirmExitPage() { return false } } catch { /* ignore */ }
+    try { window.__ds160SuppressExitWarning?.() } catch { /* ignore */ }
     try {
       if (typeof window.setDirty === 'function' && !window.setDirty.__ds160Wrapped) {
         const original = window.setDirty
@@ -24,13 +24,60 @@
     } catch { /* ignore */ }
     if (typeof window.__doPostBack === 'function' && !window.__doPostBack.__ds160Wrapped) {
       const original = window.__doPostBack
-      const wrapped = function wrappedDoPostBack() {
+      const wrapped = function wrappedDoPostBack(target) {
+        const name = String(target || '')
+        if (!window.__ds160AllowExit && /(?:^|\$)(?:lbtnExit|banner|lbtnHelp|lbtnContactUs)$/i.test(name)) {
+          return
+        }
         try { window.needToConfirm = false } catch { /* ignore */ }
         return original.apply(this, arguments)
       }
       wrapped.__ds160Wrapped = true
       window.__doPostBack = wrapped
     }
+  }
+
+  const chromeNav = (node) => {
+    const el = node && node.closest ? node.closest('a, area, input, button') : null
+    if (!el) return false
+    const id = el.id || ''
+    if ([
+      'GetStarted', 'Personal', 'Travel', 'TravelCompanions', 'PreviousUSTravel',
+      'AddressPhone', 'PptVisa', 'USContact', 'Family', 'WorkEducationMain', 'SecAndBackMain',
+      'COMPLETE', 'PHOTO', 'REVIEW', 'ESIGN',
+      'ctl00_lbtnExit', 'ctl00_lbtnHelp', 'ctl00_lbtnContactUs', 'ctl00_banner',
+    ].includes(id)) return true
+    return Boolean(el.closest('#sideNav, #nav-sidebar, #nav-global, #branding, #nav-main'))
+  }
+
+  window.__ds160SuppressExitWarning = () => {
+    try { window.confirmExitPage = function confirmExitPage() { return false } } catch { /* ignore */ }
+    if (window.__ds160AllowExit) return false
+    try {
+      const modal = window.$find && window.$find('modalExitWarning')
+      if (modal && !modal.__ds160ShowBlocked) {
+        modal.__ds160ShowBlocked = true
+        modal.show = function show() {}
+      }
+    } catch { /* ignore */ }
+    const fg = document.getElementById('modalExitWarning_foregroundElement')
+    const bg = document.getElementById('modalExitWarning_backgroundElement')
+    const panel = document.getElementById('ctl00_pnlExitWarning')
+    const shown = (el) => {
+      if (!el) return false
+      const style = getComputedStyle(el)
+      return style.display !== 'none' && style.visibility !== 'hidden' && el.getClientRects().length > 0
+    }
+    if (!shown(fg) && !shown(panel)) return false
+    try { if (typeof window.cancelPage === 'function') window.cancelPage() } catch { /* ignore */ }
+    try {
+      const modal = window.$find && window.$find('modalExitWarning')
+      if (modal && typeof modal.hide === 'function') modal.hide()
+    } catch { /* ignore */ }
+    for (const el of [fg, bg, panel]) {
+      if (el) el.style.display = 'none'
+    }
+    return true
   }
 
   const freeze = (name, getter) => {
@@ -77,6 +124,13 @@
   }
   document.addEventListener('submit', silence, true)
   document.addEventListener('click', silence, true)
+  document.addEventListener('click', (event) => {
+    if (window.__ds160AllowExit) return
+    if (!chromeNav(event.target)) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+  }, true)
 
   if (!window.__ds160StartArmed) {
     window.__ds160StartArmed = true
