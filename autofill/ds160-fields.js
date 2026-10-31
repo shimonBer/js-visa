@@ -162,6 +162,8 @@ export const DS160_FIELDS = {
     employer_postal: { ref: 'tbxPREV_EMPL_ADDR_POSTAL_CD', type: 'text', label: 'Postal Zone/ZIP Code', aliases: ['ZIP Code'], afterPostback: true },
     employer_country: { ref: 'ddlEmpCountry', type: 'country', label: 'Country/Region', aliases: ['Country / Region'], afterPostback: true },
     employer_phone: { ref: 'tbxEmpPhone', type: 'text', label: 'Phone Number', aliases: ['Employer Phone Number'], afterPostback: true },
+    supervisor_surname: { ref: 'tbSupervisorSurname', type: 'text', label: 'Previous Employer Supervisor Surname', aliases: ['Supervisor Surname', "Supervisor's Surname"], afterPostback: true },
+    supervisor_given_names: { ref: 'tbSupervisorGivenName', type: 'text', label: 'Previous Employer Supervisor Given Names', aliases: ['Supervisor Given Name', 'Supervisor Given Names', "Supervisor's Given Name"], afterPostback: true },
     employment_from: { ref: 'EmpDateFrom', type: 'date', label: 'Employment Date From', aliases: ['Start Date', 'Employment Date From'], afterPostback: true },
     employment_to: { ref: 'EmpDateTo', type: 'date', label: 'Employment Date To', aliases: ['End Date', 'Employment Date To'], afterPostback: true },
     attended_secondary_or_higher_education: { ref: 'rblOtherEduc', type: 'bool', label: 'Have you attended any educational institutions at a secondary level or above?' },

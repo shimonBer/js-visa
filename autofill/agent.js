@@ -15,6 +15,7 @@
 
 import { spawnSync } from 'node:child_process'
 import { createCanvas } from '@napi-rs/canvas'
+import { snapFillValue } from '../lib/alignReviewValues.js'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
 import { normalizeCeacNameFillValue } from '../lib/ceacNameFormatting.js'
 import {
@@ -3968,6 +3969,7 @@ GENERAL RULES:
 - On the Sign and Submit page, complete fields in this exact order: (1) answer "Yes" to "Did anyone assist you in filling out this application?" and fill the JVisa preparer (organization JVISA, 27 Hermon Street, Nahariya 2220527, Israel, relationship Clerk; preparer personal names Does Not Apply), (2) fill "Enter your Passport/Travel Document Number" from the applicant's passport data, (3) output {"type":"solveCaptcha"}. After CAPTCHA is solved, the code verifies the preparer, passport, and CAPTCHA and clicks "Sign and Submit Application".
 - Never use a generic click action for "Sign and Submit Application"; only the guarded submitApplication action may click it.
 - If you are on a preview/review screen (no editable fields visible), output {"type":"reviewNext"} to advance to the next review section. Repeat on every review page until Sign and Submit is reached.
+- Copy text values character for character from APPLICANT DATA. Never respell a name: YIGAL stays YIGAL, ILANIT stays ILANIT.
 - Fill fields in top-to-bottom, left-to-right order as they appear on screen.
 - DS-160 exact label names: city of birth is labeled "City"; state/province of birth is labeled "State/Province" — if the applicant data has N/A or no value for that field, output {"type":"check","label":"Does Not Apply","fieldLabel":"State/Province"} to check its "Does Not Apply" checkbox; only use {"type":"fill","label":"State/Province"} when there is an actual value; country of birth is labeled "Country/Region of Birth" and is a <select> dropdown — always use {"type":"selectOption"} for it.
 - For Date of Birth always use {"type":"fill","label":"Date of Birth","value":"DD/MM/YYYY"} — the code handles splitting into the Day/Month/Year dropdowns automatically. Never use selectOption for date fields.`
@@ -4224,6 +4226,7 @@ RULES:
 - On the Sign and Submit page, complete fields in this exact order: (1) answer "Yes" to "Did anyone assist you in filling out this application?" and fill the JVisa preparer (organization JVISA, 27 Hermon Street, Nahariya 2220527, Israel, relationship Clerk; preparer personal names Does Not Apply), (2) fill "Enter your Passport/Travel Document Number" from the applicant's passport data, (3) output {"type":"solveCaptcha"}. After CAPTCHA is solved, the code verifies the preparer, passport, and CAPTCHA and clicks "Sign and Submit Application".
 - Never use a generic click action for "Sign and Submit Application"; only the guarded submitApplication action may click it.
 - If you are on a preview/review screen (no editable fields visible), output {"type":"reviewNext"} to advance to the next review section. Repeat on every review page until Sign and Submit is reached.
+- Copy text values character for character from APPLICANT DATA. Never respell a name: YIGAL stays YIGAL, ILANIT stays ILANIT.
 - Fill fields in top-to-bottom, left-to-right order as they appear on screen
 - DS-160 exact label names: city of birth is labeled "City"; state/province of birth is labeled "State/Province" — if the applicant data has N/A or no value for that field, output {"type":"check","label":"Does Not Apply","fieldLabel":"State/Province"} to check its "Does Not Apply" checkbox; only use {"type":"fill","label":"State/Province"} when there is an actual value; country of birth is labeled "Country/Region of Birth" and is a <select> dropdown — always use {"type":"selectOption"} for it
 - For Date of Birth always use {"type":"fill","label":"Date of Birth","value":"DD/MM/YYYY"} — the code handles splitting into the Day/Month/Year dropdowns automatically. Never use selectOption for date fields
@@ -6606,6 +6609,13 @@ export async function runAgent(page, translatedText, apiKey, opts = {}) {
     // ── Execute action ───────────────────────────────────────────────────────
     let actionSucceeded = false
     try {
+      if (action?.type === 'fill') {
+        const snapped = snapFillValue(action, relevantText)
+        if (String(snapped.value) !== String(action.value)) {
+          log(`[align] ${action.label || action.fieldLabel}: "${action.value}" → "${snapped.value}"`)
+          action = snapped
+        }
+      }
       await executeAction(page, action)
       actionHistory.push(action)
       failedActionCounts.delete(JSON.stringify(action))

@@ -94,7 +94,8 @@ CRITICAL — N/A / DO NOT KNOW / DOES NOT APPLY handling:
     or {"type":"check","label":"Does Not Apply","fieldLabel":"<label>"} as appropriate.
   * If no dnaCbxRef → skip the field entirely (leave it blank).
 - When the applicant data provides a real value → fill it normally (never use marker text as a value).
-- Phone number fields must be filled with digits only. Strip +, spaces, hyphens, and parentheses: "+972 538055645" → "972538055645".`
+- Phone number fields must be filled with digits only. Strip +, spaces, hyphens, and parentheses: "+972 538055645" → "972538055645".
+- Copy text values character for character from APPLICANT DATA. Never respell a name: YIGAL stays YIGAL, ILANIT stays ILANIT.`
 
 async function fetchWithTimeout(url, options, timeoutMs = PLANNER_TIMEOUT_MS) {
   const controller = new AbortController()

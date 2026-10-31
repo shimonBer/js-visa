@@ -12,6 +12,7 @@ import {
   fillMissingInstitutionAddressesInText,
   resolveMissingInstitutionAddresses,
 } from '../lib/institutionAddresses.js'
+import { lockAnswerSheetToReview } from '../lib/alignReviewValues.js'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
 import {
   normalizeCeacNameFieldsInAnswerSheet,
@@ -226,6 +227,13 @@ For name fields (Surname, Given Name, Place of Birth, etc.):
 * Do NOT phoneticize manually.
 * NEVER include parentheses or parenthetical aliases in a person-name value.
 * Example: "Given Name: DAVID ORI"
+
+LATIN SPELLING LOCK:
+If a person name, place, street, or organization is already written in Latin letters in the intake or on an uploaded document, copy those letters exactly.
+Do not add, drop, or swap a letter to produce a more usual spelling.
+YIGAL stays YIGAL. ILANIT stays ILANIT. Never rewrite them as IGAL or LILANIT.
+Transliterate from Hebrew only when no Latin spelling is present.
+A Latin spelling on a passport, visa, identity card, or employment document outranks a Hebrew spelling of the same name.
 
 ━━━━━━━━━━━━━━━━━━━━
 PLACE NAME RULES
@@ -1585,8 +1593,9 @@ Rules for every section:
   reading 03/04/1990 is ambiguous and guessing files the wrong date. If the
   document's own order is genuinely unclear, use null rather than a guess.
 - null for N/A / DO NOT KNOW / MISSING fields.
-- Copy values as written; do not translate place names into other spellings or
-  expand abbreviations.
+- Copy every name, place, and free-text value character for character from the review.
+  If the review says YIGAL, the JSON says YIGAL, not IGAL. Never "correct" a spelling.
+- Do not translate place names into other spellings or expand abbreviations.
 - Phone numbers must be digits only: strip +, spaces, hyphens, and parentheses.
 
 Output ONLY valid JSON with no extra explanation.`
@@ -1732,6 +1741,11 @@ Output ONLY valid JSON with no extra explanation.`
       }
     }
     const translatedWithAddresses = fillMissingInstitutionAddressesInText(translated, lookedUpStreets)
+    // The PDF is this text. The answer sheet must use the same characters,
+    // including a name the extractor changed.
+    if (answerSheet) {
+      answerSheet = lockAnswerSheetToReview(answerSheet, translatedWithAddresses)
+    }
 
     const orderIdx = (f) => {
       const i = UPLOAD_DOC_FIELDS.indexOf(String(f || ''))
