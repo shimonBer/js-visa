@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process'
 import { createCanvas } from '@napi-rs/canvas'
 import { snapFillValue } from '../lib/alignReviewValues.js'
 import { OPENAI_MODELS } from '../lib/openaiModels.js'
-import { normalizeCeacNameFillValue } from '../lib/ceacNameFormatting.js'
+import { normalizeCeacNameFillValue, sanitizeCeacName } from '../lib/ceacNameFormatting.js'
 import {
   fitDs160Phone,
   fitDs160Value,
@@ -3828,6 +3828,12 @@ export async function executeAction(page, action) {
         rowSelector: 'input[id*="dtlUS_DRIVER_LICENSE"][id*="tbxUS_DRIVER_LICENSE"]',
         linkSelector: 'a[id*="InsertButtonUS_DRIVER_LICENSE"]',
       },
+      {
+        label: 'education',
+        match: /^add another education$/i,
+        rowSelector: 'input[id*="dtlPrevEduc"][id*="tbxSchoolName"]',
+        linkSelector: 'a[id*="InsertButtonPrevEduc"]',
+      },
     ].find((entry) => entry.match.test((text || label || '').trim()))
     if (repeatedAdd) {
       const rows = page.locator(repeatedAdd.rowSelector)
@@ -4164,7 +4170,9 @@ Previous Work / Education page:
   * Fill previous-employer city with {"type":"fill","label":"Employer City","value":"<city>","occurrence":1}. Never use the bare "City" label for the employer — that label is shared with education on the same page.
   * Fill each education city with {"type":"fill","label":"Education City","value":"<city>","occurrence":1}. Never use the bare "City" label for education.
   * For each education row, when State/Province or ZIP is N/A/DOES NOT APPLY, check Does Not Apply with fieldLabel "Education State/Province" or "Education Postal Zone/ZIP Code" and the matching occurrence.
-  * Education dates use labels "Attendance From" and "Attendance To" with DD/MM/YYYY and the matching occurrence.`,
+  * Education dates use labels "Attendance From" and "Attendance To" with DD/MM/YYYY and the matching occurrence.
+  * Fill every School / Institution Name from the EDUCATION section, in source order. The first school uses occurrence 1. Before each later school, use exactly {"type":"click","text":"Add Another Education"}, then fill that new row with occurrence 2, 3, etc.
+  * Never use generic {"type":"click","text":"Add Another"} for a school. That action is reserved for previous U.S. visits and will not create an education row.`,
 
   work_additional: `
 Additional Work / Education page:
@@ -4391,6 +4399,8 @@ RULES:
   * Fill each education city with {"type":"fill","label":"Education City","value":"<city>","occurrence":1}. Never use the bare "City" label for education.
   * For each education row, when State/Province or ZIP is N/A/DOES NOT APPLY, check Does Not Apply with fieldLabel "Education State/Province" or "Education Postal Zone/ZIP Code" and the matching occurrence.
   * Education dates use labels "Attendance From" and "Attendance To" with DD/MM/YYYY and the matching occurrence.
+  * Fill every School / Institution Name from the EDUCATION section, in source order. The first school uses occurrence 1. Before each later school, use exactly {"type":"click","text":"Add Another Education"}, then fill that new row with occurrence 2, 3, etc.
+  * Never use generic {"type":"click","text":"Add Another"} for a school. That action is reserved for previous U.S. visits and will not create an education row.
 - Additional Work / Education page:
   * Fill the first language with {"type":"fill","label":"Language Name","value":"<language>","occurrence":1}.
   * Before each later language, use exactly {"type":"click","text":"Add Another Language"}, then fill "Language Name" with occurrence 2, 3, etc.
@@ -5321,18 +5331,232 @@ export function parsePreviousEmployerCitiesFromSource(sectionText, answerSheet) 
     .filter((city) => city && !isMarkerValue(city))
 }
 
-export function parseEducationCitiesFromSource(sectionText, answerSheet) {
+const EDUCATION_FIELD_LINES = [
+  ['address', /^Address:\s*(.+)$/i],
+  ['city', /^City:\s*(.+)$/i],
+  ['state', /^State\s*\/\s*Province:\s*(.+)$/i],
+  ['zip', /^ZIP Code:\s*(.+)$/i],
+  ['country', /^Country\s*\/\s*Region:\s*(.+)$/i],
+  ['course', /^Course of Study:\s*(.+)$/i],
+  ['from', /^Attendance From:\s*(.+)$/i],
+  ['to', /^Attendance To:\s*(.+)$/i],
+]
+
+/**
+ * Every secondary-or-higher school in the EDUCATION section, in source order.
+ * A later school such as Reichman University is its own block after the first
+ * "School / Institution Name" line. Employer "City" lines stay out of this list.
+ */
+export function parseEducationInstitutionsFromSource(sectionText, answerSheet) {
+  const schools = []
+  let current = null
+  for (const raw of String(sectionText || '').split('\n')) {
+    const line = raw.trim()
+    if (/^🟦|^(?:ADDITIONAL BACKGROUND|SECURITY & BACKGROUND)$/i.test(line)) {
+      if (current) schools.push(current)
+      current = null
+      continue
+    }
+    const name = line.match(/^School\s*\/\s*Institution Name:\s*(.+)$/i)
+    if (name) {
+      if (current) schools.push(current)
+      current = { name: name[1].trim() }
+      continue
+    }
+    if (!current) continue
+    for (const [key, pattern] of EDUCATION_FIELD_LINES) {
+      const match = line.match(pattern)
+      if (match && current[key] == null) {
+        current[key] = match[1].trim()
+        break
+      }
+    }
+  }
+  if (current) schools.push(current)
+  const fromProse = schools.filter((school) => school.name && !isMarkerValue(school.name))
+  if (fromProse.length) return fromProse
+
   const rows = answerSheet?.educational_institutions || answerSheet?.schools || []
-  const fromSheet = rows
-    .map((row) => String(row?.city || row?.school_city || '').trim())
+  return rows
+    .map((row) => ({
+      name: String(row?.name || row?.school_name || row?.institution_name || '').trim(),
+      address: String(row?.address || row?.street || '').trim(),
+      city: String(row?.city || row?.school_city || '').trim(),
+      state: String(row?.state || row?.school_state || '').trim(),
+      zip: String(row?.zip || row?.postal || row?.school_postal || '').trim(),
+      country: String(row?.country || row?.school_country || '').trim(),
+      course: String(row?.course || row?.course_of_study || row?.school_course || '').trim(),
+      from: String(row?.from || row?.attendance_from || row?.school_from || '').trim(),
+      to: String(row?.to || row?.attendance_to || row?.school_to || '').trim(),
+    }))
+    .filter((school) => school.name && !isMarkerValue(school.name))
+}
+
+export function parseEducationCitiesFromSource(sectionText, answerSheet) {
+  const fromSchools = parseEducationInstitutionsFromSource(sectionText, answerSheet)
+    .map((school) => String(school.city || '').trim())
     .filter((city) => city && !isMarkerValue(city))
-  if (fromSheet.length) return fromSheet
+  if (fromSchools.length) return fromSchools
   const cities = []
   for (const line of String(sectionText || '').split('\n')) {
     const match = line.trim().match(/^City:\s*(.+)$/i)
     if (match) cities.push(match[1].trim())
   }
   return cities.filter((city) => city && !isMarkerValue(city))
+}
+
+async function fillEducationText(locator, value) {
+  if ((await locator.count().catch(() => 0)) === 0) return false
+  const next = String(value || '').trim()
+  if (!next || isMarkerValue(next)) return false
+  const current = await locator.inputValue().catch(() => '')
+  if (sameCi(current, next)) return false
+  await fillLocatedInput(locator, next)
+  return true
+}
+
+async function setEducationMarkerBox(page, selector, index, shouldCheck) {
+  const boxes = page.locator(selector)
+  if (await boxes.count() <= index) return false
+  const box = boxes.nth(index)
+  const checked = await box.isChecked().catch(() => false)
+  if (checked === shouldCheck) return false
+  await box.scrollIntoViewIfNeeded().catch(() => {})
+  await box.click()
+  return true
+}
+
+async function fillEducationDate(page, label, value, occurrence) {
+  const year = String(value || '').split('/')[2] || ''
+  if (!year) return false
+  const yearSelector = /from/i.test(label)
+    ? 'input[id*="dtlPrevEduc"][id*="tbxSchoolFromYear"]'
+    : 'input[id*="dtlPrevEduc"][id*="tbxSchoolToYear"]'
+  const yearInput = page.locator(yearSelector).nth(occurrence - 1)
+  if (await yearInput.count() === 0) return false
+  if ((await yearInput.inputValue().catch(() => '')).trim() === year) return false
+  await executeAction(page, { type: 'fill', label, value, occurrence })
+  return true
+}
+
+async function fillEducationRow(page, index, school) {
+  const occurrence = index + 1
+  const row = (suffix) => page.locator(`input[id*="dtlPrevEduc"][id*="${suffix}"]`).nth(index)
+  let changed = false
+  if (await fillEducationText(row('tbxSchoolName'), sanitizeCeacName(school.name))) {
+    log(`[education] School ${occurrence} → "${sanitizeCeacName(school.name)}"`)
+    changed = true
+  }
+  const address = school.address && !isMarkerValue(school.address)
+    ? school.address
+    : sanitizeCeacName(school.name)
+  if (await fillEducationText(row('tbxSchoolAddr1'), address)) changed = true
+  if (await fillEducationText(row('tbxSchoolCity'), school.city)) changed = true
+  if (await fillEducationText(row('tbxSchoolCourseOfStudy'), school.course)) changed = true
+
+  const stateMissing = !school.state || isMarkerValue(school.state)
+  if (await setEducationMarkerBox(
+    page,
+    'input[id*="dtlPrevEduc"][id*="cbxEDUC_INST_ADDR_STATE_NA"]',
+    index,
+    stateMissing,
+  )) changed = true
+  if (!stateMissing && await fillEducationText(row('tbxEDUC_INST_ADDR_STATE'), school.state)) {
+    changed = true
+  }
+
+  const zipMissing = !school.zip || isMarkerValue(school.zip)
+  if (await setEducationMarkerBox(
+    page,
+    'input[id*="dtlPrevEduc"][id*="cbxEDUC_INST_POSTAL_CD_NA"]',
+    index,
+    zipMissing,
+  )) changed = true
+  if (!zipMissing && await fillEducationText(row('tbxEDUC_INST_POSTAL_CD'), school.zip)) {
+    changed = true
+  }
+
+  const country = page.locator('select[id*="dtlPrevEduc"][id*="ddlSchoolCountry"]').nth(index)
+  if (
+    (await country.count().catch(() => 0)) > 0 &&
+    school.country &&
+    !isMarkerValue(school.country)
+  ) {
+    const picked = await country.evaluate((el, requested) => {
+      const wanted = requested.trim().toUpperCase()
+      const current = el.options[el.selectedIndex]?.text?.trim().toUpperCase() || ''
+      if (current === wanted || current.includes(wanted)) return false
+      const opt = Array.from(el.options).find((candidate) => {
+        const text = candidate.text.trim().toUpperCase()
+        return text === wanted || text.includes(wanted)
+      })
+      if (!opt) return false
+      el.value = opt.value
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    }, school.country).catch(() => false)
+    if (picked) changed = true
+  }
+
+  try {
+    if (school.from && await fillEducationDate(page, 'Attendance From', school.from, occurrence)) {
+      changed = true
+    }
+    if (school.to && await fillEducationDate(page, 'Attendance To', school.to, occurrence)) {
+      changed = true
+    }
+  } catch (err) {
+    logWarn(`[education] Date fill for row ${occurrence} failed: ${err.message}`)
+  }
+  return changed
+}
+
+/**
+ * CEAC shows one education row after "Yes". Later schools, including Reichman
+ * University, need InsertButtonPrevEduc. Generic "Add Another" only adds a
+ * previous U.S. visit, so those schools were skipped.
+ */
+export async function syncEducationInstitutionsFromSource(page, sectionText, answerSheet) {
+  const schools = parseEducationInstitutionsFromSource(sectionText, answerSheet)
+  if (!schools.length) return false
+
+  const yes = page.locator('input[id$="rblOtherEduc_0"]')
+  const names = page.locator('input[id*="dtlPrevEduc"][id*="tbxSchoolName"]')
+  if (await yes.count() === 0 && await names.count() === 0) return false
+
+  let changed = false
+  if (await yes.count() > 0 && !(await yes.isChecked().catch(() => false))) {
+    await yes.scrollIntoViewIfNeeded().catch(() => {})
+    await yes.click()
+    log('[education] Selected Yes for educational institutions')
+    changed = true
+    await names.first().waitFor({ state: 'attached', timeout: 8000 }).catch(() => {})
+  }
+  if (await names.count() === 0) return changed
+
+  while (await names.count() < schools.length) {
+    const before = await names.count()
+    if (await fillEducationRow(page, before - 1, schools[before - 1])) changed = true
+    await commitControl(names.nth(before - 1))
+    try {
+      await executeAction(page, { type: 'click', text: 'Add Another Education' })
+    } catch (err) {
+      logWarn(`[education] Could not add row ${before + 1}: ${err.message}`)
+      break
+    }
+    if (await names.count() <= before) {
+      logWarn('[education] Add Another did not create a new education row')
+      break
+    }
+    changed = true
+  }
+
+  const rowCount = Math.min(schools.length, await names.count())
+  for (let i = 0; i < rowCount; i++) {
+    if (await fillEducationRow(page, i, schools[i])) changed = true
+  }
+  if (changed) log(`[education] Synchronized ${rowCount} school(s) from source`)
+  return changed
 }
 
 export async function syncWorkPreviousCitiesFromSource(page, sectionText, answerSheet) {
@@ -6310,6 +6534,12 @@ export async function runAgent(page, translatedText, apiKey, opts = {}) {
 
     if (pageContext === 'work_previous') {
       const prevSheet = answerSheet?.work_previous
+      if (await syncEducationInstitutionsFromSource(page, relevantText, prevSheet)) {
+        actionHistory.push({ type: '_education_institutions_synced_from_source' })
+        currentPlan = null
+        await page.waitForTimeout(200)
+        continue
+      }
       if (await syncWorkPreviousCitiesFromSource(page, relevantText, prevSheet)) {
         actionHistory.push({ type: '_work_previous_cities_synced_from_source' })
         currentPlan = null

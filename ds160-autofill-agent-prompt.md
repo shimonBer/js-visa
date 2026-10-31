@@ -450,6 +450,8 @@ If Yes (repeatable group for each school/institution):
 | Attendance From | `Attendance From` |
 | Attendance To | `Attendance To` |
 
+The first school uses occurrence 1. Before each later school, click `Add Another Education`, then fill that new row with occurrence 2, 3, and so on. Do not use the generic `Add Another` action for a school. That action only adds a previous U.S. visit.
+
 ---
 
 ### SECTION: ADDITIONAL BACKGROUND

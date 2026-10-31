@@ -25,6 +25,7 @@ import {
   parseCountriesVisitedFromSource,
   parseLanguagesFromSource,
   parseEducationCitiesFromSource,
+  parseEducationInstitutionsFromSource,
   parsePreviousEmployerCitiesFromSource,
   parsePackedUsAddress,
   parsePrevTravelFromSource,
@@ -34,6 +35,7 @@ import {
   parsePayerCompanyFromSource,
   parseUsStayAddressFromSource,
   socialMediaIdentifier,
+  syncEducationInstitutionsFromSource,
   syncPayerCompanyFromSource,
   syncPrevTravelFromSource,
   syncIntendedStayFromSource,
@@ -1077,6 +1079,134 @@ test('form9 previous-work cities keep Elbit in Hod HaSharon', () => {
     parseEducationCitiesFromSource(section, parsed.answerSheet?.work_previous),
     ['Modiin'],
   )
+})
+
+test('education source keeps every school, including Reichman University', () => {
+  const section = `
+EDUCATION
+Have you attended any educational institutions at a secondary level or above? Yes
+School / Institution Name: Galil Maaravi Comprehensive School
+Address: Galil Maaravi
+City: Maale Yosef
+State / Province: DOES NOT APPLY
+ZIP Code: DOES NOT APPLY
+Country / Region: Israel
+Course of Study: High School Studies
+Attendance From: 01/09/1999
+Attendance To: 01/09/2000
+School / Institution Name: Reichman University
+Address: Reichman
+City: Herzliya
+State / Province: DOES NOT APPLY
+ZIP Code: 4610101
+Country / Region: Israel
+Course of Study: Law and Business Administration
+Attendance From: 01/09/2005
+Attendance To: 01/09/2009
+ADDITIONAL BACKGROUND
+`
+  const schools = parseEducationInstitutionsFromSource(section)
+  assert.deepEqual(schools.map((school) => school.name), [
+    'Galil Maaravi Comprehensive School',
+    'Reichman University',
+  ])
+  assert.equal(schools[1].city, 'Herzliya')
+  assert.equal(schools[1].zip, '4610101')
+  assert.deepEqual(parseEducationCitiesFromSource(section), ['Maale Yosef', 'Herzliya'])
+})
+
+test('education sync adds the Reichman University row', async () => {
+  const html = `<!DOCTYPE html><html><body>
+    <input id="ctl00_SiteContentPlaceHolder_FormView1_rblOtherEduc_0" type="radio" checked>
+    <div id="educ">
+      <div data-educ-row="00">
+        <input id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_tbxSchoolName">
+        <input id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_tbxSchoolAddr1">
+        <input id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_tbxSchoolCity">
+        <input id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_tbxEDUC_INST_ADDR_STATE">
+        <input type="checkbox" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_cbxEDUC_INST_ADDR_STATE_NA">
+        <input id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_tbxEDUC_INST_POSTAL_CD">
+        <input type="checkbox" id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_cbxEDUC_INST_POSTAL_CD_NA">
+        <select id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_ddlSchoolCountry">
+          <option value="">SELECT</option>
+          <option value="ISRL">ISRAEL</option>
+        </select>
+        <input id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_tbxSchoolCourseOfStudy">
+        <select id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_ddlSchoolFromDay"><option></option><option>1</option></select>
+        <select id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_ddlSchoolFromMonth"><option></option><option>SEP</option></select>
+        <input id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_tbxSchoolFromYear">
+        <select id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_ddlSchoolToDay"><option></option><option>1</option></select>
+        <select id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_ddlSchoolToMonth"><option></option><option>SEP</option></select>
+        <input id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_tbxSchoolToYear">
+        <a id="ctl00_SiteContentPlaceHolder_FormView1_dtlPrevEduc_ctl00_InsertButtonPrevEduc" href="javascript:__doPostBack('x','')">Add Another</a>
+      </div>
+    </div>
+    <script>
+      document.getElementById('educ').addEventListener('click', (event) => {
+        const link = event.target.closest('a[id*="InsertButtonPrevEduc"]')
+        if (!link) return
+        event.preventDefault()
+        const rows = document.querySelectorAll('[data-educ-row]')
+        const next = String(rows.length).padStart(2, '0')
+        const clone = rows[0].cloneNode(true)
+        clone.setAttribute('data-educ-row', next)
+        clone.innerHTML = clone.innerHTML.replaceAll('_ctl00_', '_ctl' + next + '_')
+        for (const el of clone.querySelectorAll('input, select')) {
+          if (el.type === 'checkbox' || el.type === 'radio') el.checked = false
+          else if (el.tagName === 'SELECT') el.selectedIndex = 0
+          else el.value = ''
+        }
+        document.getElementById('educ').appendChild(clone)
+      })
+    </script>
+  </body></html>`
+  const section = `
+School / Institution Name: Galil Maaravi Comprehensive School
+Address: Galil Maaravi
+City: Maale Yosef
+State / Province: DOES NOT APPLY
+ZIP Code: DOES NOT APPLY
+Country / Region: Israel
+Course of Study: High School Studies
+Attendance From: 01/09/1999
+Attendance To: 01/09/2000
+School / Institution Name: Reichman University
+Address: Reichman
+City: Herzliya
+State / Province: DOES NOT APPLY
+ZIP Code: 4610101
+Country / Region: Israel
+Course of Study: Law and Business Administration
+Attendance From: 01/09/2005
+Attendance To: 01/09/2009
+`
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: 'domcontentloaded' })
+    const changed = await syncEducationInstitutionsFromSource(page, section)
+    assert.equal(changed, true)
+    const names = page.locator('input[id*="tbxSchoolName"]')
+    assert.equal(await names.count(), 2)
+    assert.equal(await names.nth(0).inputValue(), 'Galil Maaravi Comprehensive School')
+    assert.equal(await names.nth(1).inputValue(), 'Reichman University')
+    assert.equal(await page.locator('input[id*="tbxSchoolCity"]').nth(1).inputValue(), 'Herzliya')
+    assert.equal(
+      await page.locator('input[id*="tbxSchoolCourseOfStudy"]').nth(1).inputValue(),
+      'Law and Business Administration',
+    )
+    assert.equal(await page.locator('input[id*="tbxEDUC_INST_POSTAL_CD"]').nth(1).inputValue(), '4610101')
+    assert.equal(
+      await page.locator('input[id*="cbxEDUC_INST_ADDR_STATE_NA"]').nth(1).isChecked(),
+      true,
+    )
+    assert.equal(await page.locator('input[id*="tbxSchoolFromYear"]').nth(1).inputValue(), '2005')
+    assert.equal(await page.locator('input[id*="tbxSchoolToYear"]').nth(1).inputValue(), '2009')
+    const again = await syncEducationInstitutionsFromSource(page, section)
+    assert.equal(again, false)
+  } finally {
+    await browser.close()
+  }
 })
 
 test('bare City fill does not overwrite previous employer city', async () => {
