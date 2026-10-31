@@ -1480,6 +1480,7 @@ export default function DS160IsraelForm({
   const [i94State, setI94State] = useState({ status: 'idle', error: '', data: null })
   const i94AutoRanRef = useRef(false)
   const [saveBeforeTranslatePrompt, setSaveBeforeTranslatePrompt] = useState(false)
+  const [downloadAndRunAutofill, setDownloadAndRunAutofill] = useState(false)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
   const [translateUi, setTranslateUi] = useState({
     open: false,
@@ -2805,30 +2806,33 @@ export default function DS160IsraelForm({
     URL.revokeObjectURL(url)
   }
 
-  async function handleLocalAutofill() {
-    const text = translateUi.text
-    if (!String(text || '').trim()) return
+  async function startAutofillFromTranslation(text, { downloadAlways = false } = {}) {
+    const source = String(text || '').trim()
+    if (!source) return
     setLocalFillNote('')
     const values = getValues()
     const result = await startLocalAutofill({
-      text,
+      text: source,
       formId: storageFormId,
       fileName: autofillDownloadFileName({
         firstName: values.firstNameEnglish || values.firstName,
         lastName: values.lastNameEnglish || values.lastName,
-        translatedText: text,
+        translatedText: source,
       }),
     })
     if (result.started) {
       setLocalFillNote(result.alreadyRunning
         ? 'המילוי כבר רץ בחלון המקומי במחשב הזה.'
         : 'המילוי התחיל בחלון המקומי במחשב הזה.')
-      return
     }
-    downloadAutofillFile(text)
+    if (downloadAlways || !result.started) downloadAutofillFile(source)
   }
 
-  async function handleTranslateToEnglish({ withSave = false } = {}) {
+  async function handleLocalAutofill() {
+    await startAutofillFromTranslation(translateUi.text)
+  }
+
+  async function handleTranslateToEnglish({ withSave = false, downloadAndRun = false } = {}) {
     if (ocrReview) {
       setTranslateUi((state) => ({
         ...state,
@@ -2885,6 +2889,7 @@ export default function DS160IsraelForm({
           ))
         })
         .catch((e) => console.warn('[translation pdf] load failed', e))
+      if (downloadAndRun) void startAutofillFromTranslation(cached.translated, { downloadAlways: true })
       if (!translationPersistedRef.current) {
         try {
           await saveFormBlobPayload(
@@ -2948,6 +2953,7 @@ export default function DS160IsraelForm({
         error: '',
         reused: false,
       })
+      if (downloadAndRun) void startAutofillFromTranslation(translated, { downloadAlways: true })
     } catch (e) {
       setTranslateUi((s) => ({ ...s, loading: false, error: e?.message || 'שגיאת תרגום' }))
     }
@@ -6226,12 +6232,26 @@ export default function DS160IsraelForm({
           <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 flex flex-col gap-4" dir="rtl">
             <h2 className="text-lg font-bold text-gray-800">לפני התרגום</h2>
             <p className="text-sm text-gray-600">האם ברצונך לשמור טיוטה לפני שמתחילים לתרגם?</p>
+            <label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-gray-800">
+              <input
+                type="checkbox"
+                className="mt-1 rounded"
+                checked={downloadAndRunAutofill}
+                onChange={(event) => setDownloadAndRunAutofill(event.target.checked)}
+              />
+              <span>
+                הורד את קובץ המילוי והרץ אותו
+                <span className="mt-0.5 block text-xs font-normal text-gray-600">
+                  בלי סימון, התרגום רק נשמר ועולה ל-Monday. עם סימון, הקובץ יורד והמילוי מתחיל אם חלון המילוי פתוח במחשב הזה.
+                </span>
+              </span>
+            </label>
             <div className="flex flex-col gap-2">
               <button
                 className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
                 onClick={() => {
                   setSaveBeforeTranslatePrompt(false)
-                  void handleTranslateToEnglish({ withSave: true })
+                  void handleTranslateToEnglish({ withSave: true, downloadAndRun: downloadAndRunAutofill })
                 }}
               >
                 שמור וצא לתרגום
@@ -6240,7 +6260,7 @@ export default function DS160IsraelForm({
                 className="px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
                 onClick={() => {
                   setSaveBeforeTranslatePrompt(false)
-                  void handleTranslateToEnglish({ withSave: false })
+                  void handleTranslateToEnglish({ withSave: false, downloadAndRun: downloadAndRunAutofill })
                 }}
               >
                 תרגם ללא שמירה
