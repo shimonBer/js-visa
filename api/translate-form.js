@@ -28,7 +28,10 @@ import {
   normalizePhoneFieldsInSourceData,
   normalizePhoneNumbersInTranslatedText,
 } from '../lib/phoneFormatting.js'
-import { stripParentheticalAliasesFromPersonNames } from '../lib/personNameFormatting.js'
+import {
+  lockApplicantNamesFromPortal,
+  stripParentheticalAliasesFromPersonNames,
+} from '../lib/personNameFormatting.js'
 import { fetchS3FormDocumentBytes } from '../lib/s3FormDocuments.js'
 import {
   applyMilitarySpecializedSkillsToAnswerSheet,
@@ -37,6 +40,7 @@ import {
 } from '../lib/militarySpecializedSkills.js'
 import {
   splitPackedAccommodationInSourceData,
+  splitPackedContactInSourceData,
   splitPackedUsStayInAnswerSheet,
   splitPackedUsStayInTranslatedText,
 } from '../lib/usStayAddress.js'
@@ -176,14 +180,12 @@ Length of Stay: Two weeks
 PASSPORT PRIORITY RULES
 ━━━━━━━━━━━━━━━━━━━━
 
-Passport data overrides intake JSON whenever readable.
+Passport data overrides intake JSON whenever readable, except the applicant's Surname, Given Name, and Full Name in Native Alphabet. Those three follow the APPLICANT NAME LOCK below.
 
 Use passport data as the primary source of truth for:
 
 Country / Issuing state
 Passport number
-Surname (Last name)
-Given name(s) (First and middle names)
 Nationality
 Date of birth
 Sex / Gender
@@ -234,6 +236,15 @@ Do not add, drop, or swap a letter to produce a more usual spelling.
 YIGAL stays YIGAL. ILANIT stays ILANIT. Never rewrite them as IGAL or LILANIT.
 Transliterate from Hebrew only when no Latin spelling is present.
 A Latin spelling on a passport, visa, identity card, or employment document outranks a Hebrew spelling of the same name.
+
+APPLICANT NAME LOCK:
+The portal fields are the applicant's name. Copy them. Do not enhance, translate, or extend them.
+
+* Surname → lastNameEnglish, character for character, including spaces already in that field. If lastNameEnglish is empty, transliterate lastName and nothing else.
+* Given Name → firstNameEnglish, character for character. If firstNameEnglish is empty, transliterate firstName and nothing else.
+* Full Name in Native Alphabet → firstName + space + lastName, the Hebrew portal fields, with no added words.
+* Never append nationality, issuing country, "Israel", "Israeli", a passport header, or the nationality row to a name. On an Israeli passport the nationality line sits directly under the given name and the page header says State of Israel. Those are not part of the name.
+* A passport scan may supply a name only when the matching portal field is empty. When the portal field has a value, that value wins even if the scan looks different.
 
 ━━━━━━━━━━━━━━━━━━━━
 PLACE NAME RULES
@@ -356,15 +367,15 @@ DS-160 MASTER STRUCTURE
 PERSONAL INFORMATION 1
 
 * Surname
+  Rule: APPLICANT NAME LOCK. Copy lastNameEnglish exactly. Do not add words from the passport.
 
 * Given Name
-  If the passport does not include a given name, please insert 'FNU' in Given Names.
+  Rule: APPLICANT NAME LOCK. Copy firstNameEnglish exactly. Do not append nationality or any other passport word.
+  If both firstNameEnglish and firstName are empty and the passport has no given name, insert 'FNU'.
 
 * Full Name in Native Alphabet
-  Rule:
-  1. If passport scan contains a native-language (e.g. Hebrew) given name AND surname → concatenate the current official given name + space + current official surname.
-  2. Otherwise → concatenate firstName + " " + lastName from JSON (the Hebrew name fields the user typed).
-  3. Remove every parenthetical segment and both parentheses. Never include a maiden/former/alias surname here; those belong only in Other Names.
+  Rule: APPLICANT NAME LOCK. Concatenate firstName + " " + lastName from the Hebrew portal fields.
+  Remove every parenthetical segment and both parentheses. Never include a maiden/former/alias surname here; those belong only in Other Names.
 
 * Have you ever used other names? YES/NO
 
@@ -783,7 +794,7 @@ If a complete contact-person name is supplied and there is no organization, Orga
 
 U.S. ADDRESS
 Rule: read the following fields directly — do NOT parse or infer from a single text blob.
-* Street Address: contactStreet; if absent → ❗ MISSING
+* Street Address: contactStreet, street name and number only. A city, state, ZIP, country, or a house number pasted after "United States" does not belong in this line. If contactStreet still contains them, keep only the street name and number (Flamingo Drive Macon, Georgia 31206 United States 3495 → Flamingo Drive 3495). If absent → ❗ MISSING
 * City: contactCity; if absent → ❗ MISSING
 * State: contactState; if absent → ❗ MISSING
 * ZIP Code: contactZip; if contactZipNA is true or absent → DOES NOT APPLY
@@ -1253,7 +1264,8 @@ Use uploads to fill missing fields whenever possible.
 
 passportScan:
 
-* primary source for identity data
+* primary source for passport number, nationality, sex, dates, and place of birth
+* not a source for Surname or Given Name when lastNameEnglish or firstNameEnglish is already filled
 
 existingVisaScan:
 
@@ -1311,7 +1323,7 @@ FINAL GOAL:
 Generate a COMPLETE DS-160-style English review document that mirrors the structure of the real DS-160 form.
 ALL section headers, field labels, and field values must be in English.
 The ONLY Hebrew text allowed is in the "Full Name in Native Alphabet" field.
-Translate every Hebrew value to English. Transliterate names and place names using the passport as the primary source.
+Translate every Hebrew value to English. Transliterate place names. Copy the applicant Surname and Given Name from lastNameEnglish and firstNameEnglish.
 The document is fully populated from intake data and uploaded documents, ready for direct human verification before submission.
 `
 const USER_PREAMBLE =
@@ -1432,9 +1444,9 @@ export function normalizeDs160SourceData(source) {
     data.passportBookNumber = ''
     data.passportBookNumberDoesNotApply = true
   }
-  return splitPackedAccommodationInSourceData(normalizeUsContactEitherOr(
+  return splitPackedContactInSourceData(splitPackedAccommodationInSourceData(normalizeUsContactEitherOr(
     normalizeCeacNameFieldsInSourceData(normalizePhoneFieldsInSourceData(data)),
-  ))
+  )))
 }
 
 /**
@@ -1681,16 +1693,23 @@ Output ONLY valid JSON with no extra explanation.`
     if (!translatedContent || typeof translatedContent !== 'string') {
       return jsonResponse(res, 502, { error: 'Missing translation text from OpenAI' })
     }
-    const translated = splitPackedUsStayInTranslatedText(
-      applyMilitarySpecializedSkillsToTranslatedText(
-        shortenCitiesInTranslatedText(
-          normalizeCeacNamesInTranslatedText(
-            normalizePhoneNumbersInTranslatedText(
-              stripParentheticalAliasesFromPersonNames(translatedContent),
+    const translated = lockApplicantNamesFromPortal(
+      splitPackedUsStayInTranslatedText(
+        applyMilitarySpecializedSkillsToTranslatedText(
+          shortenCitiesInTranslatedText(
+            normalizeCeacNamesInTranslatedText(
+              normalizePhoneNumbersInTranslatedText(
+                stripParentheticalAliasesFromPersonNames(translatedContent),
+              ),
             ),
           ),
         ),
       ),
+      {
+        surname: data.lastNameEnglish,
+        givenName: data.firstNameEnglish,
+        nativeName: [data.firstName, data.lastName].map((part) => String(part || '').trim()).filter(Boolean).join(' '),
+      },
     )
 
     // ── Extract a machine-readable answerSheet from the review text ───────────

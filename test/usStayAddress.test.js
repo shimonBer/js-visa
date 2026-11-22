@@ -7,6 +7,7 @@ import {
   splitPackedUsStayInAnswerSheet,
   splitPackedUsStayInTranslatedText,
   splitUsStayAddress,
+  streetStillPacked,
 } from '../lib/usStayAddress.js'
 
 const PACKED = '1217 Bay Park Pl Far Rockaway, NY 11691 United States'
@@ -53,6 +54,36 @@ test('a packed stay line splits into street, city, state, and ZIP', () => {
     },
   )
   assert.equal(splitUsStayAddress({ street: 'Hotels', city: 'New York', state: 'NY' }).street, 'Hotels')
+})
+
+test('a house number pasted after the country stays on the street', () => {
+  const packed = 'Flamingo Drive Macon, Georgia 31206 United States 3495'
+  assert.deepEqual(
+    splitUsStayAddress({ street: packed, city: 'Macon', state: 'GA', zip: '31206' }),
+    { street: 'Flamingo Drive 3495', city: 'Macon', state: 'GA', zip: '31206' },
+  )
+  assert.deepEqual(splitUsStayAddress({ street: packed }), {
+    street: 'Flamingo Drive 3495',
+    city: 'Macon',
+    state: 'GA',
+    zip: '31206',
+  })
+  assert.equal(streetStillPacked(packed), true)
+  assert.equal(streetStillPacked('Flamingo Drive 3495'), false)
+})
+
+test('a packed U.S. contact street is split in the form JSON', () => {
+  const normalized = normalizeDs160SourceData({
+    contactStreet: 'Flamingo Drive Macon, Georgia 31206 United States 3495',
+    contactCity: 'Macon',
+    contactState: 'GA',
+    contactZip: '31206',
+    contactZipNA: false,
+  })
+  assert.equal(normalized.contactStreet, 'Flamingo Drive 3495')
+  assert.equal(normalized.contactCity, 'Macon')
+  assert.equal(normalized.contactState, 'GA')
+  assert.equal(normalized.contactZip, '31206')
 })
 
 test('translation prose and answer sheet keep the packed address off the street line', () => {

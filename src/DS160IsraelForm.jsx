@@ -48,6 +48,7 @@ import OcrReviewDialog from './OcrReviewDialog.jsx'
 import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
 import { applicantFilePrefix, autofillDownloadFileName } from './lib/translatedFileName.js'
 import { startLocalAutofill } from './lib/localAutofill.js'
+import { splitUsStayAddress, streetStillPacked } from '../lib/usStayAddress.js'
 import {
   downloadPdfBase64,
   fetchTranslationPdfBase64,
@@ -220,11 +221,20 @@ function digitsOnlyRegister(register, name) {
   }
 }
 
-function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError, optional, naGate, watch: watchFn, setValue: setVal, digitsOnly, maxLength }) {
+function FormInput({ label, name, type = 'text', note, hint, placeholder, dir, register, getFieldError, optional, naGate, watch: watchFn, setValue: setVal, digitsOnly, maxLength, onBlur }) {
   const fieldError = getFieldError(name)
   const naName = `${name}NA`
   const isDisabled = naGate && !!watchFn?.(naName)
-  const inputProps = digitsOnly ? digitsOnlyRegister(register, name) : register(name)
+  const registered = digitsOnly ? digitsOnlyRegister(register, name) : register(name)
+  const inputProps = onBlur
+    ? {
+        ...registered,
+        onBlur: (event) => {
+          registered.onBlur(event)
+          onBlur(event)
+        },
+      }
+    : registered
   return (
     <div id={`field-${name}`} className="flex flex-col mb-4">
       <div className="flex items-center justify-between mb-1">
@@ -632,6 +642,7 @@ function AccommodationBlock({
   cityPreset,
   excludePathname,
   excludeFormId,
+  onStreetBlur,
 }) {
   function handleCityPreset(e) {
     const val = e.target.value
@@ -674,7 +685,7 @@ function AccommodationBlock({
 
       {hasExact === 'yes' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="accommodationStreet1" hint="לדוגמה: 9080 Sunrise Blvd" />
+          <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 1)" name="accommodationStreet1" hint="לדוגמה: 9080 Sunrise Blvd" onBlur={onStreetBlur} />
           <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב (שורה 2)" name="accommodationStreet2" hint="לדוגמה: Apt 4B" optional />
           <FormInput register={register} getFieldError={getFieldError} label="עיר" name="accommodationCity" />
           <FormInput register={register} getFieldError={getFieldError} label="מדינה (State)" name="accommodationState" hint="לדוגמה: FL" optional naGate watch={watch} setValue={setValue} />
@@ -2832,7 +2843,75 @@ export default function DS160IsraelForm({
     await startAutofillFromTranslation(translateUi.text)
   }
 
+  const packedAddressGroups = {
+    contact: { street: 'contactStreet', city: 'contactCity', state: 'contactState', zip: 'contactZip', zipNA: 'contactZipNA' },
+    stay: { street: 'accommodationStreet1', city: 'accommodationCity', state: 'accommodationState', zip: 'accommodationZip', zipNA: 'accommodationZipNA', stateNA: 'accommodationStateNA' },
+  }
+
+  function blankAddressValue(value) {
+    const text = String(value ?? '').trim()
+    return !text || text === '- SELECT ONE -'
+  }
+
+  function writeAddressSplit(keys, before, split) {
+    if (!split?.street) return
+    if (split.street !== String(before[keys.street] || '').trim()) {
+      setValue(keys.street, split.street, { shouldDirty: true, shouldValidate: true })
+    }
+    if (split.city && blankAddressValue(before[keys.city])) {
+      setValue(keys.city, split.city, { shouldDirty: true, shouldValidate: true })
+    }
+    if (split.state && blankAddressValue(before[keys.state])) {
+      setValue(keys.state, split.state, { shouldDirty: true, shouldValidate: true })
+      if (keys.stateNA) setValue(keys.stateNA, false, { shouldDirty: true })
+    }
+    if (split.zip && blankAddressValue(before[keys.zip])) {
+      setValue(keys.zip, split.zip, { shouldDirty: true, shouldValidate: true })
+      if (keys.zipNA) setValue(keys.zipNA, false, { shouldDirty: true })
+    }
+  }
+
+  async function repairPackedUsAddress(which) {
+    const keys = packedAddressGroups[which]
+    if (!keys) return
+    const values = getValues()
+    const raw = String(values[keys.street] || '').trim()
+    if (!raw) return
+    const state = values[keys.state] === '- SELECT ONE -' ? '' : values[keys.state]
+    const local = splitUsStayAddress({
+      street: raw,
+      city: values[keys.city],
+      state,
+      zip: values[keys.zip],
+    })
+    writeAddressSplit(keys, values, local)
+    if (!streetStillPacked(local.street)) return
+    try {
+      const res = await fetch('/api/split-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          street: raw,
+          city: values[keys.city] || '',
+          state: state || '',
+          zip: values[keys.zip] || '',
+        }),
+      })
+      if (!res.ok) return
+      const remote = await res.json()
+      writeAddressSplit(keys, getValues(), remote)
+    } catch {
+      /* the rules split is already in the form */
+    }
+  }
+
+  async function repairPackedUsAddresses() {
+    await repairPackedUsAddress('contact')
+    await repairPackedUsAddress('stay')
+  }
+
   async function handleTranslateToEnglish({ withSave = false, downloadAndRun = false } = {}) {
+    await repairPackedUsAddresses()
     if (ocrReview) {
       setTranslateUi((state) => ({
         ...state,
@@ -4211,6 +4290,7 @@ export default function DS160IsraelForm({
                     cityPreset={w.accommodationCityPreset}
                     excludePathname={loadedBlobKeyRef.current}
                     excludeFormId={formUUIDRef.current || storageFormId}
+                    onStreetBlur={() => { void repairPackedUsAddress('stay') }}
                   />
                 </div>
               )}
@@ -4254,6 +4334,7 @@ export default function DS160IsraelForm({
                     cityPreset={w.accommodationCityPreset}
                     excludePathname={loadedBlobKeyRef.current}
                     excludeFormId={formUUIDRef.current || storageFormId}
+                    onStreetBlur={() => { void repairPackedUsAddress('stay') }}
                   />
                 </div>
               )}
@@ -4860,7 +4941,7 @@ export default function DS160IsraelForm({
                 <div className="bg-white rounded border border-gray-200 p-4 space-y-3">
                   <p className="font-semibold text-gray-700 text-sm">Address and Phone Number of Point of Contact</p>
                   <div className="grid grid-cols-1 gap-3">
-                    <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב — שורה 1 (U.S. Street Address Line 1)" name="contactStreet" hint="לדוגמה: 123 Main St" />
+                    <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב — שורה 1 (U.S. Street Address Line 1)" name="contactStreet" hint="לדוגמה: 123 Main St" onBlur={() => { void repairPackedUsAddress('contact') }} />
                     <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב — שורה 2 (Line 2)" name="contactStreet2" optional />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="contactCity" hint="לדוגמה: Miami" />

@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { stripParentheticalAliasesFromPersonNames } from '../lib/personNameFormatting.js'
+import {
+  lockApplicantNamesFromPortal,
+  stripParentheticalAliasesFromPersonNames,
+} from '../lib/personNameFormatting.js'
 
 test('removes parenthetical aliases from English and native person names', () => {
   const translated = [
@@ -18,6 +21,33 @@ test('removes parenthetical aliases from English and native person names', () =>
       'Given Name: TETIANA',
       'Full Name in Native Alphabet: טטיאנה לוסטמן',
       'Former Spouse Surname: COHEN',
+    ].join('\n'),
+  )
+})
+
+test('copies the portal applicant name over a nationality word the model appended', () => {
+  const translated = [
+    'Surname: YIFRAH',
+    'Given Name: Netanel Israel',
+    'Full Name in Native Alphabet: נתנאל ישראל יפרח',
+    'Spouse Surname: COHEN',
+    'Spouse Given Name: MAYA',
+    'Father’s Surname: YIFRAH',
+  ].join('\n')
+
+  assert.equal(
+    lockApplicantNamesFromPortal(translated, {
+      surname: 'YIFRAH',
+      givenName: 'NETANEL',
+      nativeName: 'נתנאל יפרח',
+    }),
+    [
+      'Surname: YIFRAH',
+      'Given Name: NETANEL',
+      'Full Name in Native Alphabet: נתנאל יפרח',
+      'Spouse Surname: COHEN',
+      'Spouse Given Name: MAYA',
+      'Father’s Surname: YIFRAH',
     ].join('\n'),
   )
 })
