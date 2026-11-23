@@ -48,7 +48,7 @@ import OcrReviewDialog from './OcrReviewDialog.jsx'
 import { compareOcrPasses, runTwoPassOcr } from './lib/ocrReview.js'
 import { applicantFilePrefix, autofillDownloadFileName } from './lib/translatedFileName.js'
 import { startLocalAutofill } from './lib/localAutofill.js'
-import { splitUsStayAddress, streetStillPacked } from '../lib/usStayAddress.js'
+import { splitUsStayAddress } from '../lib/usStayAddress.js'
 import {
   downloadPdfBase64,
   fetchTranslationPdfBase64,
@@ -2871,47 +2871,28 @@ export default function DS160IsraelForm({
     }
   }
 
-  async function repairPackedUsAddress(which) {
+  function repairPackedUsAddress(which) {
     const keys = packedAddressGroups[which]
     if (!keys) return
     const values = getValues()
     const raw = String(values[keys.street] || '').trim()
     if (!raw) return
     const state = values[keys.state] === '- SELECT ONE -' ? '' : values[keys.state]
-    const local = splitUsStayAddress({
+    writeAddressSplit(keys, values, splitUsStayAddress({
       street: raw,
       city: values[keys.city],
       state,
       zip: values[keys.zip],
-    })
-    writeAddressSplit(keys, values, local)
-    if (!streetStillPacked(local.street)) return
-    try {
-      const res = await fetch('/api/split-address', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          street: raw,
-          city: values[keys.city] || '',
-          state: state || '',
-          zip: values[keys.zip] || '',
-        }),
-      })
-      if (!res.ok) return
-      const remote = await res.json()
-      writeAddressSplit(keys, getValues(), remote)
-    } catch {
-      /* the rules split is already in the form */
-    }
+    }))
   }
 
-  async function repairPackedUsAddresses() {
-    await repairPackedUsAddress('contact')
-    await repairPackedUsAddress('stay')
+  function repairPackedUsAddresses() {
+    repairPackedUsAddress('contact')
+    repairPackedUsAddress('stay')
   }
 
   async function handleTranslateToEnglish({ withSave = false, downloadAndRun = false } = {}) {
-    await repairPackedUsAddresses()
+    repairPackedUsAddresses()
     if (ocrReview) {
       setTranslateUi((state) => ({
         ...state,
@@ -4290,7 +4271,7 @@ export default function DS160IsraelForm({
                     cityPreset={w.accommodationCityPreset}
                     excludePathname={loadedBlobKeyRef.current}
                     excludeFormId={formUUIDRef.current || storageFormId}
-                    onStreetBlur={() => { void repairPackedUsAddress('stay') }}
+                    onStreetBlur={() => repairPackedUsAddress('stay')}
                   />
                 </div>
               )}
@@ -4334,7 +4315,7 @@ export default function DS160IsraelForm({
                     cityPreset={w.accommodationCityPreset}
                     excludePathname={loadedBlobKeyRef.current}
                     excludeFormId={formUUIDRef.current || storageFormId}
-                    onStreetBlur={() => { void repairPackedUsAddress('stay') }}
+                    onStreetBlur={() => repairPackedUsAddress('stay')}
                   />
                 </div>
               )}
@@ -4941,7 +4922,7 @@ export default function DS160IsraelForm({
                 <div className="bg-white rounded border border-gray-200 p-4 space-y-3">
                   <p className="font-semibold text-gray-700 text-sm">Address and Phone Number of Point of Contact</p>
                   <div className="grid grid-cols-1 gap-3">
-                    <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב — שורה 1 (U.S. Street Address Line 1)" name="contactStreet" hint="לדוגמה: 123 Main St" onBlur={() => { void repairPackedUsAddress('contact') }} />
+                    <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב — שורה 1 (U.S. Street Address Line 1)" name="contactStreet" hint="לדוגמה: 123 Main St" onBlur={() => repairPackedUsAddress('contact')} />
                     <FormInput register={register} getFieldError={getFieldError} label="כתובת רחוב — שורה 2 (Line 2)" name="contactStreet2" optional />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <FormInput register={register} getFieldError={getFieldError} label="עיר (City)" name="contactCity" hint="לדוגמה: Miami" />
