@@ -38,6 +38,7 @@ import {
   applyMilitarySpecializedSkillsToSourceData,
   applyMilitarySpecializedSkillsToTranslatedText,
 } from '../lib/militarySpecializedSkills.js'
+import { applyDeceasedSpouseToTranslatedText } from '../lib/deceasedSpouse.js'
 import {
   splitPackedAccommodationInSourceData,
   splitPackedContactInSourceData,
@@ -395,6 +396,16 @@ PERSONAL INFORMATION 1
 * Sex
 
 * Marital Status
+  Rule: map maritalStatus onto the DS-160 wording:
+  רווק → Single
+  נשוי → Married
+  גרוש → Divorced
+  אלמן → Widowed
+  נשוי אזרחית → Civil Union/Domestic Partnership
+  פרוד → Legally Separated
+  חיים משותפים → Common Law Marriage
+  If the value is already one of those English statuses, keep it.
+  אלמן is Widowed. It is not Single, and it is not "never married".
 
 * Date of Birth
 
@@ -891,6 +902,34 @@ RELATIVES IN THE U.S.
           Country: spouseAddressCountry
       - If absent or empty → ❗ MISSING
 
+  Rule: when maritalStatus is אלמן / Widowed, Are you currently married? is NO.
+  Do not copy deceasedSpouse* fields into this living-spouse block.
+
+━━━━━━━━━━━━━━━━━━━━
+
+🟦 DECEASED SPOUSE
+
+Output this section only when maritalStatus is אלמן or Widowed.
+If deceasedSpouseName is present, this section is mandatory. Never drop it.
+Do not describe this person as a previous spouse and do not answer
+"Have you ever been married before?" from these fields. CEAC collects the
+deceased spouse on its own page.
+
+* Deceased Spouse Surname
+* Deceased Spouse Given Name
+  Rule: deceasedSpouseName is one full name, given names first and the surname last.
+  Transliterate every Hebrew name into Latin letters, then put the last word in
+  Deceased Spouse Surname and every preceding word in Deceased Spouse Given Name.
+* Deceased Spouse Date of Birth
+  Rule: deceasedSpouseBirthDate as DD/MM/YYYY. If absent → ❗ MISSING
+* Deceased Spouse Nationality
+  Rule: deceasedSpouseCitizenship translated to English (ישראלית / ישראלי / ישראל → Israel).
+* Deceased Spouse City of Birth
+* Deceased Spouse Country of Birth
+  Rule: deceasedSpouseBirthCityCountry may be a city only, or a city plus a country.
+  Split them. Transliterate the city (באר יעקוב / באר יעקב → Beer Yaakov).
+  If only a city is present and citizenship is Israeli, Country of Birth is Israel.
+
 ━━━━━━━━━━━━━━━━━━━━
 
 🟦 PREVIOUS SPOUSES
@@ -898,6 +937,7 @@ RELATIVES IN THE U.S.
 * Have you ever been married before? YES/NO
   Rule: if the formerSpouses array is non-empty AND at least one entry has a non-empty surnames field → YES
   Otherwise → NO
+  A deceased spouse (maritalStatus אלמן) does not by itself make this YES.
 
   * IF YES: iterate over the formerSpouses array. For each entry output:
 
@@ -1693,23 +1733,26 @@ Output ONLY valid JSON with no extra explanation.`
     if (!translatedContent || typeof translatedContent !== 'string') {
       return jsonResponse(res, 502, { error: 'Missing translation text from OpenAI' })
     }
-    const translated = lockApplicantNamesFromPortal(
-      splitPackedUsStayInTranslatedText(
-        applyMilitarySpecializedSkillsToTranslatedText(
-          shortenCitiesInTranslatedText(
-            normalizeCeacNamesInTranslatedText(
-              normalizePhoneNumbersInTranslatedText(
-                stripParentheticalAliasesFromPersonNames(translatedContent),
+    const translated = applyDeceasedSpouseToTranslatedText(
+      lockApplicantNamesFromPortal(
+        splitPackedUsStayInTranslatedText(
+          applyMilitarySpecializedSkillsToTranslatedText(
+            shortenCitiesInTranslatedText(
+              normalizeCeacNamesInTranslatedText(
+                normalizePhoneNumbersInTranslatedText(
+                  stripParentheticalAliasesFromPersonNames(translatedContent),
+                ),
               ),
             ),
           ),
         ),
+        {
+          surname: data.lastNameEnglish,
+          givenName: data.firstNameEnglish,
+          nativeName: [data.firstName, data.lastName].map((part) => String(part || '').trim()).filter(Boolean).join(' '),
+        },
       ),
-      {
-        surname: data.lastNameEnglish,
-        givenName: data.firstNameEnglish,
-        nativeName: [data.firstName, data.lastName].map((part) => String(part || '').trim()).filter(Boolean).join(' '),
-      },
+      data,
     )
 
     // ── Extract a machine-readable answerSheet from the review text ───────────

@@ -9,6 +9,7 @@ export function detectPageContextFromUrl(href) {
     const url = currentUrl.pathname.toLowerCase()
     const node = String(currentUrl.searchParams.get('node') || '').toLowerCase()
 
+    if (node.includes('deceased')) return 'deceased_spouse'
     if (node === 'spouse') return 'spouse'
     if (node === 'personal1' || node === 'personalinfo1') return 'personal1'
     if (node === 'personal2' || node === 'personalcont' || node === 'personalinfo2') {
@@ -48,6 +49,7 @@ export function detectPageContextFromUrl(href) {
     if (url.includes('complete_contact') || url.includes('addressphone') || url.includes('address_phone')) {
       return 'address'
     }
+    if (url.includes('deceased')) return 'deceased_spouse'
     if (url.includes('complete_family')) return 'family'
     if (url.includes('complete_security')) return 'security'
     if (url.includes('complete_work')) return 'work_edu'
@@ -119,6 +121,7 @@ const AFTER_PERSONAL1 = new Set([
   'contact',
   'family',
   'spouse',
+  'deceased_spouse',
   'work_present',
   'work_previous',
   'work_additional',
@@ -146,6 +149,7 @@ export function detectPageContextFromHeading(text) {
   if (t.includes('address')) return 'address'
   if (t.includes('passport')) return 'passport'
   if (t.includes('u.s. contact') || t.includes('point of contact')) return 'contact'
+  if (t.includes('deceased spouse')) return 'deceased_spouse'
   if (t.includes('family information') && t.includes('spouse')) return 'spouse'
   if (t.includes('family')) return 'family'
   if (t.includes('additional work') || t.includes('additional education')) return 'work_additional'
@@ -176,6 +180,9 @@ export function detectPageContextFromUrlFallback(href) {
 export function detectPageContext({ href = '', heading = '' } = {}) {
   const fromUrl = detectPageContextFromUrl(href)
   const fromHeading = detectPageContextFromHeading(heading)
+  // The deceased-spouse page is served under a family URL. The heading is the
+  // only thing that distinguishes it from parents/relatives.
+  if (fromHeading === 'deceased_spouse') return 'deceased_spouse'
   // Form heading wins over the Default.aspx landing URL (frames / wrapper).
   if (fromHeading && (fromUrl === 'captcha' || fromUrl === 'unknown')) return fromHeading
   if (fromUrl !== 'unknown') return fromUrl

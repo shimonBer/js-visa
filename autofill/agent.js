@@ -26,6 +26,7 @@ import {
 } from '../lib/ds160CityLength.js'
 import { normalizePhoneFillValue, phoneDigits } from '../lib/phoneFormatting.js'
 import {
+  detectPageContext,
   detectPageContextFromHeading,
   detectPageContextFromUrl,
   detectPageContextFromUrlFallback,
@@ -33,6 +34,7 @@ import {
 } from './detect-page-context.js'
 import { UNKNOWN_US_STAY_ZIP } from './parse-applicant-source.js'
 import { splitUsStayAddress } from '../lib/usStayAddress.js'
+import { parseDeceasedSpouseSection } from '../lib/deceasedSpouse.js'
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 const OPENAI_TIMEOUT_MS = 60_000
@@ -4159,6 +4161,15 @@ Spouse Information page rules:
   * Before navigating, verify the entered spouse name exactly matches those two spouse-source fields.
   * Spouse City of Birth — fill with {"type":"fill","label":"City","value":"<city>"}. Only check "Do Not Know" if the source explicitly says N/A or unknown for this field. NEVER check Do Not Know when the source provides a real city name.`,
 
+  deceased_spouse: `
+Deceased Spouse page (Family Information: Deceased Spouse). Use only the 🟦 DECEASED SPOUSE section. Never copy SPOUSE INFORMATION, PREVIOUS SPOUSES, or a U.S. relative.
+  * {"type":"fill","label":"Surname","value":"<Deceased Spouse Surname>"}
+  * {"type":"fill","label":"Given Name","value":"<Deceased Spouse Given Name>"}
+  * {"type":"fill","label":"Date of Birth","value":"DD/MM/YYYY"} from Deceased Spouse Date of Birth
+  * {"type":"selectOption","label":"Country/Region of Origin (Nationality)","value":"<Deceased Spouse Nationality>"}
+  * {"type":"fill","label":"City","value":"<Deceased Spouse City of Birth>"}. Do not check Do Not Know when a city is provided.
+  * {"type":"selectOption","label":"Country/Region","value":"<Deceased Spouse Country of Birth>"}`,
+
   work_previous: `
 Previous Work / Education page:
   * Employer Name, School / Institution Name, and Job Title may only use A-Z, 0-9, hyphen, apostrophe, ampersand, and spaces. Never type a period — "Elbit Systems Ltd." must be "Elbit Systems Ltd".
@@ -4389,6 +4400,10 @@ RULES:
   * Use values only from the 🟦 SPOUSE INFORMATION section. Never copy a name from RELATIVES IN THE U.S., U.S. CONTACT INFORMATION, or TRAVEL COMPANIONS.
   * Fill "Spouse's Surnames" from Spouse Surname and "Spouse's Given Names" from Spouse Given Name.
   * Before navigating, verify the entered spouse name exactly matches those two spouse-source fields.
+- Deceased Spouse page (heading "Family Information: Deceased Spouse"):
+  * Use only the 🟦 DECEASED SPOUSE section. Do not treat "Are you currently married? No" or "Have you ever been married before? No" as a reason to leave this page blank.
+  * Fill Surname, Given Name, Date of Birth (DD/MM/YYYY), Country/Region of Origin (Nationality), City, and Country/Region from Deceased Spouse Surname, Given Name, Date of Birth, Nationality, City of Birth, and Country of Birth.
+  * Do not check City "Do Not Know" when a city is provided.
 - Previous Work / Education page:
   * Never type the literal value "N/A", "DOES NOT APPLY", or "DO NOT KNOW" into a previous-employer or education input when its row has a checkbox.
   * For each previous employer row, when State/Province or ZIP is N/A/DOES NOT APPLY, use {"type":"check","label":"Does Not Apply","fieldLabel":"Previous Employer State/Province","occurrence":1} or fieldLabel "Previous Employer Postal Zone/ZIP Code".
@@ -4569,18 +4584,39 @@ export async function askAgent(
  */
 export async function detectCurrentPageContext(page) {
   try {
-    const fromUrl = detectPageContextFromUrl(page.url())
-    if (fromUrl !== 'unknown') return fromUrl
+    const href = page.url()
+    const fromUrl = detectPageContextFromUrl(href)
+    let heading = ''
+    if (
+      fromUrl === 'family' ||
+      fromUrl === 'spouse' ||
+      fromUrl === 'deceased_spouse' ||
+      fromUrl === 'unknown'
+    ) {
+      for (const sel of ['h2', 'h3', 'legend', '.step-title']) {
+        try {
+          const text = (await page.locator(sel).first().textContent({ timeout: 500 })) || ''
+          if (String(text).trim()) {
+            heading = text
+            break
+          }
+        } catch { /* try next */ }
+      }
+    }
+    const detected = detectPageContext({ href, heading })
+    if (detected !== 'unknown') return detected
 
-    for (const sel of ['h2', 'h3', 'legend', '.step-title']) {
-      try {
-        const text = (await page.locator(sel).first().textContent({ timeout: 500 })) || ''
-        const fromHeading = detectPageContextFromHeading(text)
-        if (fromHeading) return fromHeading
-      } catch { /* try next */ }
+    if (!heading) {
+      for (const sel of ['h2', 'h3', 'legend', '.step-title']) {
+        try {
+          const text = (await page.locator(sel).first().textContent({ timeout: 500 })) || ''
+          const fromHeading = detectPageContextFromHeading(text)
+          if (fromHeading) return fromHeading
+        } catch { /* try next */ }
+      }
     }
 
-    return detectPageContextFromUrlFallback(page.url())
+    return detectPageContextFromUrlFallback(href)
   } catch {
     return 'unknown'
   }
@@ -4602,6 +4638,7 @@ export function filterTranslatedText(translatedText, pageContext) {
     contact:      /🟦 (?:U\.?S\.?\s+)?CONTACT[\s\S]*?(?=\n🟦|$)/i,
     family:       /🟦 FAMILY[\s\S]*?(?=\n🟦|$)/i,
     spouse:       /🟦 SPOUSE INFORMATION[\s\S]*?(?=\n🟦|$)/i,
+    deceased_spouse: /🟦 DECEASED SPOUSE[\s\S]*?(?=\n🟦|$)/i,
     work_present: /🟦 WORK.*EDUCATION[\s\S]*?(?=\n🟦 PREVIOUS EMPLOYMENT|\n🟦 EDUCATION|\n🟦 ADDITIONAL BACKGROUND|$)/i,
     work_previous:/🟦 PREVIOUS EMPLOYMENT[\s\S]*?(?=\n🟦 ADDITIONAL BACKGROUND|\n🟦 SECURITY|$)/i,
     work_additional:/🟦 ADDITIONAL BACKGROUND[\s\S]*?(?=\n🟦 SECURITY|$)/i,
@@ -4936,6 +4973,98 @@ export async function syncSpouseNameFromSource(page, sectionText) {
     log(`Corrected spouse ${field.label} from the SPOUSE INFORMATION source section`)
     changed = true
   }
+  return changed
+}
+
+async function firstVisible(page, selectors) {
+  for (const sel of selectors) {
+    const matches = page.locator(sel)
+    const count = await matches.count().catch(() => 0)
+    for (let i = 0; i < count; i++) {
+      const el = matches.nth(i)
+      if (await el.isVisible().catch(() => false)) return el
+    }
+  }
+  return null
+}
+
+/**
+ * Fill Family Information: Deceased Spouse from the translated DECEASED SPOUSE
+ * section. Widowed applicants land here after marital status, and the living
+ * spouse / previous-spouse questions do not carry this person.
+ */
+export async function syncDeceasedSpouseFromSource(page, sectionText) {
+  const parsed = parseDeceasedSpouseSection(sectionText)
+  if (isMarkerValue(parsed.surname) || isMarkerValue(parsed.givenName)) return false
+
+  const heading = await page.locator('h1, h2, h3, legend, .step-title').first().textContent().catch(() => '')
+  if (!/deceased spouse/i.test(heading || '')) return false
+
+  let changed = false
+  const writeText = async (selectors, value) => {
+    if (isMarkerValue(value)) return
+    const el = await firstVisible(page, selectors)
+    if (!el) return
+    const current = (await el.inputValue().catch(() => '')).trim()
+    if (current.toUpperCase() === value.trim().toUpperCase()) return
+    await el.fill(value)
+    changed = true
+  }
+  const writeSelect = async (selectors, value) => {
+    if (isMarkerValue(value)) return
+    const el = await firstVisible(page, selectors)
+    if (!el) return
+    const selected = (await el.locator('option:checked').textContent().catch(() => '') || '').trim()
+    if (selected && selected.toUpperCase() === value.trim().toUpperCase()) return
+    const options = await el.locator('option').allTextContents()
+    const match = options.find((option) => option.trim().toUpperCase() === value.trim().toUpperCase())
+      || options.find((option) => option.trim().toUpperCase().includes(value.trim().toUpperCase()))
+    if (!match) return
+    await el.selectOption({ label: match.trim() }).catch(async () => {
+      await el.selectOption({ label: match })
+    })
+    changed = true
+  }
+
+  await writeText(
+    ['input[id$="tbxSURNAME"]', 'input[id$="tbxSpouseSurname"]', 'input[id*="Deceased"][id*="Surname"]'],
+    parsed.surname,
+  )
+  await writeText(
+    ['input[id$="tbxGIVEN_NAME"]', 'input[id$="tbxSpouseGivenName"]', 'input[id*="Deceased"][id*="Given"]'],
+    parsed.givenName,
+  )
+  await writeSelect(
+    ['select[id$="ddlSpouseNatDropDownList"]', 'select[id*="NatDropDown"]', 'select[id*="NATIONALITY"]'],
+    parsed.nationality,
+  )
+  await writeText(
+    ['input[id$="tbxSpousePOBCity"]', 'input[id$="tbxCITY"]', 'input[id*="POB"][id*="City"]'],
+    parsed.city,
+  )
+  await writeSelect(
+    ['select[id$="ddlSpousePOBCountry"]', 'select[id$="ddlCountry"]'],
+    parsed.country,
+  )
+
+  const [, , year = ''] = String(parsed.birthDate || '').split('/')
+  const yearInput = await firstVisible(page, ['input[id$="tbxDOBYear"]', 'input[id$="tbxSpsDOBYear"]'])
+  const currentYear = yearInput ? (await yearInput.inputValue().catch(() => '')).trim() : ''
+  if (yearInput && year && currentYear !== year) {
+    try {
+      await executeAction(page, {
+        type: 'fill',
+        label: 'Deceased Spouse Date of Birth',
+        value: parsed.birthDate,
+      })
+      const after = (await yearInput.inputValue().catch(() => '')).trim()
+      if (after === year) changed = true
+    } catch (err) {
+      logWarn(`[deceased spouse] Date of birth was not filled: ${err.message}`)
+    }
+  }
+
+  if (changed) log('Filled deceased spouse from the DECEASED SPOUSE source section')
   return changed
 }
 
@@ -6183,7 +6312,7 @@ const MAX_LLM_CALLS_PER_PAGE = 4
 // Pages where the batch planner is used; others fall back to the vision agent
 const PLANNER_PAGES = new Set([
   'personal1','personal2','travel','companions','prev_travel','address',
-  'passport','contact','family','spouse','work_present','work_previous',
+  'passport','contact','family','spouse','deceased_spouse','work_present','work_previous',
   'work_additional','work_edu','security',
 ])
 // Per-page stall limits — longer for dense sections like Travel and Security
@@ -6197,6 +6326,7 @@ const PAGE_STALL_LIMITS = {
   work_edu:         50,
   family:           50,
   spouse:           35,
+  deceased_spouse:  35,
   address:          40,
   personal1:        35,
   personal2:        35,
@@ -6508,6 +6638,13 @@ export async function runAgent(page, translatedText, apiKey, opts = {}) {
 
     if (pageContext === 'spouse' && await syncSpouseNameFromSource(page, relevantText)) {
       actionHistory.push({ type: '_spouse_name_synced_from_source' })
+      await page.waitForTimeout(200)
+      continue
+    }
+
+    if (pageContext === 'deceased_spouse' && await syncDeceasedSpouseFromSource(page, relevantText)) {
+      actionHistory.push({ type: '_deceased_spouse_synced_from_source' })
+      currentPlan = null
       await page.waitForTimeout(200)
       continue
     }
