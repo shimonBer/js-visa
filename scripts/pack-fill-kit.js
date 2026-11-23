@@ -79,17 +79,22 @@ const readme = `fill-ds160 — worker kit
 =======================
 
 Mac
+0. Install Node 20 (https://nodejs.org) and Google Chrome.
 1. Unzip this folder.
-2. Double-click: scripts/Install Fill DS-160 on Desktop.command
-3. Desktop app: fill-ds160
+2. Double-click: Download fill-ds160.command
+   Leave that window open until it says the download is ready.
+3. Double-click fill-ds160.command in this same folder.
+   That file is already in the zip. It only opens the app.
 4. Add translation files and press play on each. They run one after another.
 
 Windows
 0. Install Node 20 LTS (https://nodejs.org) and Google Chrome.
-1. Unzip this folder. Keep it on the PC (do not run from the zip).
-2. Double-click: scripts\Install-fill-ds160.bat
-   First install needs internet (Node packages + Chromium fallback).
-3. Desktop shortcut: fill-ds160
+1. Unzip this folder onto the PC. Do not run it from inside the zip.
+2. Double-click: Download fill-ds160.bat
+   Leave that window open. It downloads packages and Chromium.
+   Do not paste commands into Command Prompt.
+3. When the window says the download is ready, double-click fill-ds160.bat in this same folder.
+   That file is already in the zip. It only opens the app.
 4. Same Hebrew window: add files, play / stop per file. Fills run one after another.
 
 In the visa form, translate and download first_last.txt, then drop those files into fill-ds160.
@@ -120,8 +125,13 @@ run('rsync', [
   `${kitDir}/`,
 ])
 
-const batPath = path.join(kitDir, 'scripts', 'Install-fill-ds160.bat')
-if (fs.existsSync(batPath)) {
+for (const batPath of [
+  path.join(kitDir, 'Install fill-ds160.bat'),
+  path.join(kitDir, 'Download fill-ds160.bat'),
+  path.join(kitDir, 'fill-ds160.bat'),
+  path.join(kitDir, 'scripts', 'Install-fill-ds160.bat'),
+]) {
+  if (!fs.existsSync(batPath)) continue
   const crlf = fs.readFileSync(batPath, 'utf8').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')
   fs.writeFileSync(batPath, crlf)
 }
@@ -140,4 +150,6 @@ run('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', kitDir, zipPath])
 
 console.log(`Worker folder: ${kitDir}`)
 console.log(`Worker zip:    ${zipPath}`)
-console.log('Copy the zip to the worker computer, unzip, then run the Mac or Windows installer.')
+console.log('Copy the zip to the worker computer and unzip it.')
+console.log('Windows: Download fill-ds160.bat once, then open fill-ds160.bat in that folder.')
+console.log('Mac: Download fill-ds160.command once, then open fill-ds160.command in that folder.')

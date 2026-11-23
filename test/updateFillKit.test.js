@@ -24,6 +24,10 @@ test('preserved paths stay on the worker machine', () => {
   assert.equal(isPreservedRel(path.join('node_modules', 'playwright')), true)
   assert.equal(isPreservedRel(path.join('autofill-output', 'fill-queue.json')), true)
   assert.equal(isPreservedRel(path.join('people', 'a.txt')), true)
+  assert.equal(isPreservedRel('fill-ds160.bat'), true)
+  assert.equal(isPreservedRel('Download fill-ds160.bat'), true)
+  assert.equal(isPreservedRel('fill-ds160.command'), true)
+  assert.equal(isPreservedRel('Download fill-ds160.command'), true)
   assert.equal(isPreservedRel(path.join('autofill', 'agent.js')), false)
 })
 

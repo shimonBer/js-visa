@@ -22,6 +22,10 @@ const PRESERVE = new Set([
   'autofill-output',
   'people',
   'graphify-out',
+  'fill-ds160.bat',
+  'Download fill-ds160.bat',
+  'fill-ds160.command',
+  'Download fill-ds160.command',
 ])
 
 export function isPreservedRel(rel) {
